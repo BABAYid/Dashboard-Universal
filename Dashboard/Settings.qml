@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import Qt.labs.settings 1.0
+import QtCore as Core
 
 Window {
     id: settingsWindow
@@ -20,8 +20,9 @@ Window {
     // Сигнал при применении настроек
     signal settingsApplied(real sf, real rf, real ff, real tf)
 
-    // Сохранение настроек
-    Settings {
+    // Сохранение настроек. Тип указан через псевдоним импорта, иначе имя
+    // Settings разрешилось бы в одноимённый компонент этого же файла.
+    Core.Settings {
         id: appSettings
         property real savedSpeedFactor: 1.0
         property real savedRpmFactor: 1.0
@@ -176,6 +177,7 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
 
             Button {
+                id: saveButton
                 text: "Сохранить"
                 width: 120
                 height: 40
@@ -184,7 +186,7 @@ Window {
                     radius: 6
                 }
                 contentItem: Text {
-                    text: parent.text
+                    text: saveButton.text
                     color: "white"
                     font.pixelSize: 16
                     font.bold: true
@@ -209,6 +211,7 @@ Window {
             }
 
             Button {
+                id: cancelButton
                 text: "Отмена"
                 width: 120
                 height: 40
@@ -217,7 +220,7 @@ Window {
                     radius: 6
                 }
                 contentItem: Text {
-                    text: parent.text
+                    text: cancelButton.text
                     color: "white"
                     font.pixelSize: 16
                     font.bold: true

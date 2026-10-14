@@ -12,6 +12,9 @@ qt_add_executable(appDashboard
     main.cpp
 )
 
+# Сгенерированный qmltyperegistrar код подключает <CanBackend.h> по имени файла
+target_include_directories(appDashboard PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/can)
+
 # Все ресурсы (картинки, шрифт) кладутся в ресурсную систему по пути модуля:
 # qrc:/qt/qml/Dashboard/images/... — в QML на них ссылаемся относительными путями
 # ("images/taho.png"). Абсолютных путей file:///home/... в проекте быть не должно:
@@ -19,6 +22,9 @@ qt_add_executable(appDashboard
 qt_add_qml_module(appDashboard
     URI Dashboard
     VERSION 1.0
+    SOURCES
+        can/CanBackend.h
+        can/CanBackend.cpp
     QML_FILES
         Main.qml
         Speedometer.qml
@@ -79,3 +85,19 @@ install(TARGETS appDashboard
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# ---------------------------------------------------------------------------
+#  Тест разбора CAN-протокола (не входит в обычную сборку):
+#      cmake -S Dashboard -B build -DDASHBOARD_BUILD_TESTS=ON
+#      cmake --build build --target test_canprotocol && ./build/test_canprotocol
+# ---------------------------------------------------------------------------
+option(DASHBOARD_BUILD_TESTS "Собрать тест разбора CAN-протокола" OFF)
+
+if(DASHBOARD_BUILD_TESTS)
+    add_executable(test_canprotocol
+        tests/test_canprotocol.cpp
+        can/CanBackend.cpp
+    )
+    target_include_directories(test_canprotocol PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/can)
+    target_link_libraries(test_canprotocol PRIVATE Qt6::Quick)
+endif()

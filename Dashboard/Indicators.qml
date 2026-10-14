@@ -145,6 +145,11 @@ Item {
                 else if (root.displayMode === "tripA") root.displayMode = "tripB"
                 else if (root.displayMode === "tripB") root.displayMode = "odo"
             }
+            // Долгое нажатие — сброс текущего trip (одометр не сбрасывается)
+            onPressAndHold: {
+                if (root.displayMode === "tripA") CanBackend.resetTripA()
+                else if (root.displayMode === "tripB") CanBackend.resetTripB()
+            }
         }
     }
 }
