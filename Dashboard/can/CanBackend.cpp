@@ -257,7 +257,11 @@ void CanBackend::handleSensorFrame(const quint8 *d)
     set(m_voltage,     static_cast<double>(d[2]) / 10.0,    &CanBackend::voltageChanged);
     set(m_outsideTemp, static_cast<double>(static_cast<qint8>(d[3])), &CanBackend::outsideTempChanged);
     set(m_oilPressureAlarm, d[4] != 0,                      &CanBackend::oilPressureAlarmChanged);
-    set(m_fuelRate,    static_cast<double>(d[5]) / 10.0,    &CanBackend::fuelRateChanged);
+
+    // Расход — uint16 (байты 5-6), значение x10. В версии 1.0 протокола он
+    // занимал один байт, и заявленные 99.9 л/100 км в него не помещались.
+    const int fuelRateX10 = (static_cast<int>(d[5]) << 8) | static_cast<int>(d[6]);
+    set(m_fuelRate, static_cast<double>(fuelRateX10) / 10.0, &CanBackend::fuelRateChanged);
 }
 
 // 0x400: режим АКПП, передача, LOCK, провода S1/S2/SL
@@ -518,7 +522,9 @@ void CanBackend::generateMockFrames()
         d[2] = static_cast<quint8>(qBound(0.0, volts * 10.0, 255.0));
         d[3] = static_cast<quint8>(static_cast<qint8>(qBound(-40.0, outside, 60.0)));
         d[4] = 0;
-        d[5] = static_cast<quint8>(qBound(0.0, rate * 10.0, 255.0));
+        const int rateX10 = qBound(0, static_cast<int>(rate * 10.0), 999);
+        d[5] = static_cast<quint8>((rateX10 >> 8) & 0xFF);   // расход, старший байт
+        d[6] = static_cast<quint8>(rateX10 & 0xFF);          // расход, младший байт
         handleFrame(kIdSensors, d, 8);
     }
 

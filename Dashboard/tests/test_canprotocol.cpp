@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
                               << " лев=" << backend.leftTurn()
                               << " прав=" << backend.rightTurn()
                               << " кадров=" << backend.framesReceived()
+                              << " расход=" << backend.fuelRate()
                               << " прошивка=" << backend.deviceFirmware()
                               << " работает=" << backend.deviceUptimeSec() << "с"
                               << " перезапусков=" << backend.deviceRestarts();
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
     check(can.gearLock(), "LOCK (SL) активен");
 
     qInfo() << "0x300 — датчики (пример из документации)";
-    can.feedFrame(0x300, frame({0x5A, 0x2A, 0x8E, 0xFB, 0x00, 0x55}));
+    can.feedFrame(0x300, frame({0x5A, 0x2A, 0x8E, 0xFB, 0x00, 0x00, 0x55}));
     checkNum(can.engineTemp(), 90.0, "температура двигателя 90 °C");
     checkNum(can.fuelLevel(), 42.0, "уровень топлива 42 %");
     checkNum(can.voltage(), 14.2, "напряжение 14.2 В");
@@ -119,8 +120,13 @@ int main(int argc, char *argv[])
     check(!can.oilPressureAlarm(), "давление масла в норме");
     checkNum(can.fuelRate(), 8.5, "мгновенный расход 8.5 л/100 км");
 
+    // Значение, которое физически не помещалось в однобайтовый формат
+    // версии 1.0 протокола — за это расход и перенесли в uint16
+    can.feedFrame(0x300, frame({0x5A, 0x2A, 0x8E, 0xFB, 0x00, 0x03, 0xE7}));
+    checkNum(can.fuelRate(), 99.9, "расход 99.9 л/100 км (999 = 0x03E7, в 1.0 не влезал)");
+
     qInfo() << "0x300 — авария по давлению масла";
-    can.feedFrame(0x300, frame({0x5A, 0x2A, 0x8E, 0x14, 0x01, 0x55}));
+    can.feedFrame(0x300, frame({0x5A, 0x2A, 0x8E, 0x14, 0x01, 0x00, 0x55}));
     check(can.oilPressureAlarm(), "авария по давлению масла");
     checkNum(can.outsideTemp(), 20.0, "наружная температура +20 °C");
 
