@@ -125,7 +125,17 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 150 } }
     }
 
-    // Топливо (низкий уровень)
+    // Значок шкалы топлива — это часть разметки прибора, он виден ВСЕГДА.
+    // Мигает только при низком уровне топлива.
+    property bool fuelWarnBlink: false
+    Timer {
+        interval: 500
+        repeat: true
+        running: root.fuelWarning
+        onRunningChanged: if (!running) root.fuelWarnBlink = false
+        onTriggered: root.fuelWarnBlink = !root.fuelWarnBlink
+    }
+
     Image {
         source: "images/fuel_tank.png"
         width: parent.width * 0.07
@@ -133,11 +143,8 @@ Item {
         x: parent.width * 0.28
         y: parent.height * 0.77
         fillMode: Image.PreserveAspectFit
-        opacity: root.fuelWarning ? 1.0 : 0.0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        opacity: (root.fuelWarning && root.fuelWarnBlink) ? 0.3 : 1.0
     }
-
     // Ручник
     Image {
         source: "images/H_brake.png"

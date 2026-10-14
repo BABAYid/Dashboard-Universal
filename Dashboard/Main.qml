@@ -74,8 +74,6 @@ Window {
     readonly property int dialRightX: 1206     // тахометр вплотную к правому краю
     readonly property int centerX: 714         // центральная область: 714..1206
     readonly property int centerWidth: 492
-    readonly property int navOffsetX: 200      // сдвиг приборов за край в режиме навигации
-    readonly property real navScale: 0.7
 
     // Масштабирование всего макета под размер окна (на устройстве ровно 1.0)
     readonly property real canvasScale: Math.min(width / 1920, height / 720)
@@ -125,28 +123,18 @@ Window {
         }
 
         // ========== КОНТЕЙНЕР СПИДОМЕТРА ==========
+        // Приборы стоят на месте в обоих режимах. Раньше при включении навигации
+        // они разъезжались за края и уменьшались, а поверх карты просвечивали:
+        // циферблаты полупрозрачные (альфа 255 только в центре, на радиусе 300
+        // уже 16), на чёрном фоне это незаметно, а на карте они нечитаемы.
+        // Теперь карта занимает только центр между приборами, как в Audi
+        // virtual cockpit, и приборы трогать не нужно.
         Item {
             id: speedoContainer
-            x: navigationMode ? -navOffsetX : dialLeftX
+            x: dialLeftX
             y: dialY
             width: dialSize
             height: dialSize
-            scale: navigationMode ? navScale : 1.0
-
-            Behavior on x { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-
-            // Круг-подложка под прибором в режиме навигации
-            Rectangle {
-                width: parent.width * 0.7
-                height: parent.height * 0.7
-                radius: width / 2
-                color: "black"
-                opacity: navigationMode ? 0.9 : 0.0
-                visible: opacity > 0
-                anchors.centerIn: parent
-                Behavior on opacity { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            }
 
             Speedometer {
                 id: speedo
@@ -167,25 +155,10 @@ Window {
         // ========== КОНТЕЙНЕР ТАХОМЕТРА ==========
         Item {
             id: tachoContainer
-            x: navigationMode ? dialRightX + navOffsetX : dialRightX
+            x: dialRightX
             y: dialY
             width: dialSize
             height: dialSize
-            scale: navigationMode ? navScale : 1.0
-
-            Behavior on x { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-
-            Rectangle {
-                width: parent.width * 0.7
-                height: parent.height * 0.7
-                radius: width / 2
-                color: "black"
-                opacity: navigationMode ? 0.9 : 0.0
-                visible: opacity > 0
-                anchors.centerIn: parent
-                Behavior on opacity { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            }
 
             Tachometer {
                 id: tacho
@@ -202,7 +175,9 @@ Window {
             }
         }
 
-        // ========== ЦЕНТРАЛЬНАЯ ОБЛАСТЬ (x=714..1206, y=146..555) ==========
+        // ========== ЦЕНТРАЛЬНАЯ ОБЛАСТЬ: карта ==========
+        // Ровно между линиями-разделителями (y=146..555). Здесь же позже
+        // встанет 3D-модель автомобиля.
         Item {
             id: centerPanel
             x: root.centerX
@@ -210,90 +185,15 @@ Window {
             width: root.centerWidth
             height: 409
 
-            // Нет данных от блока сбора (ESP32): кадры не приходят дольше 1,5 с
-            Text {
-                id: noCanWarning
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 4
-                text: "НЕТ ДАННЫХ CAN"
-                color: "#FF4444"
-                font.pixelSize: 20
-                font.bold: true
-                visible: !root.canDataValid
+            MapWebView {
+                id: navMap
+                anchors.fill: parent
+                opacity: navigationMode ? 1.0 : 0.0
+                visible: navigationMode || opacity > 0
+                active: navigationMode
 
-                SequentialAnimation on opacity {
-                    running: noCanWarning.visible
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 0.3; to: 1.0; duration: 600 }
-                    NumberAnimation { from: 1.0; to: 0.3; duration: 600 }
-                }
-            }
-
-            Column {
-                id: infoColumn
-                width: parent.width
-                y: 46
-                spacing: 16
-
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.voltage.toFixed(1) + " V"
-                    color: root.nightMode ? "#FF8800" : "white"
-                    font.pixelSize: 28
-                    font.bold: true
-                }
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: (root.fuelLevel * root.fuelFactor / 100 * root.tankCapacity).toFixed(1) + " л"
-                    color: root.nightMode ? "#FF8800" : "white"
-                    font.pixelSize: 28
-                    font.bold: true
-                }
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.temp.toFixed(0) + " °C"
-                    color: root.nightMode ? "#FF8800" : "white"
-                    font.pixelSize: 28
-                    font.bold: true
-                }
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.timeString
-                    color: root.nightMode ? "#FF8800" : "white"
-                    font.pixelSize: 28
-                    font.bold: true
-                }
-                Text {
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.fuelRate.toFixed(1) + " л/100"
-                    color: root.nightMode ? "#FF8800" : "white"
-                    font.pixelSize: 24
-                    font.bold: true
-                }
-            }
-
-            // Предупреждение о гололёде — под колонкой данных, над нижней линией
-            Text {
-                id: iceWarning
-                text: "⚠ Будьте осторожны,\nвозможен гололёд!"
-                color: "#FF4444"
-                font.pixelSize: 26
-                font.bold: true
-                horizontalAlignment: Text.AlignHCenter
-                width: parent.width
-                y: 304
-                visible: root.outsideTemp <= 0
-
-                SequentialAnimation on opacity {
-                    running: iceWarning.visible
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 0.35; to: 1.0; duration: 700 }
-                    NumberAnimation { from: 1.0; to: 0.35; duration: 700 }
+                Behavior on opacity {
+                    NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad }
                 }
             }
 
@@ -302,6 +202,109 @@ Window {
                 anchors.fill: parent
                 onPressAndHold: root.navigationMode = !root.navigationMode
                 onDoubleClicked: calibration.visible = true
+            }
+        }
+
+        // ========== ВЕРХНЯЯ ЗОНА ЦЕНТРА: предупреждения ==========
+        // Держим их вне области карты, чтобы были видны и в навигации.
+        Item {
+            x: root.centerX
+            y: 92
+            width: root.centerWidth
+            height: 42
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 22
+
+                // Нет данных от блока сбора (ESP32): кадры не приходят дольше 1,5 с
+                Text {
+                    id: noCanWarning
+                    text: "НЕТ ДАННЫХ CAN"
+                    color: "#FF4444"
+                    font.pixelSize: 20
+                    font.bold: true
+                    visible: !root.canDataValid
+
+                    SequentialAnimation on opacity {
+                        running: noCanWarning.visible
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.3; to: 1.0; duration: 600 }
+                        NumberAnimation { from: 1.0; to: 0.3; duration: 600 }
+                    }
+                }
+
+                // Гололёд
+                Text {
+                    id: iceWarning
+                    text: "⚠ ГОЛОЛЁД"
+                    color: "#FF4444"
+                    font.pixelSize: 20
+                    font.bold: true
+                    visible: root.outsideTemp <= 0
+
+                    SequentialAnimation on opacity {
+                        running: iceWarning.visible
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0.35; to: 1.0; duration: 700 }
+                        NumberAnimation { from: 1.0; to: 0.35; duration: 700 }
+                    }
+                }
+            }
+        }
+
+        // ========== НИЖНЯЯ ЗОНА ЦЕНТРА: показания ==========
+        // Вольтметр, топливо, температура двигателя, расход. Раньше это была
+        // колонка в центре — в навигации она попадала на карту.
+        Item {
+            x: root.centerX
+            y: 570
+            width: root.centerWidth
+            height: 40
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 12
+
+                Text {
+                    text: root.voltage.toFixed(1) + " В"
+                    color: root.nightMode ? "#FF8800" : "white"
+                    font.pixelSize: 24
+                    font.bold: true
+                }
+                Text {
+                    text: "·"
+                    color: "#555555"
+                    font.pixelSize: 24
+                }
+                Text {
+                    text: (root.fuelLevel * root.fuelFactor / 100 * root.tankCapacity).toFixed(1) + " л"
+                    color: root.nightMode ? "#FF8800" : "white"
+                    font.pixelSize: 24
+                    font.bold: true
+                }
+                Text {
+                    text: "·"
+                    color: "#555555"
+                    font.pixelSize: 24
+                }
+                Text {
+                    text: root.temp.toFixed(0) + " °C"
+                    color: root.nightMode ? "#FF8800" : "white"
+                    font.pixelSize: 24
+                    font.bold: true
+                }
+                Text {
+                    text: "·"
+                    color: "#555555"
+                    font.pixelSize: 24
+                }
+                Text {
+                    text: root.fuelRate.toFixed(1) + " л/100"
+                    color: root.nightMode ? "#FF8800" : "white"
+                    font.pixelSize: 22
+                    font.bold: true
+                }
             }
         }
 
@@ -321,29 +324,16 @@ Window {
             gearLock: root.gearLock
             gearMode: root.gearMode
             outsideTemp: root.outsideTemp
+            timeString: root.timeString
             odometer: root.odometer
             tripA: root.tripA
             tripB: root.tripB
             selfTest: root.lampSelfTest
         }
 
-        // ========== КАРТА (режим навигации) ==========
-        MapWebView {
-            id: navMap
-            anchors.fill: parent
-            opacity: navigationMode ? 1.0 : 0.0
-            visible: navigationMode || opacity > 0
-            active: navigationMode
-            z: -1
-
-            Behavior on opacity {
-                NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad }
-            }
-        }
-
         Button {
             text: "Навигация"
-            x: 900; y: 30
+            x: 730; y: 24
             visible: !navigationMode
             onClicked: navigationMode = true
             z: 2

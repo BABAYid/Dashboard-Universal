@@ -24,6 +24,7 @@ Item {
     property real tripA: 0
     property real tripB: 0
     property string displayMode: "odo"
+    property string timeString: "--:--"
 
     // Самопроверка ламп при включении зажигания: все лампы горят ~2,5 с
     property bool selfTest: false
@@ -120,12 +121,14 @@ Item {
 
 
 
-    // === НАРУЖНАЯ ТЕМПЕРАТУРА ===
+    // === ВЕРХНЯЯ ПРАВАЯ ЗОНА: наружная температура и часы ===
+    // Как в Audi virtual cockpit: время и температура всегда на одном месте,
+    // независимо от того, включена навигация или нет.
     Item {
         x: 1750
-        y: 50
+        y: 40
         width: 100
-        height: 120
+        height: 190
 
         Text {
             id: outsideTempText
@@ -140,13 +143,25 @@ Item {
 
         Image {
             source: "images/snow.png"
-            width: 40
-            height: 40
+            width: 34
+            height: 34
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: outsideTempText.bottom
-            anchors.topMargin: 5
+            anchors.topMargin: 2
             visible: root.outsideTemp <= 0
             fillMode: Image.PreserveAspectFit
+        }
+
+        // Часы
+        Text {
+            id: clockText
+            text: root.timeString
+            color: "white"
+            font.pixelSize: 34
+            font.bold: true
+            font.family: "Kdam Thmor Pro"
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
         }
     }
 
@@ -162,7 +177,7 @@ Item {
         }
         // Одетометр по центру центральной области (714..1206 → центр 960)
         x: (root.width - width) / 2
-        y: 600
+        y: 622
         color: "white"
         font.pixelSize: 20
         font.family: "Kdam Thmor Pro"

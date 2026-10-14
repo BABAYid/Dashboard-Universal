@@ -96,7 +96,17 @@ Item {
     }
 
     // ======================= ЛАМПЫ ТАХОМЕТРА =======================
-    // Температура двигателя (перегрев)
+    // Значок шкалы температуры — это часть разметки прибора, он виден ВСЕГДА.
+    // Мигает только при перегреве.
+    property bool tempWarnBlink: false
+    Timer {
+        interval: 500
+        repeat: true
+        running: root.tempWarning
+        onRunningChanged: if (!running) root.tempWarnBlink = false
+        onTriggered: root.tempWarnBlink = !root.tempWarnBlink
+    }
+
     Image {
         source: "images/temp_dvs.png"
         width: parent.width * 0.08
@@ -104,9 +114,7 @@ Item {
         x: parent.width * 0.65
         y: parent.height * 0.77
         fillMode: Image.PreserveAspectFit
-        opacity: root.tempWarning ? 1.0 : 0.0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        opacity: (root.tempWarning && root.tempWarnBlink) ? 0.3 : 1.0
     }
     // ABS
     Image {
