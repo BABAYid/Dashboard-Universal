@@ -1,5 +1,5 @@
 // ============================================================================
-//  Тест разбора CAN-протокола (can_protocol_v1.txt).
+//  Тест разбора CAN-протокола (can_protocol_v1.1.txt).
 //
 //  Проверяются примеры кадров прямо из документации плюс граничные случаи:
 //  определение передачи по проводам S1/S2, режимы АКПП, отрицательная
@@ -75,7 +75,10 @@ int main(int argc, char *argv[])
                               << " габариты=" << backend.positionLights()
                               << " лев=" << backend.leftTurn()
                               << " прав=" << backend.rightTurn()
-                              << " кадров=" << backend.framesReceived();
+                              << " кадров=" << backend.framesReceived()
+                              << " прошивка=" << backend.deviceFirmware()
+                              << " работает=" << backend.deviceUptimeSec() << "с"
+                              << " перезапусков=" << backend.deviceRestarts();
             if (seconds >= 20)
                 QCoreApplication::quit();
         });
@@ -152,6 +155,48 @@ int main(int argc, char *argv[])
                   .arg(m.byte).arg(QLatin1String(m.expected), can.gearMode()));
     }
     check(can.gearLock(), "LOCK включён (байт 2 = 1)");
+
+    // ---- 0x7F0: статус блока сбора (добавлен в протоколе 1.1) ----
+    qInfo() << "0x7F0 — статус блока сбора";
+    auto deviceFrame = [](int counter, int version, quint32 uptime, int errors) {
+        QByteArray a(8, '\0');
+        a[0] = static_cast<char>(counter);
+        a[1] = static_cast<char>(version);
+        a[2] = static_cast<char>((uptime >> 24) & 0xFF);
+        a[3] = static_cast<char>((uptime >> 16) & 0xFF);
+        a[4] = static_cast<char>((uptime >> 8) & 0xFF);
+        a[5] = static_cast<char>(uptime & 0xFF);
+        a[6] = static_cast<char>(errors);
+        quint8 xorSum = 0;
+        for (int i = 0; i < 7; ++i)
+            xorSum ^= static_cast<quint8>(a[i]);
+        a[7] = static_cast<char>(xorSum);
+        return a;
+    };
+
+    can.feedFrame(0x7F0, deviceFrame(0, 0x11, 3600, 3));
+    check(can.deviceAlive(), "кадр статуса принят (признак жизни)");
+    check(can.deviceFirmware() == QLatin1String("1.1"),
+          QStringLiteral("версия прошивки 1.1, получено %1").arg(can.deviceFirmware()));
+    check(can.deviceUptimeSec() == 3600u,
+          QStringLiteral("время работы 3600 с, получено %1").arg(can.deviceUptimeSec()));
+    check(can.deviceBusErrors() == 3,
+          QStringLiteral("ошибок шины 3, получено %1").arg(can.deviceBusErrors()));
+    check(can.deviceRestarts() == 0, "перезапусков нет");
+
+    can.feedFrame(0x7F0, deviceFrame(1, 0x11, 3601, 3));
+    check(can.deviceRestarts() == 0, "последовательный счётчик — не перезапуск");
+
+    can.feedFrame(0x7F0, deviceFrame(5, 0x11, 4, 0));
+    check(can.deviceRestarts() == 1,
+          QStringLiteral("перезапуск блока обнаружен, получено %1").arg(can.deviceRestarts()));
+    check(can.deviceUptimeSec() == 4u, "время работы сброшено — блок перезапустился");
+
+    QByteArray broken = deviceFrame(6, 0x11, 10, 0);
+    broken[7] = static_cast<char>(static_cast<quint8>(broken[7]) ^ 0xFF);
+    can.feedFrame(0x7F0, broken);
+    check(can.deviceRestarts() == 1, "кадр с неверной контрольной суммой не считается");
+    check(can.deviceUptimeSec() == 4u, "значения из повреждённого кадра не применены");
 
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин

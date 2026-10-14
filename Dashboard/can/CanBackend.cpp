@@ -20,14 +20,17 @@
 #endif
 
 namespace {
-// ID сообщений (can_protocol_v1.txt)
+// ID сообщений (can_protocol_v1.1.txt)
 constexpr quint32 kIdMotion  = 0x100;   // скорость и обороты
 constexpr quint32 kIdStatus  = 0x200;   // лампы и индикаторы
 constexpr quint32 kIdSensors = 0x300;   // датчики
 constexpr quint32 kIdGearbox = 0x400;   // АКПП
+constexpr quint32 kIdDevice  = 0x7F0;   // статус блока сбора (протокол 1.1)
 
 // Данные считаются устаревшими, если кадров нет дольше этого времени
 constexpr int kDataTimeoutMs = 1500;
+// Статус блока сбора приходит раз в секунду, поэтому таймаут больше
+constexpr int kDeviceTimeoutMs = 3000;
 // Период проверки связи
 constexpr int kWatchdogMs = 250;
 // Как часто пытаться открыть CAN-интерфейс заново
@@ -49,6 +52,7 @@ CanBackend::CanBackend(QObject *parent)
 
     m_sinceLastFrame.start();
     m_sinceLastSpeed.start();
+    m_sinceDeviceStatus.start();
 }
 
 CanBackend::~CanBackend()
@@ -207,6 +211,7 @@ void CanBackend::handleFrame(quint32 id, const quint8 *d, int len)
     case kIdStatus:  handleStatusFrame(d);  break;
     case kIdSensors: handleSensorFrame(d);  break;
     case kIdGearbox: handleGearboxFrame(d); break;
+    case kIdDevice:  handleDeviceStatusFrame(d); break;
     default: break;   // неизвестные ID игнорируем
     }
 }
@@ -283,6 +288,49 @@ void CanBackend::handleGearboxFrame(const quint8 *d)
     set(m_gearLock, d[2] != 0, &CanBackend::gearLockChanged);
 }
 
+// 0x7F0: статус блока сбора — признак жизни, версия прошивки, время работы,
+// ошибки шины, контрольная сумма. Добавлен в протоколе 1.1.
+void CanBackend::handleDeviceStatusFrame(const quint8 *d)
+{
+    // Контрольная сумма: XOR байтов 0..6 должен совпасть с байтом 7
+    quint8 xorSum = 0;
+    for (int i = 0; i < 7; ++i)
+        xorSum ^= d[i];
+    if (xorSum != d[7]) {
+        qWarning() << "CAN: кадр статуса 0x7F0 повреждён (контрольная сумма не совпала)";
+        return;
+    }
+
+    m_sinceDeviceStatus.restart();
+    set(m_deviceAlive, true, &CanBackend::deviceAliveChanged);
+
+    const quint8 counter = d[0];
+    const quint32 uptime = (static_cast<quint32>(d[2]) << 24)
+                         | (static_cast<quint32>(d[3]) << 16)
+                         | (static_cast<quint32>(d[4]) << 8)
+                         | static_cast<quint32>(d[5]);
+
+    // Перезапуск блока: счётчик не продолжил последовательность либо время
+    // работы уменьшилось. Без этого кадра отличить перезапуск от зависания
+    // было невозможно.
+    if (m_lastStatusCounter >= 0) {
+        const quint8 expected = static_cast<quint8>((m_lastStatusCounter + 1) & 0xFF);
+        if (counter != expected || uptime < m_lastUptime) {
+            set(m_deviceRestarts, m_deviceRestarts + 1, &CanBackend::deviceRestartsChanged);
+            qWarning() << "Блок сбора перезапустился: счётчик" << m_lastStatusCounter
+                       << "→" << counter << ", время работы" << m_lastUptime << "→" << uptime << "с";
+        }
+    }
+    m_lastStatusCounter = counter;
+    m_lastUptime = uptime;
+
+    set(m_deviceFirmware,
+        QStringLiteral("%1.%2").arg(d[1] >> 4).arg(d[1] & 0x0F),
+        &CanBackend::deviceFirmwareChanged);
+    set(m_deviceUptimeSec, uptime, &CanBackend::deviceUptimeSecChanged);
+    set(m_deviceBusErrors, static_cast<int>(d[6]), &CanBackend::deviceBusErrorsChanged);
+}
+
 // ------------------------------------------------------------------ контроль
 
 void CanBackend::updateDataValidity()
@@ -292,6 +340,12 @@ void CanBackend::updateDataValidity()
 
     if (m_sinceLastFrame.elapsed() > kDataTimeoutMs)
         set(m_dataValid, false, &CanBackend::dataValidChanged);
+
+    // Статус блока сбора приходит раз в секунду. Если его нет дольше трёх
+    // секунд, значит на блоке сбора прошивка 1.0 (или модуль завис) —
+    // сами данные при этом могут продолжать идти.
+    if (m_sinceDeviceStatus.elapsed() > kDeviceTimeoutMs)
+        set(m_deviceAlive, false, &CanBackend::deviceAliveChanged);
 
     // Если интерфейса не было при старте — периодически пробуем снова
     if (!m_mockMode && !m_connected && tick % kReconnectEveryTicks == 0)
@@ -480,5 +534,24 @@ void CanBackend::generateMockFrames()
             d[4] = (gear == 2 || gear == 3) ? 1 : 0; // S2
         }
         handleFrame(kIdGearbox, d, 8);
+    }
+
+    // --- кадр 0x7F0: статус блока сбора (раз в секунду) ---
+    if (static_cast<int>(t) != m_mockLastStatusSecond) {
+        m_mockLastStatusSecond = static_cast<int>(t);
+        quint8 d[8] = {};
+        d[0] = static_cast<quint8>(m_mockStatusCounter++);
+        d[1] = 0x11;                                             // версия прошивки 1.1
+        const quint32 uptime = static_cast<quint32>(t);
+        d[2] = static_cast<quint8>((uptime >> 24) & 0xFF);
+        d[3] = static_cast<quint8>((uptime >> 16) & 0xFF);
+        d[4] = static_cast<quint8>((uptime >> 8) & 0xFF);
+        d[5] = static_cast<quint8>(uptime & 0xFF);
+        d[6] = 0;                                                // ошибок шины нет
+        quint8 xorSum = 0;
+        for (int i = 0; i < 7; ++i)
+            xorSum ^= d[i];
+        d[7] = xorSum;
+        handleFrame(kIdDevice, d, 8);
     }
 }

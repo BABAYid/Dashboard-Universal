@@ -15,7 +15,7 @@ class QTimer;
 //  на nanoPC-T6 модуль Qt6::SerialBus может отсутствовать, а формат кадра
 //  у нас фиксированный (классический CAN, 8 байт, 11-битный ID).
 //
-//  Протокол: can_protocol_v1.txt
+//  Протокол: can_protocol_v1.1.txt
 //    0x100 — скорость и обороты
 //    0x200 — лампы и индикаторы (битовые маски)
 //    0x300 — датчики (температура, топливо, напряжение, расход)
@@ -71,6 +71,13 @@ class CanBackend : public QObject
     // --- 0x400: АКПП ---
     Q_PROPERTY(QString gearMode READ gearMode NOTIFY gearModeChanged)     // P/R/N/D1..D4/L
     Q_PROPERTY(bool gearLock READ gearLock NOTIFY gearLockChanged)        // LOCK (SL)
+
+    // --- 0x7F0: статус блока сбора (протокол 1.1) ---
+    Q_PROPERTY(bool deviceAlive READ deviceAlive NOTIFY deviceAliveChanged)
+    Q_PROPERTY(QString deviceFirmware READ deviceFirmware NOTIFY deviceFirmwareChanged)
+    Q_PROPERTY(uint deviceUptimeSec READ deviceUptimeSec NOTIFY deviceUptimeSecChanged)
+    Q_PROPERTY(int deviceRestarts READ deviceRestarts NOTIFY deviceRestartsChanged)
+    Q_PROPERTY(int deviceBusErrors READ deviceBusErrors NOTIFY deviceBusErrorsChanged)
 
     // --- пробег (в CAN-протоколе его нет, считаем сами и храним в настройках) ---
     Q_PROPERTY(double odometer READ odometer NOTIFY odometerChanged)      // км, всего
@@ -137,6 +144,12 @@ public:
     double tripA() const { return m_tripA; }
     double tripB() const { return m_tripB; }
 
+    bool deviceAlive() const { return m_deviceAlive; }
+    QString deviceFirmware() const { return m_deviceFirmware; }
+    uint deviceUptimeSec() const { return m_deviceUptimeSec; }
+    int deviceRestarts() const { return m_deviceRestarts; }
+    int deviceBusErrors() const { return m_deviceBusErrors; }
+
 signals:
     void connectedChanged();
     void dataValidChanged();
@@ -167,6 +180,11 @@ signals:
     void odometerChanged();
     void tripAChanged();
     void tripBChanged();
+    void deviceAliveChanged();
+    void deviceFirmwareChanged();
+    void deviceUptimeSecChanged();
+    void deviceRestartsChanged();
+    void deviceBusErrorsChanged();
 
 private:
     void openSocket();
@@ -176,6 +194,7 @@ private:
     void handleStatusFrame(const quint8 *d);
     void handleSensorFrame(const quint8 *d);
     void handleGearboxFrame(const quint8 *d);
+    void handleDeviceStatusFrame(const quint8 *d);
     void updateDataValidity();
     void accountDistance();
     void loadDistance();
@@ -237,4 +256,16 @@ private:
     double m_odometer = 0;
     double m_tripA = 0;
     double m_tripB = 0;
+
+    // Статус блока сбора (кадр 0x7F0)
+    bool m_deviceAlive = false;
+    QString m_deviceFirmware;
+    uint m_deviceUptimeSec = 0;
+    int m_deviceRestarts = 0;
+    int m_deviceBusErrors = 0;
+    int m_lastStatusCounter = -1;      // счётчик предыдущего кадра статуса
+    quint32 m_lastUptime = 0;
+    QElapsedTimer m_sinceDeviceStatus;
+    int m_mockLastStatusSecond = -1;   // для отправки 0x7F0 раз в секунду в демо-режиме
+    int m_mockStatusCounter = 0;
 };
