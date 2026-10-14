@@ -78,7 +78,12 @@ class CanBackend : public QObject
     Q_PROPERTY(double tripB READ tripB NOTIFY tripBChanged)               // км
 
 public:
-    explicit CanBackend(QObject *parent = nullptr);
+    // Внимание: конструктор намеренно объявлен БЕЗ аргумента по умолчанию.
+    // Qt при регистрации QML-синглтона сначала проверяет, можно ли создать
+    // объект конструктором по умолчанию, и только потом — статический create().
+    // Если бы класс был default-constructible, QML создал бы ВТОРОЙ экземпляр,
+    // не связанный с тем, что запускает main.cpp (данные бы не приходили).
+    explicit CanBackend(QObject *parent);
     ~CanBackend() override;
 
     // Синглтон: доступен и из main.cpp (до загрузки QML), и из QML.

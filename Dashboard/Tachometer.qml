@@ -18,6 +18,12 @@ Item {
     property bool startup: false
     property bool nightMode: false
 
+    // Состояние ламп (приходит из Main.qml, источник — CanBackend)
+    property bool absWarning: false
+    property bool checkEngineWarning: false
+    property bool oilPressureWarning: false
+    property bool tempWarning: false
+
     // Центр вращения
     readonly property point centerPoint: Qt.point(width/2, height/2)
 
@@ -55,6 +61,13 @@ Item {
 
     }
 
+    // Угол стрелки тахометра: во время самопроверки — sweepAngle (ведёт
+    // анимация), после неё — значение по оборотам. Анимация не пишет в rotation
+    // напрямую, иначе привязка разрушилась бы (раньше это лечилось костылём
+    // onRpmChanged, который переписывал угол вручную).
+    readonly property real rpmAngle: rpmStartAngle + (rpm / maxRpm) * (rpmEndAngle - rpmStartAngle)
+    property real sweepAngle: 0
+
     // === СТРЕЛКА ТАХОМЕТРА ===
     Image {
         id: needleRpm
@@ -65,40 +78,51 @@ Item {
         height: parent.height * 1.05
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        rotation: rpmStartAngle + (rpm / maxRpm) * (rpmEndAngle - rpmStartAngle)
+        rotation: root.startup ? root.sweepAngle : root.rpmAngle
         Behavior on rotation {
+            enabled: !root.startup
             NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
         }
     }
 
-    // Индикаторы
+    // ======================= ЛАМПЫ ТАХОМЕТРА =======================
+    // Температура двигателя (перегрев)
     Image {
         source: "images/temp_dvs.png"
         width: parent.width * 0.08
         height: parent.width * 0.08
         x: parent.width * 0.65
         y: parent.height * 0.77
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: root.tempWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
+    // ABS
     Image {
         source: "images/ABS.png"
         width: parent.width * 0.07
         height: parent.width * 0.07
         x: parent.width * 0.55
         y: parent.height * 0.58
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: root.absWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
+    // Check Engine
     Image {
         source: "images/check.png"
         width: parent.width * 0.07
         height: parent.width * 0.07
         x: parent.width * 0.45
         y: parent.height * 0.58
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: root.checkEngineWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
+    // Давление масла (авария)
     Image {
         source: "images/oil_press.png"
         width: parent.width * 0.07
@@ -106,35 +130,31 @@ Item {
         x: parent.width * 0.35
         y: parent.height * 0.58
         fillMode: Image.PreserveAspectFit
+        opacity: root.oilPressureWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
 
-    // Анимация запуска
+    // Анимация запуска. Флагом startup управляет Main.qml.
     SequentialAnimation {
         id: startupAnimation
         running: root.startup
-        onFinished: root.startup = false
 
         NumberAnimation {
-            target: needleRpm
-            property: "rotation"
-            from: rpmStartAngle
-            to: rpmEndAngle
+            target: root
+            property: "sweepAngle"
+            from: root.rpmStartAngle
+            to: root.rpmEndAngle
             duration: 800
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
-            target: needleRpm
-            property: "rotation"
-            from: rpmEndAngle
-            to: rpmStartAngle + (rpm / maxRpm) * (rpmEndAngle - rpmStartAngle)
+            target: root
+            property: "sweepAngle"
+            from: root.rpmEndAngle
+            to: root.rpmAngle
             duration: 400
             easing.type: Easing.InOutQuad
-        }
-    }
-
-    onRpmChanged: {
-        if (!startup) {
-            needleRpm.rotation = rpmStartAngle + (rpm / maxRpm) * (rpmEndAngle - rpmStartAngle)
         }
     }
 }

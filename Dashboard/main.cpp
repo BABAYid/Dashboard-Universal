@@ -75,12 +75,13 @@ int main(int argc, char *argv[])
     }
 
     // Отладочный снимок экрана: DASHBOARD_SHOT=/путь/файл.png сохраняет окно
-    // через 3 секунды после запуска и завершает работу. Удобно для проверки
-    // макета на устройстве без монитора.
+    // и завершает работу. DASHBOARD_SHOT_DELAY — задержка в мс (по умолчанию 3000).
+    // Удобно для проверки макета на устройстве без монитора.
     const QByteArray shotPath = qgetenv("DASHBOARD_SHOT");
     if (!shotPath.isEmpty()) {
+        const int delay = qgetenv("DASHBOARD_SHOT_DELAY").toInt();
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
-        QTimer::singleShot(3000, &app, [window, shotPath]() {
+        QTimer::singleShot(delay > 0 ? delay : 3000, &app, [window, shotPath]() {
             bool ok = false;
             if (window)
                 ok = window->grabWindow().save(QString::fromLocal8Bit(shotPath));

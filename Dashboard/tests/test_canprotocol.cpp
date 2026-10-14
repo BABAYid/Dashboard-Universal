@@ -17,6 +17,7 @@
 #include <QByteArray>
 #include <QDebug>
 #include <QtMath>
+#include <QTimer>
 
 static int g_failures = 0;
 
@@ -55,7 +56,34 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("AudiDashboard"));
     QCoreApplication::setApplicationName(QStringLiteral("DashboardTest"));
 
-    CanBackend can;
+    // Режим наблюдения за демо-генератором: печатает состояние раз в секунду
+    if (argc > 1 && QByteArray(argv[1]) == "--mock-watch") {
+        CanBackend backend(nullptr);
+        backend.setMockMode(true);
+        backend.start();
+        int seconds = 0;
+        QTimer tick;
+        tick.setInterval(1000);
+        QObject::connect(&tick, &QTimer::timeout, [&]() {
+            ++seconds;
+            qInfo().nospace() << seconds << " с: скорость=" << backend.speed()
+                              << " об=" << backend.rpm()
+                              << " передача=" << backend.gearMode()
+                              << " темп=" << backend.engineTemp()
+                              << " бак=" << backend.fuelLevel()
+                              << " В=" << backend.voltage()
+                              << " габариты=" << backend.positionLights()
+                              << " лев=" << backend.leftTurn()
+                              << " прав=" << backend.rightTurn()
+                              << " кадров=" << backend.framesReceived();
+            if (seconds >= 20)
+                QCoreApplication::quit();
+        });
+        tick.start();
+        return app.exec();
+    }
+
+    CanBackend can(nullptr);
 
     qInfo() << "0x100 — скорость и обороты (пример из документации)";
     can.feedFrame(0x100, frame({0x66, 0x09, 0x92}));

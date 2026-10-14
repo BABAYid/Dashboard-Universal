@@ -61,6 +61,8 @@ Window {
     property real fuelFactor: 1.0
     property real tempFactor: 1.0
     property bool startup: true
+    // Самопроверка ламп при включении зажигания (гаснет через 2,5 с)
+    property bool lampSelfTest: true
     property real brightness: 1.0
     property bool navigationMode: false
     property real navigationAnimDuration: 400
@@ -154,6 +156,10 @@ Window {
                 fuelLevel: root.fuelLevel * root.fuelFactor
                 startup: root.startup
                 nightMode: root.nightMode
+                seatBeltWarning: root.lampSelfTest || root.seatBelt
+                handBrakeWarning: root.lampSelfTest || root.handBrake
+                fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
+                batteryWarning: root.lampSelfTest || (root.rpm > 400 && root.voltage < 12.8)
                 z: 1
             }
         }
@@ -188,6 +194,10 @@ Window {
                 temp: root.temp * root.tempFactor
                 startup: root.startup
                 nightMode: root.nightMode
+                absWarning: root.lampSelfTest || root.abs
+                checkEngineWarning: root.lampSelfTest || root.checkEngine
+                oilPressureWarning: root.lampSelfTest || root.oilPressureAlarm
+                tempWarning: root.lampSelfTest || (root.temp >= 110)
                 z: 1
             }
         }
@@ -299,13 +309,22 @@ Window {
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
             highBeam: root.highBeam
+            lowBeam: root.lowBeam
+            positionLights: root.positionLights
+            fogLights: root.fogLights
+            brakeLights: root.brakeLights
+            reverseLights: root.reverseLights
             checkEngine: root.checkEngine
             abs: root.abs
+            handBrake: root.handBrake
+            seatBelt: root.seatBelt
+            gearLock: root.gearLock
             gearMode: root.gearMode
             outsideTemp: root.outsideTemp
             odometer: root.odometer
             tripA: root.tripA
             tripB: root.tripB
+            selfTest: root.lampSelfTest
         }
 
         // ========== КАРТА (режим навигации) ==========
@@ -359,6 +378,20 @@ Window {
             opacity: 1.0 - root.brightness
             z: 100
             enabled: false
+        }
+
+
+
+        // ====================================================================
+        //  Самопроверка ламп и стрелок при включении зажигания
+        // ====================================================================
+        Timer {
+            interval: 2500
+            running: true
+            onTriggered: {
+                root.lampSelfTest = false
+                root.startup = false
+            }
         }
 
         // ====================================================================

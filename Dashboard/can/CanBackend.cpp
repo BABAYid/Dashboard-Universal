@@ -383,6 +383,8 @@ void CanBackend::generateMockFrames()
         clock.start();
     const double t = clock.elapsed() / 1000.0;
     const double cycle = std::fmod(t, 60.0);   // сценарий длиной 60 с
+    // Первые 2 секунды двигатель заглушён — на приборке видно самопроверку ламп
+    const bool engineRunning = t > 2.0;
 
     // --- профиль скорости: разгон, крейсер, торможение, стоянка ---
     double speed = 0;
@@ -407,7 +409,7 @@ void CanBackend::generateMockFrames()
 
     const double idleRpm = 800.0;
     const double ratio = (gear == 1) ? 130.0 : (gear == 2) ? 80.0 : (gear == 3) ? 55.0 : 38.0;
-    int rpm = static_cast<int>(speed > 1.0 ? idleRpm + speed * ratio : idleRpm);
+    int rpm = engineRunning ? static_cast<int>(speed > 1.0 ? idleRpm + speed * ratio : idleRpm) : 0;
     rpm = qBound(0, rpm, 8000);
 
     // --- свет и поворотники (мигание 1.5 Гц) ---
@@ -433,7 +435,7 @@ void CanBackend::generateMockFrames()
     // --- датчики ---
     const double temp = qMin(90.0, 20.0 + t * 0.6);                 // прогрев
     const double fuel = 78.0 - std::fmod(t, 3600.0) / 3600.0 * 8.0; // медленно убывает
-    const double volts = speed > 1.0 ? 14.2 + 0.2 * std::sin(t) : 12.3;
+    const double volts = engineRunning ? 14.2 + 0.2 * std::sin(t) : 12.3;
     const double outside = 2.0 + 6.0 * std::sin(t / 120.0);         // иногда ниже нуля
     const double rate = speed > 1.0 ? 8.5 + 2.0 * std::sin(t / 5.0) : 0.0;
 

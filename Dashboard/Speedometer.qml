@@ -18,6 +18,12 @@ Item {
     property bool nightMode: false
     property string gearMode: "P"
 
+    // Состояние ламп (приходит из Main.qml, источник — CanBackend)
+    property bool seatBeltWarning: false
+    property bool batteryWarning: false
+    property bool fuelWarning: false
+    property bool handBrakeWarning: false
+
     // Коэффициенты для масштабирования (относительно базового размера 714)
     readonly property real baseSize: 714
     readonly property real scaleFactor: width / baseSize
@@ -55,6 +61,13 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
+    // Угол поворота стрелки скорости.
+    // Во время самопроверки показываем sweepAngle (его ведёт анимация), после
+    // неё — обычное значение. Анимация пишет в отдельное свойство: если бы она
+    // писала прямо в rotation, привязка разрушилась бы и стрелка «застыла».
+    readonly property real speedAngle: speedStartAngle + (speed / maxSpeed) * (speedEndAngle - speedStartAngle)
+    property real sweepAngle: 0
+
     // Стрелка спидометра (поверх всего)
     Image {
         id: needleSpeed
@@ -65,92 +78,109 @@ Item {
         source: "images/needls_spd.svg"
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        rotation: speedStartAngle + (speed / maxSpeed) * (speedEndAngle - speedStartAngle)
+        rotation: root.startup ? root.sweepAngle : root.speedAngle
         Behavior on rotation {
+            enabled: !root.startup
             NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
         }
     }
+    // ======================= ЛАМПЫ СПИДОМЕТРА =======================
+    // Каждая лампа загорается по своему сигналу; гаснет — opacity 0.
+    // Длительность перехода небольшая, чтобы включение читалось мягко.
+
     // Ремень безопасности
-        Image {
-            source: "images/belt.png"
-            width: parent.width * 0.07   // ~50px при 714x714
-            height: parent.width * 0.07
-            x: parent.width * 0.47
-            y: parent.height * 0.25
-            opacity: 1.0
-            fillMode: Image.PreserveAspectFit
-        }
-        // Дополнительная иконка для режима L
-        Image {
-            source: "images/low_L.png"
-            width: parent.width * 0.07   // ~50px при 714x714
-            height: parent.width * 0.07
-            x: parent.width * 0.55
-            y: parent.height * 0.58
-            fillMode: Image.PreserveAspectFit
-            visible: (root.gearMode === "L")
-        }
+    Image {
+        source: "images/belt.png"
+        width: parent.width * 0.07
+        height: parent.width * 0.07
+        x: parent.width * 0.47
+        y: parent.height * 0.25
+        fillMode: Image.PreserveAspectFit
+        opacity: root.seatBeltWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+    }
 
-        // Зарядка АКБ
-        Image {
-            source: "images/batt.png"
-            width: parent.width * 0.07   // ~50px при 714x714
-            height: parent.width * 0.07
-            x: parent.width * 0.35
-            y: parent.height * 0.58
-            opacity: 1.0
-            fillMode: Image.PreserveAspectFit
-        }
-        // === ИНДИКАТОР АКПП ===
-        Image {
-            id: gearIcon
-            source: "images/gear_" + root.gearMode + ".png"
-            width: parent.width * 0.12   // ~50px при 714x714
-            height: parent.width * 0.12
-            x: parent.width * 0.6
-            y: parent.height * 0.43
-            fillMode: Image.PreserveAspectFit
-        }
-        // Топливо
-        Image {
-            source: "images/fuel_tank.png"
-            width: parent.width * 0.07   // ~50px при 714x714
-            height: parent.width * 0.07
-            x: parent.width * 0.28
-            y: parent.height * 0.77
-            opacity: 1.0
-            fillMode: Image.PreserveAspectFit
-        }
-        // Ручник
-        Image {
-            source: "images/H_brake.png"
-            width: parent.width * 0.07   // ~50px при 714x714
-            height: parent.width * 0.07
-            x: parent.width * 0.45
-            y: parent.height * 0.58
-            opacity: 1.0
-            fillMode: Image.PreserveAspectFit
-        }
+    // Зарядка АКБ
+    Image {
+        source: "images/batt.png"
+        width: parent.width * 0.07
+        height: parent.width * 0.07
+        x: parent.width * 0.35
+        y: parent.height * 0.58
+        fillMode: Image.PreserveAspectFit
+        opacity: root.batteryWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+    }
 
-    // Анимация запуска (Sweep)
+    // Топливо (низкий уровень)
+    Image {
+        source: "images/fuel_tank.png"
+        width: parent.width * 0.07
+        height: parent.width * 0.07
+        x: parent.width * 0.28
+        y: parent.height * 0.77
+        fillMode: Image.PreserveAspectFit
+        opacity: root.fuelWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+    }
+
+    // Ручник
+    Image {
+        source: "images/H_brake.png"
+        width: parent.width * 0.07
+        height: parent.width * 0.07
+        x: parent.width * 0.45
+        y: parent.height * 0.58
+        fillMode: Image.PreserveAspectFit
+        opacity: root.handBrakeWarning ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+    }
+
+    // Пониженная передача (режим L)
+    Image {
+        source: "images/low_L.png"
+        width: parent.width * 0.07
+        height: parent.width * 0.07
+        x: parent.width * 0.55
+        y: parent.height * 0.58
+        fillMode: Image.PreserveAspectFit
+        opacity: (root.gearMode === "L") ? 1.0 : 0.0
+        visible: opacity > 0
+    }
+
+    // === ИНДИКАТОР АКПП (P/R/N/D1..D4/L) ===
+    Image {
+        id: gearIcon
+        source: "images/gear_" + root.gearMode + ".png"
+        width: parent.width * 0.12
+        height: parent.width * 0.12
+        x: parent.width * 0.6
+        y: parent.height * 0.43
+        fillMode: Image.PreserveAspectFit
+    }
+
+    // Анимация запуска (Sweep). Флагом startup управляет Main.qml.
     SequentialAnimation {
         id: startupAnimation
         running: root.startup
-        onFinished: root.startup = false
 
         NumberAnimation {
-            target: needleSpeed
-            property: "rotation"
-            from: speedStartAngle
-            to: speedEndAngle
+            target: root
+            property: "sweepAngle"
+            from: root.speedStartAngle
+            to: root.speedEndAngle
             duration: 800
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
-            target: needleSpeed
-            property: "rotation"
-            from: speedEndAngle
-            to: speedStartAngle + (speed / maxSpeed) * (speedEndAngle - speedStartAngle)
+            target: root
+            property: "sweepAngle"
+            from: root.speedEndAngle
+            to: root.speedAngle
             duration: 400
             easing.type: Easing.InOutQuad
         }

@@ -8,14 +8,36 @@ Item {
     property bool leftTurn: false
     property bool rightTurn: false
     property bool highBeam: false
+    property bool lowBeam: false
+    property bool positionLights: false
+    property bool fogLights: false
+    property bool brakeLights: false
+    property bool reverseLights: false
     property bool checkEngine: false
     property real outsideTemp: 0
     property bool abs: false
+    property bool handBrake: false
+    property bool seatBelt: false
+    property bool gearLock: false
     property string gearMode: "P"
     property real odometer: 0
     property real tripA: 0
     property real tripB: 0
     property string displayMode: "odo"
+
+    // Самопроверка ламп при включении зажигания: все лампы горят ~2,5 с
+    property bool selfTest: false
+
+    // Мигание поворотников — 1,5 Гц, как у штатного реле
+    property bool blinkOn: false
+
+    Timer {
+        interval: 333
+        repeat: true
+        running: root.leftTurn || root.rightTurn
+        onRunningChanged: if (!running) root.blinkOn = false
+        onTriggered: root.blinkOn = !root.blinkOn
+    }
 
     // Левый поворотник (на циферблате спидометра, прибор сдвинут по макету)
     Image {
@@ -24,8 +46,9 @@ Item {
         y: 80
         width: 50
         height: 50
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: (root.selfTest || (root.leftTurn && root.blinkOn)) ? 1.0 : 0.0
+        visible: opacity > 0
     }
 
     // Правый поворотник
@@ -35,8 +58,9 @@ Item {
         y: 80
         width: 50
         height: 50
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: (root.selfTest || (root.rightTurn && root.blinkOn)) ? 1.0 : 0.0
+        visible: opacity > 0
     }
 
 
@@ -50,8 +74,10 @@ Item {
         y: 50
         width: 40
         height: 40
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: (root.selfTest || root.positionLights) ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
 
     // Противотуманки
@@ -61,8 +87,10 @@ Item {
         y: 50
         width: 40
         height: 40
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: (root.selfTest || root.fogLights) ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
 
     // Дальний свет
@@ -72,8 +100,10 @@ Item {
         y: 50
         width: 40
         height: 40
-        opacity: 1.0
         fillMode: Image.PreserveAspectFit
+        opacity: (root.selfTest || root.highBeam) ? 1.0 : 0.0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
     }
 
 
