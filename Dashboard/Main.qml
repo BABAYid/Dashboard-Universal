@@ -75,6 +75,15 @@ Window {
     readonly property int centerX: 714         // центральная область: 714..1206
     readonly property int centerWidth: 492
 
+    // Приборы в режиме навигации: уменьшаются и уходят в нижние углы, как в Audi,
+    // освобождая экран под карту. Карта при этом идёт под приборы, поэтому под
+    // каждым прибором ставится непрозрачная подложка: сами циферблаты
+    // полупрозрачные (альфа 255 только в центре, на радиусе 300 — уже 16)
+    // и поверх карты становятся нечитаемыми.
+    readonly property real navScale: 0.5
+    readonly property int navMargin: 8
+    readonly property real navInset: dialSize * (1 - navScale) / 2
+
     // Масштабирование всего макета под размер окна (на устройстве ровно 1.0)
     readonly property real canvasScale: Math.min(width / 1920, height / 720)
 
@@ -109,32 +118,96 @@ Window {
         y: (root.height - height * scale) / 2
 
         // ========== РАЗДЕЛИТЕЛЬНЫЕ ЛИНИИ ЦЕНТРАЛЬНОЙ ОБЛАСТИ ==========
+        // Натуральный размер картинок 641x5 (раньше их растягивали до 500x10 —
+        // сжимали по ширине и вдвое утолщали, из-за чего концы не доходили
+        // до приборов). Ширина 800: концы заходят под циферблаты, как в макете,
+        // где линия уходит под оба прибора. Яркость в линии — градиент,
+        // поэтому под приборами концы самые тусклые.
         Image {
             source: "images/line_up.png"
-            x: 710; y: 146
-            width: 500; height: 10
+            x: 560; y: 149
+            width: 800; height: 5
             fillMode: Image.Stretch
         }
         Image {
             source: "images/line_down.png"
-            x: 710; y: 555
-            width: 500; height: 10
+            x: 560; y: 558
+            width: 800; height: 5
             fillMode: Image.Stretch
         }
 
+        // ========== КАРТА: на весь экран, как в Audi ==========
+        // Лежит под всем остальным (z = -10). Приборы в навигации уменьшаются
+        // и уходят в нижние углы, поэтому карта под ними не мешает.
+        MapWebView {
+            id: navMap
+            anchors.fill: parent
+            opacity: navigationMode ? 1.0 : 0.0
+            visible: navigationMode || opacity > 0
+            active: navigationMode
+            z: -10
+
+            Behavior on opacity {
+                NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad }
+            }
+        }
+
+        // Затемнение верхнего и нижнего края карты: показания (лампы, часы,
+        // строка значений) должны читаться поверх карты.
+        Rectangle {
+            anchors.fill: parent
+            z: -5
+            opacity: navigationMode ? 1.0 : 0.0
+            visible: opacity > 0
+            gradient: Gradient {
+                GradientStop { position: 0.00; color: "#E6000000" }
+                GradientStop { position: 0.14; color: "#B3000000" }
+                GradientStop { position: 0.32; color: "#00000000" }
+                GradientStop { position: 0.62; color: "#00000000" }
+                GradientStop { position: 0.76; color: "#B3000000" }
+                GradientStop { position: 1.00; color: "#E6000000" }
+            }
+            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+        }
+
+        // Подложка под зоной часов и наружной температуры: она лежит ниже
+        // затемнения сверху, и белый текст на светлой карте не читался бы
+        Rectangle {
+            x: 1726; y: 26
+            width: 172; height: 226
+            radius: 18
+            color: "#B3000000"
+            opacity: navigationMode ? 1.0 : 0.0
+            visible: opacity > 0
+            z: -4
+            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+        }
+
         // ========== КОНТЕЙНЕР СПИДОМЕТРА ==========
-        // Приборы стоят на месте в обоих режимах. Раньше при включении навигации
-        // они разъезжались за края и уменьшались, а поверх карты просвечивали:
-        // циферблаты полупрозрачные (альфа 255 только в центре, на радиусе 300
-        // уже 16), на чёрном фоне это незаметно, а на карте они нечитаемы.
-        // Теперь карта занимает только центр между приборами, как в Audi
-        // virtual cockpit, и приборы трогать не нужно.
         Item {
             id: speedoContainer
-            x: dialLeftX
-            y: dialY
+            x: navigationMode ? (navMargin - navInset) : dialLeftX
+            y: navigationMode ? (parent.height - dialSize * navScale - navMargin - navInset) : dialY
             width: dialSize
             height: dialSize
+            scale: navigationMode ? navScale : 1.0
+            z: 1
+
+            Behavior on x { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on y { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+
+            // Непрозрачная подложка под прибором в навигации
+            Rectangle {
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
+                radius: width / 2
+                color: "black"
+                opacity: navigationMode ? 1.0 : 0.0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+            }
 
             Speedometer {
                 id: speedo
@@ -155,10 +228,27 @@ Window {
         // ========== КОНТЕЙНЕР ТАХОМЕТРА ==========
         Item {
             id: tachoContainer
-            x: dialRightX
-            y: dialY
+            x: navigationMode ? (parent.width - navMargin - dialSize * navScale - navInset) : dialRightX
+            y: navigationMode ? (parent.height - dialSize * navScale - navMargin - navInset) : dialY
             width: dialSize
             height: dialSize
+            scale: navigationMode ? navScale : 1.0
+            z: 1
+
+            Behavior on x { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on y { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: parent.width
+                height: parent.height
+                radius: width / 2
+                color: "black"
+                opacity: navigationMode ? 1.0 : 0.0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+            }
 
             Tachometer {
                 id: tacho
@@ -175,27 +265,16 @@ Window {
             }
         }
 
-        // ========== ЦЕНТРАЛЬНАЯ ОБЛАСТЬ: карта ==========
-        // Ровно между линиями-разделителями (y=146..555). Здесь же позже
-        // встанет 3D-модель автомобиля.
+        // ========== ЦЕНТРАЛЬНАЯ ОБЛАСТЬ ==========
+        // Ровно между линиями-разделителями. Здесь позже встанет 3D-модель
+        // автомобиля; пока это зона нажатий (карта рисуется отдельно, на весь
+        // экран, чтобы её не перекрывало).
         Item {
             id: centerPanel
             x: root.centerX
-            y: 146
+            y: 154
             width: root.centerWidth
-            height: 409
-
-            MapWebView {
-                id: navMap
-                anchors.fill: parent
-                opacity: navigationMode ? 1.0 : 0.0
-                visible: navigationMode || opacity > 0
-                active: navigationMode
-
-                Behavior on opacity {
-                    NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad }
-                }
-            }
+            height: 404
 
             // Двойной клик — калибровка приборов, долгое нажатие — навигация
             MouseArea {
