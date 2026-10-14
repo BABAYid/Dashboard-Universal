@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="23"
+   height="113"
+   viewBox="0 0 23 113"
+   fill="none"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="Стрелка короткая.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview5"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="7.1061947"
+     inkscape:cx="11.539228"
+     inkscape:cy="56.5"
+     inkscape:window-width="1861"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5" />
+  <g
+     id="Ð¡ÑÑÐµÐ»ÐºÐ° ÐºÐ¾ÑÐ¾ÑÐºÐ°Ñ"
+     inkscape:transform-center-x="-0.08164507"
+     inkscape:transform-center-y="45.60614"
+     transform="rotate(0.53306866,10.592033,12.367432)">
+    <path
+       id="Rectangle 17"
+       d="M 22.0284,94.7228 11.5487,112.827 0.767437,94.9007 4.47e-7,3.21374 21.261,3.03578 Z"
+       fill="url(#paint0_linear_10_13)"
+       style="fill:url(#paint0_linear_10_13)" />
+    <g
+       id="Vector 53 (Stroke)"
+       filter="url(#filter0_f_10_13)">
+      <path
+         d="M 9.89355,66.7752 9.36498,3.62755 12.2642,3.60328 12.7928,66.7509 11.664,105.088 Z"
+         fill="#000000"
+         fill-opacity="0.4"
+         id="path1" />
+    </g>
+    <path
+       id="Vector 53 (Stroke)_2"
+       d="M 10.7194,111.473 9.81257,3.13156 11.448,3.11787 12.3548,111.459 l -0.8063,1.368 z"
+       fill="url(#paint1_linear_10_13)"
+       style="fill:url(#paint1_linear_10_13)" />
+  </g>
+  <defs
+     id="defs5">
+    <filter
+       id="filter0_f_10_13"
+       x="5.76177"
+       y="1.81198e-05"
+       width="10.6342"
+       height="108.692"
+       filterUnits="userSpaceOnUse"
+       color-interpolation-filters="sRGB">
+      <feFlood
+         flood-opacity="0"
+         result="BackgroundImageFix"
+         id="feFlood1" />
+      <feBlend
+         mode="normal"
+         in="SourceGraphic"
+         in2="BackgroundImageFix"
+         result="shape"
+         id="feBlend1" />
+      <feGaussianBlur
+         stdDeviation="1.80163"
+         result="effect1_foregroundBlur_10_13"
+         id="feGaussianBlur1" />
+    </filter>
+    <linearGradient
+       id="paint0_linear_10_13"
+       x1="11.5487"
+       y1="112.827"
+       x2="10.2548"
+       y2="-5.56139"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0.0392443"
+         stop-color="#FDFDFD"
+         id="stop1" />
+      <stop
+         offset="0.771736"
+         stop-color="#C7C9C8"
+         id="stop2" />
+      <stop
+         offset="1"
+         stop-color="#040404"
+         id="stop3" />
+    </linearGradient>
+    <linearGradient
+       id="paint1_linear_10_13"
+       x1="11.1169"
+       y1="110.107"
+       x2="10.2175"
+       y2="2.65387"
+       gradientUnits="userSpaceOnUse">
+      <stop
+         offset="0.643692"
+         stop-color="#FCFCFC"
+         id="stop4" />
+      <stop
+         offset="1"
+         stop-color="#040605"
+         id="stop5" />
+    </linearGradient>
+  </defs>
+</svg>

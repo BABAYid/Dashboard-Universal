@@ -1,0 +1,27 @@
+# --- Сборка ---
+build/
+*-build/
+.dsh-*/
+*.o
+*.so
+*.a
+*.user
+
+# --- Qt Creator ---
+*.autosave
+.qtc_clangd/
+compile_commands.json
+
+# --- Артефакты проверок ---
+preview*.png
+*.log
+
+# --- Образы ОС и архивы (гигабайты, не для репозитория) ---
+образ для nanoPC-T6/
+*.zip
+*.img
+*.img.xz
+
+# --- ОС ---
+.DS_Store
+Thumbs.db

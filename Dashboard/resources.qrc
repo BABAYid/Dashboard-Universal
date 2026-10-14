@@ -1,0 +1,44 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>Main.qml</file>
+        <file>Speedometer.qml</file>
+        <file>images/around_in.png</file>
+        <file>images/needls_fuel.svg</file>
+        <file>images/needls_spd.svg</file>
+        <file>images/needls_temp.svg</file>
+        <file>images/needls_tho.svg</file>
+        <file>images/Speedometr.png</file>
+        <file>images/taho.png</file>
+        <file>Tachometer.qml</file>
+        <file>images/line_down.png</file>
+        <file>images/line_up.png</file>
+        <file>images/left_turn.png</file>
+        <file>images/right_turn.png</file>
+        <file>Indicators.qml</file>
+        <file>images/ABS.png</file>
+        <file>images/batt.png</file>
+        <file>images/belt.png</file>
+        <file>images/check.png</file>
+        <file>images/gabarit.png</file>
+        <file>images/H_brake.png</file>
+        <file>images/hi_beam.png</file>
+        <file>images/low_L.png</file>
+        <file>images/tuman.png</file>
+        <file>images/fuel_tank.png</file>
+        <file>images/temp_dvs.png</file>
+        <file>images/gear_D1.png</file>
+        <file>images/gear_D2.png</file>
+        <file>images/gear_D3.png</file>
+        <file>images/gear_D4.png</file>
+        <file>images/gear_L.png</file>
+        <file>images/gear_P.png</file>
+        <file>images/gear_R.png</file>
+        <file>images/gear_N.png</file>
+        <file>images/oil_press.png</file>
+        <file>Settings.qml</file>
+        <file>fonts/KdamThmorPro-Regular.ttf</file>
+        <file>images/snow.png</file>
+        <file>NavigationMap.qml</file>
+        <file>MapWebView.qml</file>
+    </qresource>
+</RCC>
