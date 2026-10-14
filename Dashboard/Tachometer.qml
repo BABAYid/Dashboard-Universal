@@ -7,8 +7,18 @@ Item {
 
     property real rpm: 0
     property real maxRpm: 8000
-    property real rpmStartAngle: -80
-    property real rpmEndAngle: 200
+
+    // Углы стрелки тахометра.
+    // Стрелка (needls_tho.svg) при rotation = 0 смотрит не вверх, а влево —
+    // примерно на 191°. Поэтому углы ниже посчитаны как (угол цифры на шкале
+    // минус 191°). Цифры шкалы в taho.png стоят так: 0 → 134.5°, 4 → 269.8°
+    // (ровно вверху), 8 → 46.1°; шаг между цифрами 33.5°.
+    //   rpm = 0    → стрелка на 134.5° → rotation = 134.5 - 191.2 = -56.7
+    //   rpm = 8000 → стрелка на  46.1° → rotation = (46.1 - 191.2) + 360 = 214.9
+    // Размах шкалы 271.6°. При этих значениях стрелка ложится на цифры с
+    // расхождением не более 2°.
+    property real rpmStartAngle: -56.7
+    property real rpmEndAngle: 214.9
 
     property real temp: 0
     property real maxTemp: 120

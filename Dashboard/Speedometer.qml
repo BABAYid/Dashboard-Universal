@@ -8,8 +8,19 @@ Item {
     // Свойства для данных
     property real speed: 0
     property real maxSpeed: 220
-    property real speedStartAngle: -60
-    property real speedEndAngle: 220
+
+    // Углы стрелки спидометра.
+    // Стрелка (needls_spd.svg) при rotation = 0 смотрит не вверх, а влево —
+    // примерно на 191°. Углы ниже посчитаны как (угол метки на шкале минус 191°).
+    // Метки шкалы в Speedometr.png стоят через 22.29° (по 20 км/ч): «0» на
+    // 135.1°, «220» на 20.3°.
+    //   speed = 0   → стрелка на 135.1° → rotation = 135.1 - 191.2 = -56.1
+    //   speed = 220 → стрелка на  20.3° → rotation = (20.3 - 191.2) + 360 = 189.1
+    // Раньше стояло -60…220 (размах 280° вместо 245°), из-за чего у нуля ошибка
+    // была 4°, а на 220 км/ч стрелка уходила на 31° за метку.
+    property real speedStartAngle: -56.1
+    property real speedEndAngle: 189.1
+
     property real fuelLevel: 0
     property real maxFuel: 100
     property real fuelStartAngle: -75
