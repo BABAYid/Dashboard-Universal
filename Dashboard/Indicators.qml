@@ -17,10 +17,10 @@ Item {
     property real tripB: 0
     property string displayMode: "odo"
 
-    // Левый поворотник
+    // Левый поворотник (на циферблате спидометра, прибор сдвинут по макету)
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/left_turn.png"
-        x: 650
+        source: "images/left_turn.png"
+        x: 550
         y: 80
         width: 50
         height: 50
@@ -30,8 +30,8 @@ Item {
 
     // Правый поворотник
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/right_turn.png"
-        x: 1220
+        source: "images/right_turn.png"
+        x: 1320
         y: 80
         width: 50
         height: 50
@@ -45,7 +45,7 @@ Item {
 
     // Габариты
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/gabarit.png"
+        source: "images/gabarit.png"
         x: 1050
         y: 50
         width: 40
@@ -56,7 +56,7 @@ Item {
 
     // Противотуманки
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/tuman.png"
+        source: "images/tuman.png"
         x: 1000
         y: 50
         width: 40
@@ -67,7 +67,7 @@ Item {
 
     // Дальний свет
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/hi_beam.png"
+        source: "images/hi_beam.png"
         x: 950
         y: 50
         width: 40
@@ -92,7 +92,7 @@ Item {
 
     // === НАРУЖНАЯ ТЕМПЕРАТУРА ===
     Item {
-        x: 1650
+        x: 1750
         y: 50
         width: 100
         height: 120
@@ -109,7 +109,7 @@ Item {
         }
 
         Image {
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/snow.png"
+            source: "images/snow.png"
             width: 40
             height: 40
             anchors.horizontalCenter: parent.horizontalCenter
@@ -130,8 +130,9 @@ Item {
             else if (root.displayMode === "tripB") return "TRIP B: " + root.tripB.toFixed(1) + " km"
             else return ""
         }
-        x: 870
-        y: 680
+        // Одетометр по центру центральной области (714..1206 → центр 960)
+        x: (root.width - width) / 2
+        y: 600
         color: "white"
         font.pixelSize: 20
         font.family: "Kdam Thmor Pro"

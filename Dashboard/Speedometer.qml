@@ -25,7 +25,7 @@ Item {
     // Шкала спидометра
     Image {
         anchors.fill: parent
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/Speedometr.png"
+        source: "images/Speedometr.png"
         fillMode: Image.PreserveAspectFit
     }
 
@@ -36,7 +36,7 @@ Item {
         height: parent.height * 1.05
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/needls_fuel.svg"
+        source: "images/needls_fuel.svg"
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
         rotation: fuelStartAngle + (fuelLevel / maxFuel) * (fuelEndAngle - fuelStartAngle)
@@ -51,7 +51,7 @@ Item {
         height: parent.height * 0.622
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/around_in.png"
+        source: "images/around_in.png"
         fillMode: Image.PreserveAspectFit
     }
 
@@ -62,7 +62,7 @@ Item {
         height: parent.height * 1.05
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/needls_spd.svg"
+        source: "images/needls_spd.svg"
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
         rotation: speedStartAngle + (speed / maxSpeed) * (speedEndAngle - speedStartAngle)
@@ -72,7 +72,7 @@ Item {
     }
     // Ремень безопасности
         Image {
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/belt.png"
+            source: "images/belt.png"
             width: parent.width * 0.07   // ~50px при 714x714
             height: parent.width * 0.07
             x: parent.width * 0.47
@@ -82,7 +82,7 @@ Item {
         }
         // Дополнительная иконка для режима L
         Image {
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/low_L.png"
+            source: "images/low_L.png"
             width: parent.width * 0.07   // ~50px при 714x714
             height: parent.width * 0.07
             x: parent.width * 0.55
@@ -93,7 +93,7 @@ Item {
 
         // Зарядка АКБ
         Image {
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/batt.png"
+            source: "images/batt.png"
             width: parent.width * 0.07   // ~50px при 714x714
             height: parent.width * 0.07
             x: parent.width * 0.35
@@ -104,7 +104,7 @@ Item {
         // === ИНДИКАТОР АКПП ===
         Image {
             id: gearIcon
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/gear_" + root.gearMode + ".png"
+            source: "images/gear_" + root.gearMode + ".png"
             width: parent.width * 0.12   // ~50px при 714x714
             height: parent.width * 0.12
             x: parent.width * 0.6
@@ -113,7 +113,7 @@ Item {
         }
         // Топливо
         Image {
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/fuel_tank.png"
+            source: "images/fuel_tank.png"
             width: parent.width * 0.07   // ~50px при 714x714
             height: parent.width * 0.07
             x: parent.width * 0.28
@@ -123,7 +123,7 @@ Item {
         }
         // Ручник
         Image {
-            source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/H_brake.png"
+            source: "images/H_brake.png"
             width: parent.width * 0.07   // ~50px при 714x714
             height: parent.width * 0.07
             x: parent.width * 0.45

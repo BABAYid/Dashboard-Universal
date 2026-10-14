@@ -24,14 +24,14 @@ Item {
     // Подложка (общая шкала)
     Image {
         anchors.fill: parent
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/taho.png"
+        source: "images/taho.png"
         fillMode: Image.PreserveAspectFit
     }
 
     // === СТРЕЛКА ТЕМПЕРАТУРЫ ===
     Image {
         id: needleTemp
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/needls_temp.svg"
+        source: "images/needls_temp.svg"
         x: centerPoint.x - width/2
         y: centerPoint.y - height/2
         width: parent.width * 1.05
@@ -50,7 +50,7 @@ Item {
         height: parent.height * 0.638
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/around_in.png"
+        source: "images/around_in.png"
         fillMode: Image.PreserveAspectFit
 
     }
@@ -58,7 +58,7 @@ Item {
     // === СТРЕЛКА ТАХОМЕТРА ===
     Image {
         id: needleRpm
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/needls_tho.svg"
+        source: "images/needls_tho.svg"
         x: centerPoint.x - width/2
         y: centerPoint.y - height/2
         width: parent.width * 1.05
@@ -73,7 +73,7 @@ Item {
 
     // Индикаторы
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/temp_dvs.png"
+        source: "images/temp_dvs.png"
         width: parent.width * 0.08
         height: parent.width * 0.08
         x: parent.width * 0.65
@@ -82,7 +82,7 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/ABS.png"
+        source: "images/ABS.png"
         width: parent.width * 0.07
         height: parent.width * 0.07
         x: parent.width * 0.55
@@ -91,7 +91,7 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/check.png"
+        source: "images/check.png"
         width: parent.width * 0.07
         height: parent.width * 0.07
         x: parent.width * 0.45
@@ -100,7 +100,7 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
     Image {
-        source: "file:///home/oleg/Документы/новая приборка/Dashboard/images/oil_press.png"
+        source: "images/oil_press.png"
         width: parent.width * 0.07
         height: parent.width * 0.07
         x: parent.width * 0.35
