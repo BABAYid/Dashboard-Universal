@@ -107,7 +107,9 @@ Item {
     Column {
         id: digitalSpeed
         x: parent.width * 0.39
-        y: parent.height * 0.325
+        // 0.317, а не середина полосы: у шрифта большой верхний просвет,
+        // и без сдвига цифры садятся ниже центра свободного места
+        y: parent.height * 0.317
         width: parent.width * 0.22
 
         // Появляются после самопроверки приборов, как в серийных панелях
@@ -120,21 +122,12 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             text: Math.round(root.speed)
             color: root.nightMode ? "#FF8800" : "white"
-            font.pixelSize: 40
+            font.pixelSize: 54
             font.bold: true
             font.family: "Kdam Thmor Pro"
             // Подложки нет, поэтому цифры отделяем от стрелки тонким контуром
             style: Text.Outline
             styleColor: "#000000"
-        }
-
-        Text {
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            text: "км/ч"
-            color: root.nightMode ? "#FF8800" : "#8C8C8C"
-            font.pixelSize: 15
-            font.family: "Kdam Thmor Pro"
         }
     }
 
