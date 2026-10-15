@@ -25,7 +25,7 @@ Window {
     readonly property real speed: CanBackend.speed
     readonly property real rpm: CanBackend.rpm
     readonly property real fuelLevel: CanBackend.fuelLevel   // 0..100 % (0x300 байт 1)
-    readonly property real tankCapacity: 60                  // объём бака, л — для показания в литрах
+    readonly property real tankCapacity: CanBackend.tankCapacity   // объём бака, л
     readonly property real temp: CanBackend.engineTemp
     readonly property real voltage: CanBackend.voltage
     readonly property real outsideTemp: CanBackend.outsideTemp
@@ -66,6 +66,19 @@ Window {
     property real brightness: 1.0
     property bool navigationMode: false
     property real navigationAnimDuration: 400
+
+    // Режим центральной зоны: 0 — стандарт, 1 — компьютер, 2 — диагностика.
+    // Переключается нажатием по центру или клавишами (стрелки, пробел).
+    property int centerMode: 0
+    readonly property int centerModeCount: 3
+
+    function nextCenterMode() {
+        centerMode = (centerMode + 1) % centerModeCount
+    }
+
+    function prevCenterMode() {
+        centerMode = (centerMode + centerModeCount - 1) % centerModeCount
+    }
 
     // ======================= ГЕОМЕТРИЯ МАКЕТА =======================
     readonly property int dialSize: 714        // диаметр прибора
@@ -269,9 +282,8 @@ Window {
         }
 
         // ========== ЦЕНТРАЛЬНАЯ ОБЛАСТЬ ==========
-        // Ровно между линиями-разделителями. Здесь позже встанет 3D-модель
-        // автомобиля; пока это зона нажатий (карта рисуется отдельно, на весь
-        // экран, чтобы её не перекрывало).
+        // Ровно между линиями-разделителями. Внутри — переключаемые режимы
+        // (CenterPanel.qml); навигация отдельно, карта рисуется на весь экран.
         Item {
             id: centerPanel
             x: root.centerX
@@ -279,13 +291,37 @@ Window {
             width: root.centerWidth
             height: 404
 
-            // Двойной клик — калибровка приборов, долгое нажатие — навигация
+            CenterPanel {
+                anchors.fill: parent
+                mode: root.centerMode
+                clockString: root.timeString
+                nightMode: root.nightMode
+            }
+
+            // Одиночное нажатие — следующий режим, двойное — калибровка,
+            // долгое — навигация. Одиночное ждём 220 мс, иначе двойной клик
+            // успевал бы заодно переключить режим.
             MouseArea {
                 anchors.fill: parent
                 onPressAndHold: root.navigationMode = !root.navigationMode
-                onDoubleClicked: calibration.visible = true
+                onClicked: centerTap.restart()
+                onDoubleClicked: {
+                    centerTap.stop()
+                    calibration.visible = true
+                }
+            }
+
+            Timer {
+                id: centerTap
+                interval: 220
+                onTriggered: root.nextCenterMode()
             }
         }
+
+        // Клавиши — удобно на столе и пригодится для кнопок на руле
+        Shortcut { sequence: "Space"; onActivated: root.nextCenterMode() }
+        Shortcut { sequence: "Right"; onActivated: root.nextCenterMode() }
+        Shortcut { sequence: "Left"; onActivated: root.prevCenterMode() }
 
         // ========== ВЕРХНЯЯ ЗОНА ЦЕНТРА: предупреждения ==========
         // Держим их вне области карты, чтобы были видны и в навигации.

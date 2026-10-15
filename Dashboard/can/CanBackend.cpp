@@ -53,6 +53,7 @@ CanBackend::CanBackend(QObject *parent)
     m_sinceLastFrame.start();
     m_sinceLastSpeed.start();
     m_sinceDeviceStatus.start();
+    m_journeyClock.start();
 }
 
 CanBackend::~CanBackend()
@@ -351,6 +352,11 @@ void CanBackend::updateDataValidity()
     if (m_sinceDeviceStatus.elapsed() > kDeviceTimeoutMs)
         set(m_deviceAlive, false, &CanBackend::deviceAliveChanged);
 
+    if (++m_publishTick >= 4) {   // 4 * 250 мс = раз в секунду
+        m_publishTick = 0;
+        publishJourney();
+    }
+
     // Если интерфейса не было при старте — периодически пробуем снова
     if (!m_mockMode && !m_connected && tick % kReconnectEveryTicks == 0)
         openSocket();
@@ -370,6 +376,41 @@ void CanBackend::accountDistance()
     set(m_odometer, m_odometer + km, &CanBackend::odometerChanged);
     set(m_tripA,    m_tripA + km,    &CanBackend::tripAChanged);
     set(m_tripB,    m_tripB + km,    &CanBackend::tripBChanged);
+
+    // Маршрутный компьютер копим без сигналов — публикуем раз в секунду
+    m_journeyKmAcc += km;
+    if (m_fuelRate > 0.0)
+        m_fuelUsedAcc += m_fuelRate / 100.0 * km;   // мгновенный расход л/100 км → литры
+}
+
+// Показания маршрутного компьютера отдаём раз в секунду: чаще незачем,
+// а перерисовка текста 20 раз в секунду только грузит приборку.
+void CanBackend::publishJourney()
+{
+    set(m_journeyKm, m_journeyKmAcc, &CanBackend::journeyKmChanged);
+    set(m_fuelUsed, m_fuelUsedAcc, &CanBackend::fuelUsedChanged);
+    set(m_journeySeconds, static_cast<int>(m_journeyClock.elapsed() / 1000),
+        &CanBackend::journeySecondsChanged);
+
+    const double hours = m_journeyClock.elapsed() / 3600000.0;
+    const double avgSpeed = hours > 0.01 ? m_journeyKmAcc / hours : 0.0;
+    set(m_avgSpeed, avgSpeed, &CanBackend::avgSpeedChanged);
+
+    // Меньше половины километра — средний расход ещё не о чём не говорит
+    const double avg = m_journeyKmAcc > 0.5 ? m_fuelUsedAcc / m_journeyKmAcc * 100.0 : 0.0;
+    set(m_avgConsumption, avg, &CanBackend::avgConsumptionChanged);
+
+    // Запас хода: остаток топлива в литрах делим на средний расход
+    const double litresLeft = m_fuelLevel / 100.0 * m_tankCapacity;
+    set(m_rangeKm, avg > 0.1 ? litresLeft / avg * 100.0 : 0.0, &CanBackend::rangeKmChanged);
+}
+
+void CanBackend::resetJourney()
+{
+    m_journeyKmAcc = 0;
+    m_fuelUsedAcc = 0;
+    m_journeyClock.restart();
+    publishJourney();
 }
 
 void CanBackend::resetTripA()

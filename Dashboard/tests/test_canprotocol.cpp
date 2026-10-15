@@ -61,6 +61,8 @@ int main(int argc, char *argv[])
         CanBackend backend(nullptr);
         backend.setMockMode(true);
         backend.start();
+        // Второй аргумент — сколько секунд наблюдать (по умолчанию 20)
+        const int watchSeconds = (argc > 2) ? QByteArray(argv[2]).toInt() : 20;
         int seconds = 0;
         QTimer tick;
         tick.setInterval(1000);
@@ -80,7 +82,13 @@ int main(int argc, char *argv[])
                               << " прошивка=" << backend.deviceFirmware()
                               << " работает=" << backend.deviceUptimeSec() << "с"
                               << " перезапусков=" << backend.deviceRestarts();
-            if (seconds >= 20)
+            if (seconds % 10 == 0)
+                qInfo().nospace() << "      маршрут: " << backend.journeyKm() << " км, "
+                                  << backend.fuelUsed() << " л, средний "
+                                  << backend.avgConsumption() << " л/100, запас хода "
+                                  << backend.rangeKm() << " км, средняя скорость "
+                                  << backend.avgSpeed() << " км/ч";
+            if (seconds >= watchSeconds)
                 QCoreApplication::quit();
         });
         tick.start();

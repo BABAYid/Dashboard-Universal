@@ -72,6 +72,15 @@ class CanBackend : public QObject
     Q_PROPERTY(QString gearMode READ gearMode NOTIFY gearModeChanged)     // P/R/N/D1..D4/L
     Q_PROPERTY(bool gearLock READ gearLock NOTIFY gearLockChanged)        // LOCK (SL)
 
+    // --- маршрутный компьютер (считается по пробегу и расходу) ---
+    Q_PROPERTY(double journeyKm READ journeyKm NOTIFY journeyKmChanged)              // км за поездку
+    Q_PROPERTY(double fuelUsed READ fuelUsed NOTIFY fuelUsedChanged)                // литров за поездку
+    Q_PROPERTY(double avgConsumption READ avgConsumption NOTIFY avgConsumptionChanged)  // л/100 км
+    Q_PROPERTY(double avgSpeed READ avgSpeed NOTIFY avgSpeedChanged)                // км/ч
+    Q_PROPERTY(double rangeKm READ rangeKm NOTIFY rangeKmChanged)                   // запас хода, км
+    Q_PROPERTY(int journeySeconds READ journeySeconds NOTIFY journeySecondsChanged)
+    Q_PROPERTY(double tankCapacity READ tankCapacity WRITE setTankCapacity NOTIFY tankCapacityChanged)
+
     // --- 0x7F0: статус блока сбора (протокол 1.1) ---
     Q_PROPERTY(bool deviceAlive READ deviceAlive NOTIFY deviceAliveChanged)
     Q_PROPERTY(QString deviceFirmware READ deviceFirmware NOTIFY deviceFirmwareChanged)
@@ -99,6 +108,7 @@ public:
 
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
+    Q_INVOKABLE void resetJourney();   // обнулить маршрутный компьютер
     Q_INVOKABLE void resetTripA();
     Q_INVOKABLE void resetTripB();
 
@@ -144,6 +154,15 @@ public:
     double tripA() const { return m_tripA; }
     double tripB() const { return m_tripB; }
 
+    double journeyKm() const { return m_journeyKm; }
+    double fuelUsed() const { return m_fuelUsed; }
+    double avgConsumption() const { return m_avgConsumption; }
+    double avgSpeed() const { return m_avgSpeed; }
+    double rangeKm() const { return m_rangeKm; }
+    int journeySeconds() const { return m_journeySeconds; }
+    double tankCapacity() const { return m_tankCapacity; }
+    void setTankCapacity(double litres) { m_tankCapacity = litres; }
+
     bool deviceAlive() const { return m_deviceAlive; }
     QString deviceFirmware() const { return m_deviceFirmware; }
     uint deviceUptimeSec() const { return m_deviceUptimeSec; }
@@ -180,6 +199,13 @@ signals:
     void odometerChanged();
     void tripAChanged();
     void tripBChanged();
+    void journeyKmChanged();
+    void fuelUsedChanged();
+    void avgConsumptionChanged();
+    void avgSpeedChanged();
+    void rangeKmChanged();
+    void journeySecondsChanged();
+    void tankCapacityChanged();
     void deviceAliveChanged();
     void deviceFirmwareChanged();
     void deviceUptimeSecChanged();
@@ -196,6 +222,7 @@ private:
     void handleGearboxFrame(const quint8 *d);
     void handleDeviceStatusFrame(const quint8 *d);
     void updateDataValidity();
+    void publishJourney();
     void accountDistance();
     void loadDistance();
     void saveDistance();
@@ -256,6 +283,21 @@ private:
     double m_odometer = 0;
     double m_tripA = 0;
     double m_tripB = 0;
+
+    // Маршрутный компьютер. Накопители (m_journeyKmAcc, m_fuelUsedAcc) обновляются
+    // молча на каждом кадре, а в QML отдаются раз в секунду — иначе приборка
+    // перерисовывала бы показания 20 раз в секунду без всякой пользы.
+    double m_journeyKmAcc = 0;
+    double m_fuelUsedAcc = 0;
+    double m_journeyKm = 0;
+    double m_fuelUsed = 0;
+    double m_avgConsumption = 0;
+    double m_avgSpeed = 0;
+    double m_rangeKm = 0;
+    int m_journeySeconds = 0;
+    double m_tankCapacity = 60.0;
+    QElapsedTimer m_journeyClock;
+    int m_publishTick = 0;
 
     // Статус блока сбора (кадр 0x7F0)
     bool m_deviceAlive = false;

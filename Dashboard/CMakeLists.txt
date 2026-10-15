@@ -27,6 +27,7 @@ qt_add_qml_module(appDashboard
         can/CanBackend.cpp
     QML_FILES
         Main.qml
+        CenterPanel.qml
         Speedometer.qml
         Tachometer.qml
         Settings.qml
