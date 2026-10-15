@@ -121,47 +121,47 @@ Item {
 
 
 
-    // === ВЕРХНЯЯ ПРАВАЯ ЗОНА: наружная температура и часы ===
-    // Как в Audi virtual cockpit: время и температура всегда на одном месте,
-    // независимо от того, включена навигация или нет.
-    Item {
-        x: 1750
-        y: 40
-        width: 100
-        height: 190
+    // === ВЕРХНЯЯ ЗОНА ЦЕНТРА: часы, лампы, наружная температура ===
+    // Всё это держим в центральной полосе между приборами (x 714..1206),
+    // а не на циферблатах: приборы — круги радиусом 357 с центрами 357 и 1563,
+    // и любая точка ближе этого радиуса оказывается на шкале тахометра.
+    // Лампы (дальний / туманки / габариты) стоят по центру полосы.
+
+    // Часы — слева от ламп
+    Text {
+        id: clockText
+        x: 730
+        y: 24
+        text: root.timeString
+        color: "white"
+        font.pixelSize: 34
+        font.bold: true
+        font.family: "Kdam Thmor Pro"
+    }
+
+    // Наружная температура — справа от ламп, снежинка рядом с числом
+    Row {
+        x: 1080
+        y: 30
+        spacing: 6
 
         Text {
             id: outsideTempText
             text: root.outsideTemp.toFixed(1) + "°C"
             color: "white"
-            font.pixelSize: 24
+            font.pixelSize: 22
             font.bold: true
             font.family: "Kdam Thmor Pro"
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
+            anchors.verticalCenter: parent.verticalCenter
         }
 
         Image {
             source: "images/snow.png"
-            width: 34
-            height: 34
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: outsideTempText.bottom
-            anchors.topMargin: 2
+            width: 26
+            height: 26
             visible: root.outsideTemp <= 0
             fillMode: Image.PreserveAspectFit
-        }
-
-        // Часы
-        Text {
-            id: clockText
-            text: root.timeString
-            color: "white"
-            font.pixelSize: 34
-            font.bold: true
-            font.family: "Kdam Thmor Pro"
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
+            anchors.verticalCenter: parent.verticalCenter
         }
     }
 

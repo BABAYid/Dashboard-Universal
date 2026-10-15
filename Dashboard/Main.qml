@@ -119,21 +119,26 @@ Window {
 
         // ========== РАЗДЕЛИТЕЛЬНЫЕ ЛИНИИ ЦЕНТРАЛЬНОЙ ОБЛАСТИ ==========
         // Натуральный размер картинок 641x5 (раньше их растягивали до 500x10 —
-        // сжимали по ширине и вдвое утолщали, из-за чего концы не доходили
-        // до приборов). Ширина 800: концы заходят под циферблаты, как в макете,
-        // где линия уходит под оба прибора. Яркость в линии — градиент,
-        // поэтому под приборами концы самые тусклые.
+        // сжимали по ширине и вдвое утолщали, поэтому концы не доходили до
+        // приборов). Ширина 800: концы заходят под циферблаты и там скрываются —
+        // под каждым прибором лежит непрозрачная чёрная подложка, без неё
+        // полупрозрачные циферблаты просвечивают и полосы видно на шкалах.
+        // В навигации полосы убираем: там карта на весь экран, резать её незачем.
         Image {
             source: "images/line_up.png"
             x: 560; y: 149
             width: 800; height: 5
             fillMode: Image.Stretch
+            opacity: navigationMode ? 0.0 : 1.0
+            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
         }
         Image {
             source: "images/line_down.png"
             x: 560; y: 558
             width: 800; height: 5
             fillMode: Image.Stretch
+            opacity: navigationMode ? 0.0 : 1.0
+            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
         }
 
         // ========== КАРТА: на весь экран, как в Audi ==========
@@ -197,16 +202,16 @@ Window {
             Behavior on y { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
             Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
 
-            // Непрозрачная подложка под прибором в навигации
+            // Непрозрачная подложка под прибором. Нужна в обоих режимах:
+            // циферблаты полупрозрачные (альфа 255 только в центре, на радиусе
+            // 300 — уже 16), поэтому без подложки под ними просвечивают
+            // разделительные полосы, а в навигации — карта.
             Rectangle {
                 anchors.centerIn: parent
                 width: parent.width
                 height: parent.height
                 radius: width / 2
                 color: "black"
-                opacity: navigationMode ? 1.0 : 0.0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
             }
 
             Speedometer {
@@ -239,15 +244,13 @@ Window {
             Behavior on y { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
             Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
 
+            // Непрозрачная подложка под прибором (см. спидометр)
             Rectangle {
                 anchors.centerIn: parent
                 width: parent.width
                 height: parent.height
                 radius: width / 2
                 color: "black"
-                opacity: navigationMode ? 1.0 : 0.0
-                visible: opacity > 0
-                Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
             }
 
             Tachometer {
@@ -412,7 +415,7 @@ Window {
 
         Button {
             text: "Навигация"
-            x: 730; y: 24
+            x: 730; y: 658
             visible: !navigationMode
             onClicked: navigationMode = true
             z: 2
