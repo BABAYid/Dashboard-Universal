@@ -104,20 +104,15 @@ Item {
     // (стрелка топлива той же длины, её сектор 61°…116°, то есть низ циферблата).
     // Подложка нужна, чтобы стрелка, проходящая через цифры, не мешала читать:
     // без неё белые цифры сливаются со светлой стрелкой.
-    Rectangle {
-        x: parent.width * 0.359
-        y: parent.height * 0.322
-        width: parent.width * 0.283
-        height: parent.height * 0.106
-        radius: 14
-        color: "#B3000000"
-    }
-
     Column {
         id: digitalSpeed
         x: parent.width * 0.39
         y: parent.height * 0.325
         width: parent.width * 0.22
+
+        // Появляются после самопроверки приборов, как в серийных панелях
+        opacity: root.startup ? 0.0 : 1.0
+        Behavior on opacity { NumberAnimation { duration: 400 } }
 
         Text {
             id: speedDigits
@@ -128,6 +123,9 @@ Item {
             font.pixelSize: 40
             font.bold: true
             font.family: "Kdam Thmor Pro"
+            // Подложки нет, поэтому цифры отделяем от стрелки тонким контуром
+            style: Text.Outline
+            styleColor: "#000000"
         }
 
         Text {
