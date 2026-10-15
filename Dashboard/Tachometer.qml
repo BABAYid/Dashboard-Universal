@@ -95,6 +95,49 @@ Item {
         }
     }
 
+    // ======================= ЦИФРОВЫЕ ОБОРОТЫ =======================
+    // То же место, что у спидометра, — для симметрии. Полоса над ступицей
+    // свободна от разметки (кольцо шкалы начинается с радиуса 260) и от иконок
+    // ламп (они ниже, на y≈0.58). Стрелка оборотов проходит через цифры при
+    // ~4000 об/мин, поэтому под цифрами подложка.
+    Rectangle {
+        x: parent.width * 0.359
+        y: parent.height * 0.322
+        width: parent.width * 0.283
+        height: parent.height * 0.106
+        radius: 14
+        color: "#B3000000"
+    }
+
+    Column {
+        id: digitalRpm
+        x: parent.width * 0.39
+        y: parent.height * 0.325
+        width: parent.width * 0.22
+
+        Text {
+            id: rpmDigits
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: Math.round(root.rpm)
+            color: root.nightMode ? "#FF8800" : "white"
+            font.pixelSize: 40
+            font.bold: true
+            font.family: "Kdam Thmor Pro"
+        }
+
+        Text {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: "об/мин"
+            color: root.nightMode ? "#FF8800" : "#8C8C8C"
+            font.pixelSize: 15
+            font.family: "Kdam Thmor Pro"
+        }
+    }
+
+    // Угол стрелки тахометра:
+
     // ======================= ЛАМПЫ ТАХОМЕТРА =======================
     // Значок шкалы температуры — это часть разметки прибора, он виден ВСЕГДА.
     // Мигает только при перегреве.

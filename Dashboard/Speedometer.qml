@@ -72,9 +72,10 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // Угол поворота стрелки скорости.
-    // Во время самопроверки показываем sweepAngle (его ведёт анимация), после
-    // неё — обычное значение. Анимация пишет в отдельное свойство: если бы она
+
+    // Угол поворота стрелки скорости: во время самопроверки показываем
+    // sweepAngle (его ведёт анимация), после неё — обычное значение.
+    // Анимация пишет в отдельное свойство: если бы она
     // писала прямо в rotation, привязка разрушилась бы и стрелка «застыла».
     readonly property real speedAngle: speedStartAngle + (speed / maxSpeed) * (speedEndAngle - speedStartAngle)
     property real sweepAngle: 0
@@ -95,6 +96,51 @@ Item {
             NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
         }
     }
+    // ======================= ЦИФРОВАЯ СКОРОСТЬ =======================
+    // Место: полоса прямо над ступицей. Она зажата между иконкой ремня
+    // (заканчивается на y=228) и иконкой передачи (начинается с y=307),
+    // поэтому высота ровно 79 px — это проверено замером.
+    // Выше ставить нельзя: там ходят обе стрелки — и спидометра, и топлива
+    // (стрелка топлива той же длины, её сектор 61°…116°, то есть низ циферблата).
+    // Подложка нужна, чтобы стрелка, проходящая через цифры, не мешала читать:
+    // без неё белые цифры сливаются со светлой стрелкой.
+    Rectangle {
+        x: parent.width * 0.359
+        y: parent.height * 0.322
+        width: parent.width * 0.283
+        height: parent.height * 0.106
+        radius: 14
+        color: "#B3000000"
+    }
+
+    Column {
+        id: digitalSpeed
+        x: parent.width * 0.39
+        y: parent.height * 0.325
+        width: parent.width * 0.22
+
+        Text {
+            id: speedDigits
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: Math.round(root.speed)
+            color: root.nightMode ? "#FF8800" : "white"
+            font.pixelSize: 40
+            font.bold: true
+            font.family: "Kdam Thmor Pro"
+        }
+
+        Text {
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: "км/ч"
+            color: root.nightMode ? "#FF8800" : "#8C8C8C"
+            font.pixelSize: 15
+            font.family: "Kdam Thmor Pro"
+        }
+    }
+
+
     // ======================= ЛАМПЫ СПИДОМЕТРА =======================
     // Каждая лампа загорается по своему сигналу; гаснет — opacity 0.
     // Длительность перехода небольшая, чтобы включение читалось мягко.
