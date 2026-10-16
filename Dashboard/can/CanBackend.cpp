@@ -535,6 +535,9 @@ void CanBackend::loadDistance()
     m_odometer = s.value(prefix + "odometer", 0.0).toDouble();
     m_tripA    = s.value(prefix + "tripA", 0.0).toDouble();
     m_tripB    = s.value(prefix + "tripB", 0.0).toDouble();
+    // Объём бака храним здесь же: это тоже пользовательская настройка,
+    // и отдельный файл настроек заводить незачем.
+    m_tankCapacity = s.value(prefix + "tankCapacity", 60.0).toDouble();
 }
 
 void CanBackend::saveDistance()
@@ -544,6 +547,7 @@ void CanBackend::saveDistance()
     s.setValue(prefix + "odometer", m_odometer);
     s.setValue(prefix + "tripA", m_tripA);
     s.setValue(prefix + "tripB", m_tripB);
+    s.setValue(prefix + "tankCapacity", m_tankCapacity);
 }
 
 // ----------------------------------------------------------------- mock-режим
