@@ -58,6 +58,15 @@ Window {
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
     // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
     readonly property bool funEnabled: calibration.funEnabled
+
+    // Запас хода (считает CanBackend по среднему расходу за 5 минут).
+    // Пока расчёт недостоверен — в QML это «—», и предупреждение не горит:
+    // ноль в rangeKm означает «неизвестно», а не «ноль километров».
+    readonly property real rangeKm: CanBackend.rangeKm
+    readonly property bool rangeKmValid: CanBackend.rangeKmValid
+    readonly property bool rangeCritical: rangeKmValid && rangeKm < 20
+    property bool rangeBlinkOn: true   // фаза мигания предупреждения о запасе
+
     readonly property bool leftTurn: CanBackend.leftTurn
     readonly property bool rightTurn: CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
@@ -139,6 +148,17 @@ Window {
         root.rpmFactor = calibration.rpmFactor
         root.fuelFactor = calibration.fuelFactor
         root.tempFactor = calibration.tempFactor
+    }
+
+    // Мигание предупреждения о запасе хода: 1 Гц — 500 мс горит, 500 мс нет.
+    // Флаг сбрасывается, когда мигание прекращается, чтобы текст не остался
+    // погашенным.
+    Timer {
+        interval: 500
+        repeat: true
+        running: root.rangeCritical
+        onRunningChanged: if (!running) root.rangeBlinkOn = true
+        onTriggered: root.rangeBlinkOn = !root.rangeBlinkOn
     }
 
     Item {
