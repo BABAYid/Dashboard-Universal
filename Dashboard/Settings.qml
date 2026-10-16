@@ -110,10 +110,17 @@ Item {
 
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
 
-        // Пробег проверяет сам бэкенд: отрицательное и NaN игнорирует
+        // Пробег и объём бака проверяет сам бэкенд: отрицательное, NaN и
+        // неправдоподобные значения он игнорирует
         if (isFinite(km) && km >= 0) {
             CanBackend.setOdometer(km)
             odometerRow.field.text = CanBackend.odometer.toFixed(1)
+        }
+
+        const tank = parseFloat(tankRow.field.text)
+        if (isFinite(tank) && tank >= 1 && tank <= 500) {
+            CanBackend.tankCapacity = tank
+            tankRow.field.text = CanBackend.tankCapacity.toFixed(0)
         }
 
         visible = false

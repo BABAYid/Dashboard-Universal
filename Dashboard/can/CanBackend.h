@@ -133,6 +133,11 @@ public:
     // и позволяет проигрывать записанный трафик без железа.
     Q_INVOKABLE void feedFrame(int id, const QByteArray &data);
 
+    // Подать один сэмпл мгновенного расхода в окно среднего расхода (л/100 км).
+    // Нужно тестам: без этого окно за 5 минут пришлось бы проверять реальными
+    // секундами ожидания. В обычной работе сэмплы берутся из кадров 0x300.
+    Q_INVOKABLE void feedConsumptionSample(double rate);
+
     void setInterfaceName(const QString &name) { m_interfaceName = name; }
     void setMockMode(bool on) { m_mockMode = on; }
 
@@ -263,6 +268,7 @@ private:
     void handleGasFrame(const quint8 *d);
     void updateDataValidity();
     void publishJourney();
+    void updateConsumptionWindow(double ratePer100km);
     void accountDistance();
     void loadDistance();
     void saveDistance();
