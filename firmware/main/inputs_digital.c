@@ -279,3 +279,10 @@ uint8_t inputs_digital_i2c_errors(void)
 {
     return s_i2c_errors;
 }
+
+int inputs_digital_pin(uint8_t channel)
+{
+    if (channel < 1 || channel > DIN_DIRECT_COUNT)
+        return (int)GPIO_NUM_NC;      // входы 16…23 идут через PCF8574, у них нет вывода ESP32
+    return (int)k_din_pins[channel - 1];
+}

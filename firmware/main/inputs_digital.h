@@ -43,3 +43,8 @@ bool inputs_digital_pcf_ok(void);
 
 // Число ошибок обмена по I2C-2 (насыщается на 255) — уходит в кадр статуса.
 uint8_t inputs_digital_i2c_errors(void);
+
+// Вывод ESP32, к которому подключён вход DIN_n (для частотных входов:
+// измерение частоты настраивается на тот же вывод). GPIO_NUM_NC — если
+// такого входа нет.
+int inputs_digital_pin(uint8_t channel);
