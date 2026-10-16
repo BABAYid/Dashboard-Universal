@@ -334,10 +334,19 @@ private:
     double m_avgConsumption = 0;
     double m_avgSpeed = 0;
     double m_rangeKm = 0;
+    bool m_rangeKmValid = false;       // был ли хоть один достоверный расчёт
     int m_journeySeconds = 0;
     double m_tankCapacity = 60.0;
     QElapsedTimer m_journeyClock;
     int m_publishTick = 0;
+
+    // Скользящее окно среднего расхода: 300 сэмплов по 1 секунде (5 минут).
+    // Храним кольцом, чтобы не двигать массив на каждом сэмпле.
+    static constexpr int kConsumptionWindow = 300;
+    double m_consumptionSamples[kConsumptionWindow] = {};
+    int m_consumptionIndex = 0;        // куда писать следующий сэмпл
+    int m_consumptionCount = 0;        // сколько сэмплов уже набрано (до 300)
+    double m_avgConsumption5min = 0;
 
     // Статус блока сбора (кадр 0x7F0)
     bool m_deviceAlive = false;
