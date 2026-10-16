@@ -267,7 +267,72 @@ Item {
                 field.validator: DoubleValidator { bottom: 0.0; top: 9999999.0 }
             }
 
-            Item { width: 1; height: 14 }
+            Item { width: 1; height: 8 }
+
+            Rectangle {
+                width: panel.width - 120
+                height: 2
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: "#333"
+            }
+
+            Item { width: 1; height: 8 }
+
+            // «Приколы»: анимация в правом верхнем углу — монетки в кошелёк на
+            // газу и кочегар с пачками денег выше 5000 об/мин. Выключатель
+            // отдельной строкой, состояние хранится в настройках.
+            Row {
+                spacing: 18
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                Text {
+                    text: "Приколы"
+                    width: 320
+                    horizontalAlignment: Text.AlignRight
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.labelColor
+                    font.pixelSize: 24
+                }
+
+                Switch {
+                    id: funSwitch
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: settingsOverlay.funEnabled
+                    onToggled: settingsOverlay.funEnabled = checked
+
+                    indicator: Rectangle {
+                        implicitWidth: 78
+                        implicitHeight: 36
+                        radius: 18
+                        color: funSwitch.checked ? "#2A7A3A" : "#3A3A3A"
+                        border.color: funSwitch.checked ? "#3FBF57" : "#5A5A5A"
+                        border.width: 2
+
+                        Rectangle {
+                            y: 4
+                            x: funSwitch.checked ? parent.width - width - 4 : 4
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: funSwitch.checked ? "#E8FFE8" : "#9A9A9A"
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+                    }
+
+                    // Свой текст не нужен: подпись есть слева
+                    contentItem: Item {}
+                }
+
+                Text {
+                    text: settingsOverlay.funEnabled ? "включены" : "выключены"
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.funEnabled ? "#3FBF57" : "#8A8A8A"
+                    font.pixelSize: 20
+                    font.family: settingsOverlay.uiFont
+                }
+            }
+
+            Item { width: 1; height: 6 }
 
             Row {
                 spacing: 24
