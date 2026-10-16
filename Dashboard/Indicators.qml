@@ -14,7 +14,6 @@ Item {
     property bool brakeLights: false
     property bool reverseLights: false
     property bool checkEngine: false
-    property real outsideTemp: 0
     property bool abs: false
     property bool handBrake: false
     property bool seatBelt: false
@@ -121,7 +120,7 @@ Item {
 
 
 
-    // === ВЕРХНЯЯ ЗОНА ЦЕНТРА: часы, лампы, наружная температура ===
+    // === ВЕРХНЯЯ ЗОНА ЦЕНТРА: часы и лампы ===
     // Всё это держим в центральной полосе между приборами (x 714..1206),
     // а не на циферблатах: приборы — круги радиусом 357 с центрами 357 и 1563,
     // и любая точка ближе этого радиуса оказывается на шкале тахометра.

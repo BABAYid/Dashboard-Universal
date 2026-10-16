@@ -406,7 +406,9 @@ Window {
                     font.pixelSize: 24
                 }
                 Text {
-                    text: root.temp.toFixed(0) + " °C"
+                    // Температура — как соседние показания, с одним знаком:
+                    // «0,0 °C», а не «0 °C».
+                    text: root.temp.toFixed(1) + " °C"
                     color: root.nightMode ? "#FF8800" : "white"
                     font.pixelSize: 24
                     font.bold: true
@@ -440,7 +442,6 @@ Window {
             seatBelt: root.seatBelt
             gearLock: root.gearLock
             gearMode: root.gearMode
-            outsideTemp: root.outsideTemp
             timeString: root.timeString
             odometer: root.odometer
             tripA: root.tripA
