@@ -188,18 +188,10 @@ Window {
             Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
         }
 
-        // Подложка под зоной часов и наружной температуры: она лежит ниже
-        // затемнения сверху, и белый текст на светлой карте не читался бы
-        Rectangle {
-            x: 1726; y: 26
-            width: 172; height: 226
-            radius: 18
-            color: "#B3000000"
-            opacity: navigationMode ? 1.0 : 0.0
-            visible: opacity > 0
-            z: -4
-            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
-        }
+        // Здесь была скруглённая подложка под часами и наружной температурой
+        // (x 1726, y 26) — остаток прежней раскладки, когда они стояли на
+        // тахометре. Сейчас и часы, и температура живут в центральной полосе,
+        // под затемнением сверху, поэтому подложка только мазала карту.
 
         // ========== КОНТЕЙНЕР СПИДОМЕТРА ==========
         Item {
@@ -294,8 +286,15 @@ Window {
             CenterPanel {
                 anchors.fill: parent
                 mode: root.centerMode
-                clockString: root.timeString
                 nightMode: root.nightMode
+
+                // В навигации карта занимает весь экран, и панель поверх неё
+                // только мешает: гасим её так же, как разделительные полосы.
+                // Область нажатий (MouseArea ниже) остаётся живой — долгое
+                // нажатие по центру по-прежнему выводит из навигации.
+                opacity: root.navigationMode ? 0.0 : 1.0
+                visible: opacity > 0
+                Behavior on opacity { NumberAnimation { duration: root.navigationAnimDuration } }
             }
 
             // Одиночное нажатие — следующий режим, двойное — калибровка,
