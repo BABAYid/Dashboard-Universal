@@ -328,12 +328,13 @@ void vehicle_state_update(void)
     read_gas(&next.gas_sensor_mv, &next.gas_sensor_valid);
 
     // --- зажигание ---
-    if (sig_assigned(SIG_IGNITION)) {
-        const bool raw = din_signal(vehicle_signal(SIG_IGNITION)->channel);
-        next.ignition_on = IGNITION_SENSE_ACTIVE_LOW ? !raw : raw;
-    } else {
+    // ACC — это «плюс 12 В» при включённом зажигании. Если провод ACC
+    // замыкается на массу, в таблице проводов у него стоит флаг
+    // SIG_FLAG_GROUND_SWITCHED, и его учитывает sig_on().
+    if (sig_assigned(SIG_IGNITION))
+        next.ignition_on = sig_on(SIG_IGNITION);
+    else
         next.ignition_on = true;
-    }
 
     xSemaphoreTake(s_lock, portMAX_DELAY);
     s_state = next;
