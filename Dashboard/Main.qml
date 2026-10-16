@@ -388,6 +388,21 @@ Window {
                         NumberAnimation { from: 1.0; to: 0.35; duration: 700 }
                     }
                 }
+
+                // Мало топлива: запас хода меньше 50 км — жёлтым, меньше 20 км —
+                // красным и мигает 1 Гц. Мигание — через отдельный флаг и Timer
+                // (как поворотники в Indicators.qml): анимация на opacity,
+                // остановившись, оставила бы текст притушенным на том кадре,
+                // где мигание прекратилось.
+                Text {
+                    id: rangeWarning
+                    text: "ЗАПРАВКА " + Math.round(root.rangeKm) + " КМ"
+                    color: root.rangeCritical ? "#FF4444" : "#FFC64A"
+                    font.pixelSize: 20
+                    font.bold: true
+                    visible: root.rangeKmValid && root.rangeKm < 50
+                             && (!root.rangeCritical || root.rangeBlinkOn)
+                }
             }
         }
 
