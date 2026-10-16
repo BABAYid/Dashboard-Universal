@@ -1,32 +1,44 @@
 import QtQuick 2.15
 
-Item {
+// Тахометр: шкала 8000 об/мин, указатель температуры двигателя и лампы.
+// Общая часть приборов (циферблат, стрелки, цифры, самопроверка) — Gauge.qml.
+
+Gauge {
     id: root
-    width: 714
-    height: 714
 
     property real rpm: 0
     property real maxRpm: 8000
 
-    // Углы стрелки тахометра.
-    // Стрелка (needls_tho.svg) при rotation = 0 смотрит не вверх, а влево —
-    // примерно на 191°. Поэтому углы ниже посчитаны как (угол цифры на шкале
-    // минус 191°). Цифры шкалы в taho.png стоят так: 0 → 134.5°, 4 → 269.8°
-    // (ровно вверху), 8 → 46.1°; шаг между цифрами 33.5°.
+    // Углы основной стрелки (needls_tho.svg).
+    // Стрелка при rotation = 0 смотрит не вверх, а влево — примерно на 191°.
+    // Поэтому углы ниже посчитаны как (угол цифры на шкале минус 191°).
+    // Цифры шкалы в taho.png стоят так: 0 → 134.5°, 4 → 269.8° (ровно вверху),
+    // 8 → 46.1°; шаг между цифрами 33.5°.
     //   rpm = 0    → стрелка на 134.5° → rotation = 134.5 - 191.2 = -56.7
     //   rpm = 8000 → стрелка на  46.1° → rotation = (46.1 - 191.2) + 360 = 214.9
     // Размах шкалы 271.6°. При этих значениях стрелка ложится на цифры с
     // расхождением не более 2°.
-    property real rpmStartAngle: -56.7
-    property real rpmEndAngle: 214.9
+    startAngle: -56.7
+    endAngle: 214.9
 
+    // Что именно показывает прибор
+    value: rpm
+    maxValue: maxRpm
+
+    // Малая стрелка — температура двигателя. Её сектор внизу циферблата:
+    // стрелка температуры нарисована тем же длинным рисунком, что и тахометр.
     property real temp: 0
     property real maxTemp: 120
-    property real tempStartAngle: -80
-    property real tempEndAngle: -103
+    secondaryValue: temp
+    secondaryMaxValue: maxTemp
+    secondaryStartAngle: -80
+    secondaryEndAngle: -103
 
-    property bool startup: false
-    property bool nightMode: false
+    // Картинки: у тахометра свои, центральный круг чуть больше, чем у спидометра
+    dialSource: "images/taho.png"
+    needleSource: "images/needls_tho.svg"
+    secondaryNeedleSource: "images/needls_temp.svg"
+    centerCircleRatio: 0.638
 
     // Состояние ламп (приходит из Main.qml, источник — CanBackend)
     property bool absWarning: false
@@ -34,105 +46,14 @@ Item {
     property bool oilPressureWarning: false
     property bool tempWarning: false
 
-    // Центр вращения
-    readonly property point centerPoint: Qt.point(width/2, height/2)
-
-    // Подложка (общая шкала)
-    Image {
-        anchors.fill: parent
-        source: "images/taho.png"
-        fillMode: Image.PreserveAspectFit
-    }
-
-    // === СТРЕЛКА ТЕМПЕРАТУРЫ ===
-    Image {
-        id: needleTemp
-        source: "images/needls_temp.svg"
-        x: centerPoint.x - width/2
-        y: centerPoint.y - height/2
-        width: parent.width * 1.05
-        height: parent.height * 1.05
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        rotation: tempStartAngle + (temp / maxTemp) * (tempEndAngle - tempStartAngle)
-        Behavior on rotation {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-        }
-    }
-
-    // Центральный круг
-    Image {
-        width: parent.width * 0.638
-        height: parent.height * 0.638
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        source: "images/around_in.png"
-        fillMode: Image.PreserveAspectFit
-
-    }
-
-    // Угол стрелки тахометра: во время самопроверки — sweepAngle (ведёт
-    // анимация), после неё — значение по оборотам. Анимация не пишет в rotation
-    // напрямую, иначе привязка разрушилась бы (раньше это лечилось костылём
-    // onRpmChanged, который переписывал угол вручную).
-    readonly property real rpmAngle: rpmStartAngle + (rpm / maxRpm) * (rpmEndAngle - rpmStartAngle)
-    property real sweepAngle: 0
-
-    // === СТРЕЛКА ТАХОМЕТРА ===
-    Image {
-        id: needleRpm
-        source: "images/needls_tho.svg"
-        x: centerPoint.x - width/2
-        y: centerPoint.y - height/2
-        width: parent.width * 1.05
-        height: parent.height * 1.05
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        rotation: root.startup ? root.sweepAngle : root.rpmAngle
-        Behavior on rotation {
-            enabled: !root.startup
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-        }
-    }
-
-    // ======================= ЦИФРОВЫЕ ОБОРОТЫ =======================
-    // То же место, что у спидометра, — для симметрии. Полоса над ступицей
-    // свободна от разметки (кольцо шкалы начинается с радиуса 260) и от иконок
-    // ламп (они ниже, на y≈0.58). Стрелка оборотов проходит через цифры при
-    // ~4000 об/мин, поэтому под цифрами подложка.
-    Column {
-        id: digitalRpm
-        x: parent.width * 0.39
-        // 0.317, а не середина полосы: у шрифта большой верхний просвет,
-        // и без сдвига цифры садятся ниже центра свободного места
-        y: parent.height * 0.317
-        width: parent.width * 0.22
-
-        // Появляются после самопроверки приборов, как в серийных панелях
-        opacity: root.startup ? 0.0 : 1.0
-        Behavior on opacity { NumberAnimation { duration: 400 } }
-
-        Text {
-            id: rpmDigits
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            text: Math.round(root.rpm)
-            color: root.nightMode ? "#FF8800" : "white"
-            font.pixelSize: 54
-            font.bold: true
-            font.family: "Kdam Thmor Pro"
-            // Подложки нет, поэтому цифры отделяем от стрелки тонким контуром
-            style: Text.Outline
-            styleColor: "#000000"
-        }
-    }
-
-    // Угол стрелки тахометра:
-
     // ======================= ЛАМПЫ ТАХОМЕТРА =======================
+    // Всё, что объявлено ниже, попадает в слой gaugeContent базового Gauge.qml
+    // и рисуется поверх стрелок и цифр.
+
     // Значок шкалы температуры — это часть разметки прибора, он виден ВСЕГДА.
     // Мигает только при перегреве.
     property bool tempWarnBlink: false
+
     Timer {
         interval: 500
         repeat: true
@@ -150,6 +71,7 @@ Item {
         fillMode: Image.PreserveAspectFit
         opacity: (root.tempWarning && root.tempWarnBlink) ? 0.3 : 1.0
     }
+
     // ABS
     Image {
         source: "images/ABS.png"
@@ -162,6 +84,7 @@ Item {
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
     }
+
     // Check Engine
     Image {
         source: "images/check.png"
@@ -174,6 +97,7 @@ Item {
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
     }
+
     // Давление масла (авария)
     Image {
         source: "images/oil_press.png"
@@ -185,28 +109,5 @@ Item {
         opacity: root.oilPressureWarning ? 1.0 : 0.0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 150 } }
-    }
-
-    // Анимация запуска. Флагом startup управляет Main.qml.
-    SequentialAnimation {
-        id: startupAnimation
-        running: root.startup
-
-        NumberAnimation {
-            target: root
-            property: "sweepAngle"
-            from: root.rpmStartAngle
-            to: root.rpmEndAngle
-            duration: 800
-            easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: root
-            property: "sweepAngle"
-            from: root.rpmEndAngle
-            to: root.rpmAngle
-            duration: 400
-            easing.type: Easing.InOutQuad
-        }
     }
 }

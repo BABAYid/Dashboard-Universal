@@ -1,32 +1,46 @@
 import QtQuick 2.15
 
-Item {
+// Спидометр: шкала 220 км/ч, указатель топлива, лампы и индикатор АКПП.
+// Общая часть приборов (циферблат, стрелки, цифры, самопроверка) — Gauge.qml.
+
+Gauge {
     id: root
-    width: 714
-    height: 714
 
     // Свойства для данных
     property real speed: 0
     property real maxSpeed: 220
 
-    // Углы стрелки спидометра.
-    // Стрелка (needls_spd.svg) при rotation = 0 смотрит не вверх, а влево —
-    // примерно на 191°. Углы ниже посчитаны как (угол метки на шкале минус 191°).
+    // Углы основной стрелки (needls_spd.svg).
+    // Стрелка при rotation = 0 смотрит не вверх, а влево — примерно на 191°,
+    // поэтому углы посчитаны как (угол метки на шкале минус 191°).
     // Метки шкалы в Speedometr.png стоят через 22.29° (по 20 км/ч): «0» на
     // 135.1°, «220» на 20.3°.
     //   speed = 0   → стрелка на 135.1° → rotation = 135.1 - 191.2 = -56.1
     //   speed = 220 → стрелка на  20.3° → rotation = (20.3 - 191.2) + 360 = 189.1
     // Раньше стояло -60…220 (размах 280° вместо 245°), из-за чего у нуля ошибка
     // была 4°, а на 220 км/ч стрелка уходила на 31° за метку.
-    property real speedStartAngle: -56.1
-    property real speedEndAngle: 189.1
+    startAngle: -56.1
+    endAngle: 189.1
 
+    // Что именно показывает прибор
+    value: speed
+    maxValue: maxSpeed
+
+    // Малая стрелка — топливо. Её сектор внизу циферблата: стрелка топлива
+    // нарисована тем же длинным рисунком, что и стрелка спидометра.
     property real fuelLevel: 0
     property real maxFuel: 100
-    property real fuelStartAngle: -75
-    property real fuelEndAngle: -130
-    property bool startup: false
-    property bool nightMode: false
+    secondaryValue: fuelLevel
+    secondaryMaxValue: maxFuel
+    secondaryStartAngle: -75
+    secondaryEndAngle: -130
+
+    // Картинки: у спидометра свои, центральный круг чуть меньше, чем у тахометра
+    dialSource: "images/Speedometr.png"
+    needleSource: "images/needls_spd.svg"
+    secondaryNeedleSource: "images/needls_fuel.svg"
+    centerCircleRatio: 0.622
+
     property string gearMode: "P"
 
     // Состояние ламп (приходит из Main.qml, источник — CanBackend)
@@ -35,104 +49,9 @@ Item {
     property bool fuelWarning: false
     property bool handBrakeWarning: false
 
-    // Коэффициенты для масштабирования (относительно базового размера 714)
-    readonly property real baseSize: 714
-    readonly property real scaleFactor: width / baseSize
-
-    // Шкала спидометра
-    Image {
-        anchors.fill: parent
-        source: "images/Speedometr.png"
-        fillMode: Image.PreserveAspectFit
-    }
-
-    // Стрелка топлива (под кругом)
-    Image {
-        id: needleFuel
-        width: parent.width * 1.05
-        height: parent.height * 1.05
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        source: "images/needls_fuel.svg"
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        rotation: fuelStartAngle + (fuelLevel / maxFuel) * (fuelEndAngle - fuelStartAngle)
-        Behavior on rotation {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-        }
-    }
-
-    // Центральный круг (поверх стрелки топлива)
-    Image {
-        width: parent.width * 0.622
-        height: parent.height * 0.622
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        source: "images/around_in.png"
-        fillMode: Image.PreserveAspectFit
-    }
-
-
-    // Угол поворота стрелки скорости: во время самопроверки показываем
-    // sweepAngle (его ведёт анимация), после неё — обычное значение.
-    // Анимация пишет в отдельное свойство: если бы она
-    // писала прямо в rotation, привязка разрушилась бы и стрелка «застыла».
-    readonly property real speedAngle: speedStartAngle + (speed / maxSpeed) * (speedEndAngle - speedStartAngle)
-    property real sweepAngle: 0
-
-    // Стрелка спидометра (поверх всего)
-    Image {
-        id: needleSpeed
-        width: parent.width * 1.05
-        height: parent.height * 1.05
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        source: "images/needls_spd.svg"
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        rotation: root.startup ? root.sweepAngle : root.speedAngle
-        Behavior on rotation {
-            enabled: !root.startup
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-        }
-    }
-    // ======================= ЦИФРОВАЯ СКОРОСТЬ =======================
-    // Место: полоса прямо над ступицей. Она зажата между иконкой ремня
-    // (заканчивается на y=228) и иконкой передачи (начинается с y=307),
-    // поэтому высота ровно 79 px — это проверено замером.
-    // Выше ставить нельзя: там ходят обе стрелки — и спидометра, и топлива
-    // (стрелка топлива той же длины, её сектор 61°…116°, то есть низ циферблата).
-    // Подложка нужна, чтобы стрелка, проходящая через цифры, не мешала читать:
-    // без неё белые цифры сливаются со светлой стрелкой.
-    Column {
-        id: digitalSpeed
-        x: parent.width * 0.39
-        // 0.317, а не середина полосы: у шрифта большой верхний просвет,
-        // и без сдвига цифры садятся ниже центра свободного места
-        y: parent.height * 0.317
-        width: parent.width * 0.22
-
-        // Появляются после самопроверки приборов, как в серийных панелях
-        opacity: root.startup ? 0.0 : 1.0
-        Behavior on opacity { NumberAnimation { duration: 400 } }
-
-        Text {
-            id: speedDigits
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            text: Math.round(root.speed)
-            color: root.nightMode ? "#FF8800" : "white"
-            font.pixelSize: 54
-            font.bold: true
-            font.family: "Kdam Thmor Pro"
-            // Подложки нет, поэтому цифры отделяем от стрелки тонким контуром
-            style: Text.Outline
-            styleColor: "#000000"
-        }
-    }
-
-
     // ======================= ЛАМПЫ СПИДОМЕТРА =======================
+    // Всё, что объявлено ниже, попадает в слой gaugeContent базового Gauge.qml
+    // и рисуется поверх стрелок и цифр.
     // Каждая лампа загорается по своему сигналу; гаснет — opacity 0.
     // Длительность перехода небольшая, чтобы включение читалось мягко.
 
@@ -165,6 +84,7 @@ Item {
     // Значок шкалы топлива — это часть разметки прибора, он виден ВСЕГДА.
     // Мигает только при низком уровне топлива.
     property bool fuelWarnBlink: false
+
     Timer {
         interval: 500
         repeat: true
@@ -182,6 +102,7 @@ Item {
         fillMode: Image.PreserveAspectFit
         opacity: (root.fuelWarning && root.fuelWarnBlink) ? 0.3 : 1.0
     }
+
     // Ручник
     Image {
         source: "images/H_brake.png"
@@ -209,35 +130,11 @@ Item {
 
     // === ИНДИКАТОР АКПП (P/R/N/D1..D4/L) ===
     Image {
-        id: gearIcon
         source: "images/gear_" + root.gearMode + ".png"
         width: parent.width * 0.12
         height: parent.width * 0.12
         x: parent.width * 0.6
         y: parent.height * 0.43
         fillMode: Image.PreserveAspectFit
-    }
-
-    // Анимация запуска (Sweep). Флагом startup управляет Main.qml.
-    SequentialAnimation {
-        id: startupAnimation
-        running: root.startup
-
-        NumberAnimation {
-            target: root
-            property: "sweepAngle"
-            from: root.speedStartAngle
-            to: root.speedEndAngle
-            duration: 800
-            easing.type: Easing.OutCubic
-        }
-        NumberAnimation {
-            target: root
-            property: "sweepAngle"
-            from: root.speedEndAngle
-            to: root.speedAngle
-            duration: 400
-            easing.type: Easing.InOutQuad
-        }
     }
 }
