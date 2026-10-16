@@ -185,7 +185,7 @@ Item {
         InfoRow {
             label: "Интерфейс"
             value: CanBackend.sourceName
-            valueColour: CanBackend.canConnected ? root.valueColor : "#FF4444"
+            valueColour: CanBackend.connected ? root.valueColor : "#FF4444"
         }
 
         InfoRow {
