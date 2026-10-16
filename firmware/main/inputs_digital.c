@@ -91,30 +91,51 @@ static void fill_debounce_from_signals(void)
 
 static esp_err_t init_direct_inputs(void)
 {
-    uint64_t mask = 0;
-    for (int i = 0; i < DIN_DIRECT_COUNT; ++i)
-        mask |= (1ULL << k_din_pins[i]);
+    // Делим выводы на две группы: там, где внутренняя подтяжка есть,
+    // включаем её (добавка к внешним 10 кОм на плате), на выводах 34/35/36/39
+    // подтяжек внутри чипа нет — им хватает внешних резисторов.
+    uint64_t mask_with_pullup = 0;
+    uint64_t mask_input_only = 0;
 
-    gpio_config_t cfg = {
-        .pin_bit_mask = mask,
+    for (int i = 0; i < DIN_DIRECT_COUNT; ++i) {
+        if (pin_has_internal_pullup(k_din_pins[i]))
+            mask_with_pullup |= (1ULL << k_din_pins[i]);
+        else
+            mask_input_only |= (1ULL << k_din_pins[i]);
+    }
+
+    gpio_config_t cfg_with = {
+        .pin_bit_mask = mask_with_pullup,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config_t cfg_only = {
+        .pin_bit_mask = mask_input_only,
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,
     };
 
-    // Выводы 34/35/36/39 — только вход и без внутренних подтяжек: на плате
-    // для каждого из них стоит внешний резистор 10 кОм, поэтому здесь
-    // подтяжку включаем лишь там, где она есть внутри чипа (добавка к внешней,
-    // хуже не делает).
-    for (int i = 0; i < DIN_DIRECT_COUNT; ++i) {
-        if (pin_has_internal_pullup(k_din_pins[i]))
-            cfg.pull_up_en = GPIO_PULLUP_ENABLE;
+    esp_err_t err = ESP_OK;
+    if (mask_with_pullup) {
+        err = gpio_config(&cfg_with);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "не удалось настроить входы DIN_1…DIN_15: %s",
+                     esp_err_to_name(err));
+            return err;
+        }
     }
-
-    esp_err_t err = gpio_config(&cfg);
-    if (err != ESP_OK)
-        ESP_LOGE(TAG, "не удалось настроить дискретные входы: %s", esp_err_to_name(err));
+    if (mask_input_only) {
+        err = gpio_config(&cfg_only);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "не удалось настроить входы DIN_1…DIN_15: %s",
+                     esp_err_to_name(err));
+            return err;
+        }
+    }
     return err;
 }
 
