@@ -505,6 +505,36 @@ Window {
             z: 2
         }
 
+        // ========== ОТЛАДКА: переключатель газ/бензин ==========
+        // Перекрывает признак из CAN, чтобы потыкать и посмотреть, как приборка
+        // выглядит на газу. Цвет кнопки показывает, что сейчас на экране.
+        // Убрать, когда появится кнопка на руле или прошивка блока сбора.
+        Button {
+            id: gasDebugButton
+            x: 990; y: 658
+            visible: !navigationMode
+            z: 2
+            text: root.gasDisplay ? "Газ: вкл" : "Газ: выкл"
+            onClicked: {
+                root.gasOverride = !root.gasDisplay
+                root.gasOverrideActive = true
+            }
+
+            background: Rectangle {
+                color: root.gasDisplay ? "#33CC44" : "#3A3A3A"
+                radius: 6
+                border.color: root.gasDisplay ? "#1E7A2A" : "#5A5A5A"
+            }
+            contentItem: Text {
+                text: gasDebugButton.text
+                color: root.gasDisplay ? "#0A2A10" : "white"
+                font.pixelSize: 18
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
         Rectangle {
             id: closeNavButton
             width: 60; height: 60
