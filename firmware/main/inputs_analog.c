@@ -100,7 +100,8 @@ esp_err_t inputs_analog_init(void)
 {
     memset(s_mv, 0, sizeof(s_mv));
     memset(s_raw, 0, sizeof(s_raw));
-    memset(s_have_result, 0, sizeof(s_have_result));
+    memset(s_pending, 0, sizeof(s_pending));
+    memset(s_valid, 0, sizeof(s_valid));
     s_next_channel = 0;
     s_ok = false;
     s_errors = 0;
@@ -151,24 +152,25 @@ void inputs_analog_update(void)
 
     // 1. Забираем результат предыдущего канала (преобразование уже закончилось:
     //    при 128 выб/с оно занимает 7.8 мс, а пауза между вызовами — 25 мс).
-    if (s_have_result[channel]) {
+    if (s_pending[channel]) {
         int16_t code = 0;
         esp_err_t err = read_conversion(&code);
         if (err == ESP_OK) {
             s_raw[channel] = code;
-            uint16_t mv = code_to_mv(code);
-            // Сглаживание: датчики медленные, а помех в машине много.
-            // Новая точка берётся с весом 1/4.
-            if (s_have_result[channel] && s_mv[channel] != 0)
-                s_mv[channel] = (uint16_t)((3u * s_mv[channel] + mv) / 4u);
-            else
+            const uint16_t mv = code_to_mv(code);
+            if (!s_valid[channel]) {
                 s_mv[channel] = mv;
+                s_valid[channel] = true;
+            } else {
+                // Сглаживание: датчики медленные, а помех в машине много.
+                // Новая точка берётся с весом 1/4.
+                s_mv[channel] = (uint16_t)((3u * s_mv[channel] + mv) / 4u);
+            }
         } else {
             if (s_errors < 255) ++s_errors;
             s_ok = false;
         }
-    } else {
-        s_have_result[channel] = true;
+        s_pending[channel] = false;
     }
 
     // 2. Запускаем следующий канал.
@@ -178,6 +180,7 @@ void inputs_analog_update(void)
         if (s_errors < 255) ++s_errors;
         s_ok = false;
     } else {
+        s_pending[s_next_channel] = true;
         s_ok = true;
     }
 }
