@@ -564,6 +564,13 @@ void CanBackend::generateMockFrames()
     const double idleRpm = 800.0;
     const double ratio = (gear == 1) ? 130.0 : (gear == 2) ? 80.0 : (gear == 3) ? 55.0 : 38.0;
     int rpm = engineRunning ? static_cast<int>(speed > 1.0 ? idleRpm + speed * ratio : idleRpm) : 0;
+
+    // Короткий «кикдаун» выше 5000 об/мин: без него в демо-сценарии такие
+    // обороты не набираются (на 90 км/ч это ~4200), а заказчик просил показать
+    // индикацию «деньги в топку» именно выше 5000.
+    if (engineRunning && cycle >= 31.0 && cycle < 34.0)
+        rpm = 5400;
+
     rpm = qBound(0, rpm, 8000);
 
     // --- свет и поворотники (мигание 1.5 Гц) ---
