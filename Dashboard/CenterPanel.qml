@@ -116,7 +116,11 @@ Item {
 
         InfoRow {
             label: "Запас хода"
-            value: root.fmtValue(CanBackend.rangeKm, 0) + (CanBackend.rangeKm > 0 ? " км" : "")
+            value: CanBackend.rangeKmValid
+                   ? "~" + Math.round(CanBackend.rangeKm) + " км"
+                   : "—"
+            valueColour: CanBackend.rangeKmValid && CanBackend.rangeKm < 50
+                         ? "#FFC64A" : root.valueColor
         }
 
         InfoRow {
