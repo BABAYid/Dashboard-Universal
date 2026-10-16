@@ -36,6 +36,17 @@ Window {
     readonly property bool gasMode: CanBackend.gasMode
     readonly property bool gasSensorValid: CanBackend.gasSensorValid
     readonly property int gasLevelPercent: CanBackend.gasLevelPercent
+
+    // Отладка: пока прошивки блока сбора нет, режим газа приходит только из
+    // демо-режима (там газ включается с 15-й по 45-ю секунду каждой минуты).
+    // Кнопка «Газ» на панели перекрывает то, что приходит по CAN, чтобы
+    // посмотреть, как выглядит приборка на газу. Когда появится кнопка на руле
+    // (или прошивка блока), эти два свойства и саму кнопку надо убрать.
+    property bool gasOverrideActive: false
+    property bool gasOverride: false
+
+    // Что показываем на самом деле: данные CAN, если отладка не вмешалась
+    readonly property bool gasDisplay: gasOverrideActive ? gasOverride : gasMode
     readonly property bool leftTurn: CanBackend.leftTurn
     readonly property bool rightTurn: CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
