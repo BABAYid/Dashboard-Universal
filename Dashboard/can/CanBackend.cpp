@@ -442,9 +442,38 @@ void CanBackend::publishJourney()
     const double avg = m_journeyKmAcc > 0.5 ? m_fuelUsedAcc / m_journeyKmAcc * 100.0 : 0.0;
     set(m_avgConsumption, avg, &CanBackend::avgConsumptionChanged);
 
-    // Запас хода: остаток топлива в литрах делим на средний расход
-    const double litresLeft = m_fuelLevel / 100.0 * m_tankCapacity;
-    set(m_rangeKm, avg > 0.1 ? litresLeft / avg * 100.0 : 0.0, &CanBackend::rangeKmChanged);
+    // --- Средний расход за последние 5 минут: окно 300 сэмплов по 1 секунде.
+    // Сэмпл — мгновенный расход на момент публикации (публикуем раз в секунду).
+    // Ноль означает «стоим» (или данных нет), а не «расход 0 л/100 км», поэтому
+    // в среднее такие сэмплы не идут: если усреднять нули, после пятиминутной
+    // стоянки средний расход падал бы и запас хода скакал вверх — ошибка
+    // в опасную сторону.
+    m_consumptionSamples[m_consumptionIndex] =
+        (m_dataValid && m_fuelRate > 0.0) ? m_fuelRate : 0.0;
+    m_consumptionIndex = (m_consumptionIndex + 1) % kConsumptionWindow;
+    if (m_consumptionCount < kConsumptionWindow)
+        ++m_consumptionCount;
+
+    double sum = 0.0;
+    int samples = 0;
+    for (int i = 0; i < m_consumptionCount; ++i) {
+        if (m_consumptionSamples[i] > 0.0) {
+            sum += m_consumptionSamples[i];
+            ++samples;
+        }
+    }
+    const double avg5 = samples > 0 ? sum / samples : 0.0;
+    set(m_avgConsumption5min, avg5, &CanBackend::avgConsumption5minChanged);
+
+    // --- Запас хода: остаток в литрах делим на средний расход (л/100 км).
+    // Если средний расход меньше 0,1 л/100 км, машина стоит: считать нечего,
+    // поэтому оставляем последнее достоверное значение — цифра не мигает
+    // и не показывает фантастические километры.
+    if (avg5 >= 0.1) {
+        const double litresLeft = m_fuelLevel / 100.0 * m_tankCapacity;
+        set(m_rangeKm, litresLeft / avg5 * 100.0, &CanBackend::rangeKmChanged);
+        set(m_rangeKmValid, true, &CanBackend::rangeKmValidChanged);
+    }
 }
 
 void CanBackend::resetJourney()
@@ -477,6 +506,18 @@ void CanBackend::setOdometer(double km)
         return;
 
     set(m_odometer, km, &CanBackend::odometerChanged);
+    saveDistance();
+}
+
+// Объём бака — пользовательская настройка (вводится в настройках панели).
+// Проверяем диапазон и сохраняем сразу: от объёма зависит и остаток в литрах,
+// и запас хода, поэтому после перезапуска значение должно остаться прежним.
+void CanBackend::setTankCapacity(double litres)
+{
+    if (!std::isfinite(litres) || litres < 1.0 || litres > 500.0)
+        return;
+
+    set(m_tankCapacity, litres, &CanBackend::tankCapacityChanged);
     saveDistance();
 }
 
