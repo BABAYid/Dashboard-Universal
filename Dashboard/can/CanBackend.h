@@ -172,11 +172,22 @@ public:
     double journeyKm() const { return m_journeyKm; }
     double fuelUsed() const { return m_fuelUsed; }
     double avgConsumption() const { return m_avgConsumption; }
-    double avgSpeed() const { return m_avgSpeed; }
+
+    // Средний расход за последние 5 минут (скользящее окно 300 сэмплов по 1 с).
+    // Именно от него считается запас хода: «как я еду сейчас» важнее, чем
+    // «как я ехал всю поездку».
+    double avgConsumption5min() const { return m_avgConsumption5min; }
+
+    // Запас хода в километрах и признак, что он достоверен. Пока валидного
+    // расхода не было, запас не показывается (в QML это «—»), и предупреждение
+    // о низком запасе не загорается: ноль здесь значит «неизвестно».
     double rangeKm() const { return m_rangeKm; }
+    bool rangeKmValid() const { return m_rangeKmValid; }
+
+    double avgSpeed() const { return m_avgSpeed; }
     int journeySeconds() const { return m_journeySeconds; }
     double tankCapacity() const { return m_tankCapacity; }
-    void setTankCapacity(double litres) { m_tankCapacity = litres; }
+    void setTankCapacity(double litres);
 
     bool deviceAlive() const { return m_deviceAlive; }
     QString deviceFirmware() const { return m_deviceFirmware; }
