@@ -1,4 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQuick 2.15
+import Dashboard
 
 // ============================================================================
 //  Центральная зона между приборами (492 x 404).
@@ -202,6 +204,10 @@ Item {
             model: root.modeCount
 
             Rectangle {
+                // index объявляем явно: иначе qmllint ругается на неявный
+                // доступ, а Repeater подставляет это свойство сам
+                required property int index
+
                 width: 10
                 height: 10
                 radius: 5

@@ -1,7 +1,9 @@
+pragma ComponentBehavior: Bound
 import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
 import "."
+import Dashboard
 
 // ============================================================================
 //  Приборная панель. Геометрия снята с макета дизайнера "Group 57.png"
@@ -182,16 +184,16 @@ Window {
             x: 560; y: 149
             width: 800; height: 5
             fillMode: Image.Stretch
-            opacity: navigationMode ? 0.0 : 1.0
-            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+            opacity: root.navigationMode ? 0.0 : 1.0
+            Behavior on opacity { NumberAnimation { duration: root.navigationAnimDuration } }
         }
         Image {
             source: "images/line_down.png"
             x: 560; y: 558
             width: 800; height: 5
             fillMode: Image.Stretch
-            opacity: navigationMode ? 0.0 : 1.0
-            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+            opacity: root.navigationMode ? 0.0 : 1.0
+            Behavior on opacity { NumberAnimation { duration: root.navigationAnimDuration } }
         }
 
         // ========== КАРТА: на весь экран, как в Audi ==========
@@ -200,13 +202,13 @@ Window {
         MapWebView {
             id: navMap
             anchors.fill: parent
-            opacity: navigationMode ? 1.0 : 0.0
-            visible: navigationMode || opacity > 0
-            active: navigationMode
+            opacity: root.navigationMode ? 1.0 : 0.0
+            visible: root.navigationMode || opacity > 0
+            active: root.navigationMode
             z: -10
 
             Behavior on opacity {
-                NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad }
+                NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad }
             }
         }
 
@@ -215,7 +217,7 @@ Window {
         Rectangle {
             anchors.fill: parent
             z: -5
-            opacity: navigationMode ? 1.0 : 0.0
+            opacity: root.navigationMode ? 1.0 : 0.0
             visible: opacity > 0
             gradient: Gradient {
                 GradientStop { position: 0.00; color: "#E6000000" }
@@ -225,7 +227,7 @@ Window {
                 GradientStop { position: 0.76; color: "#B3000000" }
                 GradientStop { position: 1.00; color: "#E6000000" }
             }
-            Behavior on opacity { NumberAnimation { duration: navigationAnimDuration } }
+            Behavior on opacity { NumberAnimation { duration: root.navigationAnimDuration } }
         }
 
         // Здесь была скруглённая подложка под часами и наружной температурой
@@ -236,16 +238,16 @@ Window {
         // ========== КОНТЕЙНЕР СПИДОМЕТРА ==========
         Item {
             id: speedoContainer
-            x: navigationMode ? (navMargin - navInset) : dialLeftX
-            y: navigationMode ? (parent.height - dialSize * navScale - navMargin - navInset) : dialY
-            width: dialSize
-            height: dialSize
-            scale: navigationMode ? navScale : 1.0
+            x: root.navigationMode ? (root.navMargin - root.navInset) : root.dialLeftX
+            y: root.navigationMode ? (parent.height - root.dialSize * root.navScale - root.navMargin - root.navInset) : root.dialY
+            width: root.dialSize
+            height: root.dialSize
+            scale: root.navigationMode ? root.navScale : 1.0
             z: 1
 
-            Behavior on x { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            Behavior on y { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on x { NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on y { NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on scale { NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad } }
 
             // Непрозрачная подложка под прибором. Нужна в обоих режимах:
             // циферблаты полупрозрачные (альфа 255 только в центре, на радиусе
@@ -279,16 +281,16 @@ Window {
         // ========== КОНТЕЙНЕР ТАХОМЕТРА ==========
         Item {
             id: tachoContainer
-            x: navigationMode ? (parent.width - navMargin - dialSize * navScale - navInset) : dialRightX
-            y: navigationMode ? (parent.height - dialSize * navScale - navMargin - navInset) : dialY
-            width: dialSize
-            height: dialSize
-            scale: navigationMode ? navScale : 1.0
+            x: root.navigationMode ? (parent.width - root.navMargin - root.dialSize * root.navScale - root.navInset) : root.dialRightX
+            y: root.navigationMode ? (parent.height - root.dialSize * root.navScale - root.navMargin - root.navInset) : root.dialY
+            width: root.dialSize
+            height: root.dialSize
+            scale: root.navigationMode ? root.navScale : 1.0
             z: 1
 
-            Behavior on x { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            Behavior on y { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
-            Behavior on scale { NumberAnimation { duration: navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on x { NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on y { NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad } }
+            Behavior on scale { NumberAnimation { duration: root.navigationAnimDuration; easing.type: Easing.InOutQuad } }
 
             // Непрозрачная подложка под прибором (см. спидометр)
             Rectangle {
@@ -533,15 +535,15 @@ Window {
             gasOn: root.gasDisplay
             highBurn: root.rpmShown > 5000
             rpm: root.rpmShown
-            visible: !navigationMode && root.funEnabled && (gasOn || highBurn)
+            visible: !root.navigationMode && root.funEnabled && (gasOn || highBurn)
             z: 2
         }
 
         Button {
             text: "Навигация"
             x: 730; y: 658
-            visible: !navigationMode
-            onClicked: navigationMode = true
+            visible: !root.navigationMode
+            onClicked: root.navigationMode = true
             z: 2
         }
 
@@ -550,7 +552,7 @@ Window {
         Button {
             text: "Настройки"
             x: 860; y: 658
-            visible: !navigationMode
+            visible: !root.navigationMode
             onClicked: calibration.open()
             z: 2
         }
@@ -562,7 +564,7 @@ Window {
         Button {
             id: gasDebugButton
             x: 990; y: 658
-            visible: !navigationMode
+            visible: !root.navigationMode
             z: 2
             text: root.gasDisplay ? "Газ: вкл" : "Газ: выкл"
             onClicked: {
@@ -592,7 +594,7 @@ Window {
         Button {
             id: fullThrottleButton
             x: 1110; y: 658
-            visible: !navigationMode
+            visible: !root.navigationMode
             z: 2
             text: "Газ в пол"
             onClicked: root.debugFullThrottle = !root.debugFullThrottle
@@ -618,7 +620,7 @@ Window {
             radius: 30; color: "#CC0000"
             x: parent.width - width - 20
             y: 20
-            visible: navigationMode
+            visible: root.navigationMode
             z: 200
 
             Text {
@@ -630,7 +632,7 @@ Window {
             }
             MouseArea {
                 anchors.fill: parent
-                onClicked: navigationMode = false
+                onClicked: root.navigationMode = false
             }
         }
 

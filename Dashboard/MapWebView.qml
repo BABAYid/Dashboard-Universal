@@ -1,5 +1,7 @@
+pragma ComponentBehavior: Bound
 import QtQuick 2.15
 import QtWebView 6.0
+import Dashboard
 
 Item {
     id: root

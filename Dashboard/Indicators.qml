@@ -1,4 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQuick 2.15
+import Dashboard
 
 Item {
     id: root
