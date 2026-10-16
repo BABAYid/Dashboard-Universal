@@ -237,8 +237,9 @@ int main(int argc, char *argv[])
     check(!can.gasSensorValid(), "неисправный датчик отмечен");
     check(can.gasLevelPercent() == 0, "при неисправном датчике остаток не показывается");
 
-    can.feedFrame(0x500, frame({0x00, 0x09, 0x2E}));   // обратно на бензин
+    can.feedFrame(0x500, frame({0x02, 0x09, 0x2E}));   // бензин, датчик исправен
     check(!can.gasMode(), "переключение обратно на бензин");
+    check(can.gasSensorValid(), "датчик исправен и на бензине");
     check(can.gasLevelPercent() == 47, "остаток газа читается и на бензине");
 
     const int gasFramesBefore = can.framesReceived();
