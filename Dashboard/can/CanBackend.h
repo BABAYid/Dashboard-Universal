@@ -112,6 +112,10 @@ public:
     Q_INVOKABLE void resetTripA();
     Q_INVOKABLE void resetTripB();
 
+    // Задать пробег вручную: показываем владельцу ввести показание старой
+    // приборки при замене панели. Значение сразу пишется в QSettings.
+    Q_INVOKABLE void setOdometer(double km);
+
     // Подать кадр напрямую (минуя шину): используется тестами разбора протокола
     // и позволяет проигрывать записанный трафик без железа.
     Q_INVOKABLE void feedFrame(int id, const QByteArray &data);

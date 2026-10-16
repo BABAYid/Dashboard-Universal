@@ -425,6 +425,19 @@ void CanBackend::resetTripB()
     saveDistance();
 }
 
+// Ручная установка пробега. Нужна при замене приборки: у машины уже есть
+// накатанные километры, и владелец вводит показание старой панели.
+// Проверяем значение на конечность и неотрицательность, чтобы опечатка
+// в окне настроек не обнулила одометр; сохраняем сразу, не дожидаясь таймера.
+void CanBackend::setOdometer(double km)
+{
+    if (!std::isfinite(km) || km < 0.0)
+        return;
+
+    set(m_odometer, km, &CanBackend::odometerChanged);
+    saveDistance();
+}
+
 // Подача кадра напрямую: используется тестами разбора протокола
 void CanBackend::feedFrame(int id, const QByteArray &data)
 {
