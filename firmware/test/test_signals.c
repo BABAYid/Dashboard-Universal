@@ -130,7 +130,7 @@ int main(void)
         if (list[i].flags & SIG_FLAG_GROUND_SWITCHED) ++ground_switched;
     }
     printf("\n  назначено сигналов: %d из %u\n", assigned, (unsigned)count);
-    printf("  проводов «на массу» (нужна переделка канала): %d\n", ground_switched);
+    printf("  проводов «на массу» (нужна подтяжка 4.7 кОм на +12 В): %d\n", ground_switched);
     if (assigned == 0)
         printf("  таблица ещё не заполнена — блок отправит нули и заглушки\n");
 
