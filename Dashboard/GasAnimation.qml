@@ -14,7 +14,13 @@ import QtQuick 2.15
 //  поэтому удаляется или отключается одной строкой в Main.qml.
 //
 //  Видимостью управляет Main.qml: gasOn — едем на газу, highBurn — обороты
-//  выше 5000. В навигации весь блок скрыт: там в этом углу кнопка закрытия.
+//  выше 5000 (тогда монетки сменяются топкой). В навигации весь блок скрыт:
+//  там в этом углу кнопка закрытия.
+//
+//  Координаты сцен вынесены в свойства корня: так вложенные анимации монеток
+//  и пачек не обращаются к id соседних элементов через области видимости
+//  (qmllint на такое ругается «unqualified access»), а всё читается как
+//  арифметика от размеров блока.
 // ============================================================================
 Item {
     id: fun
@@ -26,6 +32,15 @@ Item {
     // Чем выше обороты, тем быстрее сыплются монетки (но в разумных пределах)
     readonly property int coinDuration: Math.max(240, 1000 - Math.round(rpm / 8))
 
+    // Раскладка сцен: кошелёк — в правом нижнем углу блока, топка там же,
+    // кочегар — слева от топки.
+    readonly property real walletX: width - 96
+    readonly property real walletY: height - 62
+    readonly property real stokerX: width - 152
+    readonly property real stokerY: height - 84
+    readonly property real furnaceX: width - 92
+    readonly property real furnaceY: height - 96
+
     visible: gasOn || highBurn
 
     // ==================== МОНЕТКИ В КОШЕЛЁК ====================
@@ -36,8 +51,8 @@ Item {
         // Кошелёк: тёмная кожа с откинутой крышкой
         Rectangle {
             id: walletBody
-            x: parent.width - 96
-            y: parent.height - 62
+            x: fun.walletX
+            y: fun.walletY
             width: 88
             height: 54
             radius: 10
@@ -81,8 +96,7 @@ Item {
                 border.color: "#B8860B"
                 border.width: 2
 
-                // Разложены по ширине кошелька, чтобы не падали в одну точку
-                x: walletBody.x + 10 + index * 16
+                x: fun.walletX + 10 + index * 16
                 y: -20
 
                 SequentialAnimation {
@@ -93,7 +107,7 @@ Item {
                         target: coin
                         property: "y"
                         from: -20
-                        to: walletBody.y + 18
+                        to: fun.walletY + 18
                         duration: fun.coinDuration
                         easing.type: Easing.InQuad
                     }
@@ -119,8 +133,8 @@ Item {
         // Топка
         Item {
             id: furnace
-            x: parent.width - 92
-            y: parent.height - 96
+            x: fun.furnaceX
+            y: fun.furnaceY
             width: 84
             height: 96
 
@@ -172,8 +186,8 @@ Item {
         // Кочегар: силуэт, который замахивается и бросает пачку
         Item {
             id: stoker
-            x: parent.width - 152
-            y: parent.height - 84
+            x: fun.stokerX
+            y: fun.stokerY
             width: 40
             height: 84
 
@@ -201,7 +215,7 @@ Item {
             Rectangle { x: 11; y: 56; width: 8; height: 26; radius: 3; color: "#C8C8C8" }
             Rectangle { x: 23; y: 56; width: 8; height: 26; radius: 3; color: "#C8C8C8" }
 
-            // Рука с лопатой/пачкой: машет — значит, бросает
+            // Рука: машет — значит, бросает
             Rectangle {
                 id: arm
                 x: 20
@@ -245,8 +259,8 @@ Item {
                     opacity: 0.7
                 }
 
-                x: stoker.x + 30
-                y: stoker.y + 16
+                x: fun.stokerX + 30
+                y: fun.stokerY + 16
                 opacity: 0
 
                 SequentialAnimation {
@@ -257,16 +271,16 @@ Item {
                     NumberAnimation {
                         target: note
                         property: "x"
-                        from: stoker.x + 30
-                        to: furnace.x + 24
+                        from: fun.stokerX + 30
+                        to: fun.furnaceX + 24
                         duration: 520
                         easing.type: Easing.InOutQuad
                     }
                     NumberAnimation {
                         target: note
                         property: "y"
-                        from: stoker.y + 16
-                        to: furnace.y + 58
+                        from: fun.stokerY + 16
+                        to: fun.furnaceY + 58
                         duration: 520
                         easing.type: Easing.InQuad
                     }
