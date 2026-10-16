@@ -105,6 +105,7 @@ Item {
         appSettings.savedRpmFactor = rpmFactor
         appSettings.savedFuelFactor = fuelFactor
         appSettings.savedTempFactor = tempFactor
+        appSettings.savedFunEnabled = funEnabled
 
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
 
@@ -123,6 +124,7 @@ Item {
         rpmFactor = appSettings.savedRpmFactor
         fuelFactor = appSettings.savedFuelFactor
         tempFactor = appSettings.savedTempFactor
+        funEnabled = appSettings.savedFunEnabled
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
         updateInputs()
         visible = false
