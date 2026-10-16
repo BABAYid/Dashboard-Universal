@@ -442,14 +442,23 @@ void CanBackend::publishJourney()
     const double avg = m_journeyKmAcc > 0.5 ? m_fuelUsedAcc / m_journeyKmAcc * 100.0 : 0.0;
     set(m_avgConsumption, avg, &CanBackend::avgConsumptionChanged);
 
-    // --- Средний расход за последние 5 минут: окно 300 сэмплов по 1 секунде.
-    // Сэмпл — мгновенный расход на момент публикации (публикуем раз в секунду).
-    // Ноль означает «стоим» (или данных нет), а не «расход 0 л/100 км», поэтому
-    // в среднее такие сэмплы не идут: если усреднять нули, после пятиминутной
-    // стоянки средний расход падал бы и запас хода скакал вверх — ошибка
-    // в опасную сторону.
-    m_consumptionSamples[m_consumptionIndex] =
-        (m_dataValid && m_fuelRate > 0.0) ? m_fuelRate : 0.0;
+    // Окно среднего расхода за 5 минут и запас хода от него. Приходят нули,
+    // когда данных нет (стоим или шина молчит) — в среднее они не идут.
+    updateConsumptionWindow(m_dataValid ? m_fuelRate : 0.0);
+}
+
+// Один шаг окна среднего расхода за последние 5 минут (300 сэмплов по 1 секунде)
+// и пересчёт запаса хода. Вынесено отдельно от publishJourney(), чтобы это
+// можно было проверить тестом через feedConsumptionSample(), не ожидая
+// реальных секунд.
+//
+// Почему нули не идут в среднее: мгновенный расход равен нулю, когда машина
+// стоит (или данных нет), а это не «расход 0 л/100 км», а «нет данных».
+// Если усреднять нули, то после пятиминутной стоянки средний расход падал бы
+// и запас хода скакал вверх — ошибка в опасную сторону.
+void CanBackend::updateConsumptionWindow(double ratePer100km)
+{
+    m_consumptionSamples[m_consumptionIndex] = ratePer100km > 0.0 ? ratePer100km : 0.0;
     m_consumptionIndex = (m_consumptionIndex + 1) % kConsumptionWindow;
     if (m_consumptionCount < kConsumptionWindow)
         ++m_consumptionCount;
@@ -465,15 +474,21 @@ void CanBackend::publishJourney()
     const double avg5 = samples > 0 ? sum / samples : 0.0;
     set(m_avgConsumption5min, avg5, &CanBackend::avgConsumption5minChanged);
 
-    // --- Запас хода: остаток в литрах делим на средний расход (л/100 км).
-    // Если средний расход меньше 0,1 л/100 км, машина стоит: считать нечего,
-    // поэтому оставляем последнее достоверное значение — цифра не мигает
-    // и не показывает фантастические километры.
+    // Запас хода: остаток в литрах делим на средний расход (л/100 км) и
+    // умножаем на 100. Если средний расход меньше 0,1 л/100 км, машина стоит:
+    // считать нечего, поэтому оставляем последнее достоверное значение —
+    // цифра не мигает и не показывает фантастические километры.
     if (avg5 >= 0.1) {
         const double litresLeft = m_fuelLevel / 100.0 * m_tankCapacity;
         set(m_rangeKm, litresLeft / avg5 * 100.0, &CanBackend::rangeKmChanged);
         set(m_rangeKmValid, true, &CanBackend::rangeKmValidChanged);
     }
+}
+
+// Только для тестов: подать сэмпл расхода в окно вручную
+void CanBackend::feedConsumptionSample(double rate)
+{
+    updateConsumptionWindow(rate);
 }
 
 void CanBackend::resetJourney()
