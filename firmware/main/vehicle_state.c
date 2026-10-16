@@ -108,13 +108,13 @@ static int8_t read_outside_temp(void)
 
     const uint8_t channel = vehicle_signal(SIG_OUTSIDE_TEMP)->channel;
     const int32_t mv = analog_mv(channel);
-    float temp = map_two_points(mv, OUTSIDE_TEMP_COLD_MV, OUTSIDE_TEMP_COLD_C,
-                                OUTSIDE_TEMP_HOT_MV, OUTSIDE_TEMP_HOT_C);
-    const int32_t clamped = proto_clamp_u8((int32_t)lroundf(temp) + 128,
-                                           0, 255) - 128;
-    if (clamped < OUTSIDE_TEMP_MIN_C) return (int8_t)OUTSIDE_TEMP_MIN_C;
-    if (clamped > OUTSIDE_TEMP_MAX_C) return (int8_t)OUTSIDE_TEMP_MAX_C;
-    return (int8_t)clamped;
+    const float temp = map_two_points(mv, OUTSIDE_TEMP_COLD_MV, OUTSIDE_TEMP_COLD_C,
+                                      OUTSIDE_TEMP_HOT_MV, OUTSIDE_TEMP_HOT_C);
+
+    int32_t value = (int32_t)lroundf(temp);
+    if (value < OUTSIDE_TEMP_MIN_C) value = OUTSIDE_TEMP_MIN_C;
+    if (value > OUTSIDE_TEMP_MAX_C) value = OUTSIDE_TEMP_MAX_C;
+    return (int8_t)value;
 }
 
 // ---------------------------------------------------------------------------
