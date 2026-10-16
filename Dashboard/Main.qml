@@ -47,6 +47,13 @@ Window {
 
     // Что показываем на самом деле: данные CAN, если отладка не вмешалась
     readonly property bool gasDisplay: gasOverrideActive ? gasOverride : gasMode
+
+    // Отладка «Газ в пол»: принудительно показать 5400 об/мин, чтобы увидеть
+    // анимацию «деньги в топку» не дожидаясь всплеска в демо-сценарии.
+    // Перекрываем именно обороты, которые видит приборка: стрелка, цифры и
+    // анимация идут вместе, а не вразнобой.
+    property bool debugFullThrottle: false
+    readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
     readonly property bool leftTurn: CanBackend.leftTurn
     readonly property bool rightTurn: CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
@@ -239,7 +246,7 @@ Window {
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
                 handBrakeWarning: root.lampSelfTest || root.handBrake
                 fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
-                batteryWarning: root.lampSelfTest || (root.rpm > 400 && root.voltage < 12.8)
+                batteryWarning: root.lampSelfTest || (root.rpmShown > 400 && root.voltage < 12.8)
                 gasMode: root.gasDisplay
                 z: 1
             }
@@ -271,7 +278,7 @@ Window {
             Tachometer {
                 id: tacho
                 anchors.fill: parent
-                rpm: root.rpm * root.rpmFactor
+                rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
                 startup: root.startup
                 nightMode: root.nightMode
@@ -485,8 +492,8 @@ Window {
             width: 190
             height: 150
             gasOn: root.gasDisplay
-            highBurn: root.rpm > 5000
-            rpm: root.rpm
+            highBurn: root.rpmShown > 5000
+            rpm: root.rpmShown
             visible: !navigationMode && (gasOn || highBurn)
             z: 2
         }
