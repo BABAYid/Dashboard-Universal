@@ -29,6 +29,7 @@ qt_add_qml_module(appDashboard
         Main.qml
         CenterPanel.qml
         Gauge.qml
+        GasAnimation.qml
         Speedometer.qml
         Tachometer.qml
         Settings.qml
