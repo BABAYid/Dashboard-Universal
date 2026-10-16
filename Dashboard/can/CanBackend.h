@@ -245,6 +245,7 @@ private:
     void handleSensorFrame(const quint8 *d);
     void handleGearboxFrame(const quint8 *d);
     void handleDeviceStatusFrame(const quint8 *d);
+    void handleGasFrame(const quint8 *d);
     void updateDataValidity();
     void publishJourney();
     void accountDistance();
@@ -334,4 +335,13 @@ private:
     QElapsedTimer m_sinceDeviceStatus;
     int m_mockLastStatusSecond = -1;   // для отправки 0x7F0 раз в секунду в демо-режиме
     int m_mockStatusCounter = 0;
+
+    // Газовое оборудование (кадр 0x500, протокол 1.2).
+    // m_sinceGasFrame нужен для правила свежести: если кадров газа нет дольше
+    // 1500 мс, приборка считает, что данных о газе нет, и показывает бензин.
+    bool m_gasMode = false;
+    bool m_gasSensorValid = false;
+    int m_gasSensorMv = 0;             // сырое напряжение датчика, мВ
+    int m_gasLevelPercent = 0;         // 0 В — пусто, 5 В — полный
+    QElapsedTimer m_sinceGasFrame;
 };

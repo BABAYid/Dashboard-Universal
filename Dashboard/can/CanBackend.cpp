@@ -20,17 +20,21 @@
 #endif
 
 namespace {
-// ID сообщений (can_protocol_v1.1.txt)
+// ID сообщений (can_protocol_v1.2.txt)
 constexpr quint32 kIdMotion  = 0x100;   // скорость и обороты
 constexpr quint32 kIdStatus  = 0x200;   // лампы и индикаторы
 constexpr quint32 kIdSensors = 0x300;   // датчики
 constexpr quint32 kIdGearbox = 0x400;   // АКПП
+constexpr quint32 kIdGas     = 0x500;   // газовое оборудование (протокол 1.2)
 constexpr quint32 kIdDevice  = 0x7F0;   // статус блока сбора (протокол 1.1)
 
 // Данные считаются устаревшими, если кадров нет дольше этого времени
 constexpr int kDataTimeoutMs = 1500;
 // Статус блока сбора приходит раз в секунду, поэтому таймаут больше
 constexpr int kDeviceTimeoutMs = 3000;
+// Датчик уровня газа: 0 В — пустой баллон, 5 В — полный (протокол 1.2)
+constexpr int kGasSensorMaxMv = 5000;
+constexpr int kGasTimeoutMs = 1500;
 // Период проверки связи
 constexpr int kWatchdogMs = 250;
 // Как часто пытаться открыть CAN-интерфейс заново
@@ -212,6 +216,7 @@ void CanBackend::handleFrame(quint32 id, const quint8 *d, int len)
     case kIdStatus:  handleStatusFrame(d);  break;
     case kIdSensors: handleSensorFrame(d);  break;
     case kIdGearbox: handleGearboxFrame(d); break;
+    case kIdGas:     handleGasFrame(d);     break;
     case kIdDevice:  handleDeviceStatusFrame(d); break;
     default: break;   // неизвестные ID игнорируем
     }
