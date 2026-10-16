@@ -546,6 +546,33 @@ Window {
             }
         }
 
+        // ========== ОТЛАДКА: «газ в пол» ==========
+        // Принудительно 5400 об/мин: стрелка и цифры тахометра уходят вверх,
+        // и в углу появляется кочегар с деньгами — не дожидаясь всплеска
+        // в демо-сценарии. Красная, когда «педаль в пол».
+        Button {
+            id: fullThrottleButton
+            x: 1110; y: 658
+            visible: !navigationMode
+            z: 2
+            text: "Газ в пол"
+            onClicked: root.debugFullThrottle = !root.debugFullThrottle
+
+            background: Rectangle {
+                color: root.debugFullThrottle ? "#F07A16" : "#3A3A3A"
+                radius: 6
+                border.color: root.debugFullThrottle ? "#A82A06" : "#5A5A5A"
+            }
+            contentItem: Text {
+                text: fullThrottleButton.text
+                color: root.debugFullThrottle ? "#2A0E02" : "white"
+                font.pixelSize: 18
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
         Rectangle {
             id: closeNavButton
             width: 60; height: 60
