@@ -638,12 +638,29 @@ void CanBackend::generateMockFrames()
         handleFrame(kIdGearbox, d, 8);
     }
 
+    // --- кадр 0x500: газовое оборудование (раз в 200 мс, протокол 1.2) ---
+    // В демо газ включается на полминуты из каждой минуты, а датчик уровня
+    // медленно убывает: так на приборке видно и зелёный значок бензоколонки,
+    // и саму надпись с процентами, и возврат к бензину.
+    static int gasDivider = 0;
+    if (++gasDivider >= 4) {                       // 4 * 50 мс = 200 мс
+        gasDivider = 0;
+        const bool onGas = cycle >= 15.0 && cycle < 45.0;
+        const double gasMv = 4200.0 - std::fmod(t, 300.0) / 300.0 * 2600.0;
+        quint8 d[8] = {};
+        d[0] = 0x02 | (onGas ? 0x01 : 0x00);       // датчик исправен + режим газа
+        const int mv = qBound(0, static_cast<int>(gasMv), kGasSensorMaxMv);
+        d[1] = static_cast<quint8>((mv >> 8) & 0xFF);
+        d[2] = static_cast<quint8>(mv & 0xFF);
+        handleFrame(kIdGas, d, 8);
+    }
+
     // --- кадр 0x7F0: статус блока сбора (раз в секунду) ---
     if (static_cast<int>(t) != m_mockLastStatusSecond) {
         m_mockLastStatusSecond = static_cast<int>(t);
         quint8 d[8] = {};
         d[0] = static_cast<quint8>(m_mockStatusCounter++);
-        d[1] = 0x11;                                             // версия прошивки 1.1
+        d[1] = 0x12;                                             // версия прошивки 1.2
         const quint32 uptime = static_cast<quint32>(t);
         d[2] = static_cast<quint8>((uptime >> 24) & 0xFF);
         d[3] = static_cast<quint8>((uptime >> 16) & 0xFF);
