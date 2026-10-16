@@ -35,11 +35,15 @@ Gauge {
     secondaryStartAngle: -75
     secondaryEndAngle: -130
 
-    // Картинки: у спидометра свои, центральный круг чуть меньше, чем у тахометра
+    // Картинки: у спидометра свои. Центральный круг — тот же, что у тахометра:
+    // в исходниках дизайнера это один и тот же файл 445x445 при циферблате 714,
+    // то есть 445/714 = 0.623 (подробный комментарий — в Tachometer.qml).
+    // Было 0.622 — на пиксель меньше натурального, разницы не видно, но пусть
+    // у обоих приборов значение будет одно.
     dialSource: "images/Speedometr.png"
     needleSource: "images/needls_spd.svg"
     secondaryNeedleSource: "images/needls_fuel.svg"
-    centerCircleRatio: 0.622
+    centerCircleRatio: 0.623
 
     property string gearMode: "P"
 
