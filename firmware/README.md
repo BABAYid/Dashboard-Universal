@@ -69,6 +69,10 @@
 
 ## Сборка и прошивка
 
+Тулчейн ESP-IDF 5.5.6 стоит рядом с проектом — в папке `.dsh-idf/` (она
+в `.gitignore`, в репозиторий не попадает). Если работаете не из песочницы
+DeepSeek Harness, домашний каталог доступен и настройки путей не нужны:
+
 ```bash
 # один раз: ESP-IDF 5.5
 #   https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32/get-started/
@@ -80,13 +84,30 @@ idf.py build
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
-Проверка без железа и без ESP-IDF — кодировщик кадров собирается обычным gcc
-и сверяется с примерами из протокола:
+В песочнице (запись в домашний каталог запрещена) нужно указать пути иначе —
+кэш менеджера компонентов тоже переносится в проект:
+
+```bash
+export IDF_PATH="$PWD/.dsh-idf/esp-idf-v5.5.6"
+export IDF_TOOLS_PATH="$PWD/.dsh-idf/tools"
+export IDF_COMPONENT_CACHE_PATH="$PWD/.dsh-idf/component-cache"
+. "$IDF_PATH/export.sh"
+cd firmware && idf.py build
+```
+
+**Проверено 16.10.2026:** прошивка собирается под esp32, предупреждений
+компилятора нет (`-Wall -Wextra` включены для компонента `main`),
+`dashboard_collector.bin` — 190 КБ, свободно 82 % раздела приложения.
+На живой плате не запускалась: плата ещё не пришла.
+
+Проверка без железа и без ESP-IDF — кодировщик кадров и таблица проводов
+собираются обычным gcc и сверяются с документацией:
 
 ```bash
 cmake -S firmware/test -B firmware-build
 cmake --build firmware-build
-./firmware-build/test_frames
+./firmware-build/test_frames     # байты кадров против примеров из протокола
+./firmware-build/test_signals    # таблица проводов: диапазоны и коллизии
 ```
 
 Тест приборки (разбор тех же кадров) — `Dashboard/tests/test_canprotocol.cpp`,
