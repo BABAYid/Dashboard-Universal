@@ -138,31 +138,10 @@ Item {
         font.family: "Kdam Thmor Pro"
     }
 
-    // Наружная температура — справа от ламп, снежинка рядом с числом
-    Row {
-        x: 1080
-        y: 30
-        spacing: 6
-
-        Text {
-            id: outsideTempText
-            text: root.outsideTemp.toFixed(1) + "°C"
-            color: "white"
-            font.pixelSize: 22
-            font.bold: true
-            font.family: "Kdam Thmor Pro"
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        Image {
-            source: "images/snow.png"
-            width: 26
-            height: 26
-            visible: root.outsideTemp <= 0
-            fillMode: Image.PreserveAspectFit
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }
+    // Наружная температура здесь больше не показывается (убрана 16.10.2026):
+    // дублировала температуру в нижней строке показаний. Само значение
+    // (CanBackend.outsideTemp) осталось и работает — от него загорается
+    // предупреждение «ГОЛОЛЁД» в Main.qml.
 
 
     // === ОДОМЕТР/TRIP ===
