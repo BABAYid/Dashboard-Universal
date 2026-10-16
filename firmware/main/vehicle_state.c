@@ -337,9 +337,14 @@ vehicle_state_t vehicle_state_get(void)
 
 bool vehicle_state_ignition_on(void)
 {
-    vehicle_state_t copy = vehicle_state_get();
+#if IGNITION_OFF_TO_SLEEP_S <= 0
+    // Сон по зажиганию пока не используется: провода ACC в списке нет,
+    // поэтому блок работает всегда (см. config.h и firmware/README.md).
+    return true;
+#else
+    const vehicle_state_t copy = vehicle_state_get();
 
-    if (IGNITION_OFF_TO_SLEEP_S <= 0 || !sig_assigned(SIG_IGNITION))
+    if (!sig_assigned(SIG_IGNITION))
         return true;
 
     const uint32_t now = (uint32_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
@@ -353,4 +358,5 @@ bool vehicle_state_ignition_on(void)
     }
     return (uint32_t)(now - s_ignition_off_since_ms) <
            (uint32_t)(IGNITION_OFF_TO_SLEEP_S * 1000u);
+#endif
 }

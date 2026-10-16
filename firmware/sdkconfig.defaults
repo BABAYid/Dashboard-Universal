@@ -31,9 +31,13 @@ CONFIG_ESP_TASK_WDT_EN=y
 CONFIG_ESP_TASK_WDT_INIT=y
 CONFIG_ESP_TASK_WDT_TIMEOUT_S=5
 
-# --- Размер прошивки: без Wi-Fi и Bluetooth ---
+# --- Ни Wi-Fi, ни Bluetooth в блоке сбора не используются ---
 CONFIG_BT_ENABLED=n
-CONFIG_ESP_WIFI_ENABLED=n
+# Wi-Fi отключить не удаётся: сборка ESP-IDF возвращает опцию в «включено»
+# (её выбирает один из системных компонентов). Код Wi-Fi в прошивку попадает,
+# но не запускается — на работу и на точность АЦП не влияет, потому что
+# аналоговые входы читаются внешним ADS1115, а не встроенным АЦП (ADC2 у ESP32
+# конфликтует с Wi-Fi).
 
 # --- Оптимизация по размеру: экономит место, скорость нам не критична ---
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
