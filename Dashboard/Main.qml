@@ -30,6 +30,12 @@ Window {
     readonly property real voltage: CanBackend.voltage
     readonly property real outsideTemp: CanBackend.outsideTemp
     readonly property real fuelRate: CanBackend.fuelRate     // л/100 км (0x300 байт 5)
+
+    // Газовое оборудование (0x500): признак «едем на газе», исправность датчика
+    // уровня газа и остаток газа в процентах (0 В — пусто, 5 В — полный)
+    readonly property bool gasMode: CanBackend.gasMode
+    readonly property bool gasSensorValid: CanBackend.gasSensorValid
+    readonly property int gasLevelPercent: CanBackend.gasLevelPercent
     readonly property bool leftTurn: CanBackend.leftTurn
     readonly property bool rightTurn: CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
@@ -223,6 +229,7 @@ Window {
                 handBrakeWarning: root.lampSelfTest || root.handBrake
                 fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
                 batteryWarning: root.lampSelfTest || (root.rpm > 400 && root.voltage < 12.8)
+                gasMode: root.gasMode
                 z: 1
             }
         }

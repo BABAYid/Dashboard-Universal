@@ -42,6 +42,7 @@ qt_add_qml_module(appDashboard
         images/belt.png
         images/check.png
         images/fuel_tank.png
+        images/fuel_tank_gas.png
         images/gabarit.png
         images/gear_D1.png
         images/gear_D2.png

@@ -89,6 +89,11 @@ Gauge {
     // Мигает только при низком уровне топлива.
     property bool fuelWarnBlink: false
 
+    // Машина двухтопливная: на газу тот же значок бензоколонки показывается
+    // зелёным. Картинка fuel_tank_gas.png — та же иконка, перекрашенная в
+    // зелёный (альфа исходника сохранена), поэтому геометрия не меняется.
+    property bool gasMode: false
+
     Timer {
         interval: 500
         repeat: true
@@ -98,7 +103,7 @@ Gauge {
     }
 
     Image {
-        source: "images/fuel_tank.png"
+        source: root.gasMode ? "images/fuel_tank_gas.png" : "images/fuel_tank.png"
         width: parent.width * 0.07
         height: parent.width * 0.07
         x: parent.width * 0.28
