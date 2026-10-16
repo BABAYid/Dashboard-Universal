@@ -121,8 +121,12 @@ Item {
             value: CanBackend.rangeKmValid
                    ? "~" + Math.round(CanBackend.rangeKm) + " км"
                    : "—"
-            valueColour: CanBackend.rangeKmValid && CanBackend.rangeKm < 50
-                         ? "#FFC64A" : root.valueColor
+            // Те же цвета, что у предупреждения в верхней зоне: меньше 50 км —
+            // жёлтый, меньше 20 — красный. Прочерк — когда расчёта ещё нет.
+            valueColour: !CanBackend.rangeKmValid ? root.valueColor
+                         : CanBackend.rangeKm < 20 ? "#FF4444"
+                         : CanBackend.rangeKm < 50 ? "#FFC64A"
+                         : root.valueColor
         }
 
         InfoRow {
