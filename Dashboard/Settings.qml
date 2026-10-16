@@ -2,26 +2,54 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtCore as Core
 
-Window {
-    id: settingsWindow
-    width: 480
-    height: 320
-    visible: false
-    title: "Калибровка приборов"
-    modality: Qt.ApplicationModal
-    color: "#1A1A1A"
+// ============================================================================
+//  Настройки приборки.
+//
+//  Это НЕ отдельное окно, а оверлей внутри главного окна — сознательно:
+//  на устройстве приборка запускается через EGLFS, а этот платформенный плагин
+//  поддерживает только одно окно, поэтому второе (как было раньше) там просто
+//  не появится. Оверлею всё равно, сколько окон на экране, и его удобно
+//  вызывать откуда угодно: кнопкой на панели сейчас, кнопкой на руле — потом.
+//
+//  Открывается кнопкой «Настройки» на панели или двойным кликом по центральной
+//  области. Закрывается «Отменой», клавишей Esc или повторным вызовом.
+//
+//  Что настраивается сейчас:
+//    * коэффициенты показаний (скорость, обороты, топливо, температура) —
+//      подгоняют приборку под конкретную машину;
+//    * пробег на одометре — при замене панели владелец вводит показание
+//      старой приборки. Хранит и применяет его CanBackend (QSettings),
+//      потому что одометр считает именно он.
+//
+//  Коэффициенты хранит Core.Settings (QtCore.Settings, тот же QSettings).
+//  Тип указан через псевдоним импорта, иначе имя Settings разрешилось бы
+//  в одноимённый компонент этого же файла.
+//
+//  Ввод сейчас — с клавиатуры (мышь/клавиатура на столе разработчика).
+//  На устройстве клавиатуры нет: чтобы настраивать панель кнопками на руле,
+//  понадобится экранная цифровая клавиатура — см. backlog в PROJECT_STATE.md.
+// ============================================================================
+Item {
+    id: settingsOverlay
 
-    // Свойства для коэффициентов (передаются из Main.qml)
+    anchors.fill: parent
+    visible: false
+    z: 300
+
+    // Коэффициенты (передаются из Main.qml и возвращаются сигналом)
     property real speedFactor: 1.0
     property real rpmFactor: 1.0
     property real fuelFactor: 1.0
     property real tempFactor: 1.0
+    property bool nightMode: false
 
-    // Сигнал при применении настроек
+    // Сигнал при применении коэффициентов
     signal settingsApplied(real sf, real rf, real ff, real tf)
 
-    // Сохранение настроек. Тип указан через псевдоним импорта, иначе имя
-    // Settings разрешилось бы в одноимённый компонент этого же файла.
+    readonly property color valueColor: nightMode ? "#FF8800" : "white"
+    readonly property color labelColor: nightMode ? "#C46A00" : "#9A9A9A"
+    readonly property string uiFont: "Kdam Thmor Pro"
+
     Core.Settings {
         id: appSettings
         property real savedSpeedFactor: 1.0
@@ -30,214 +58,261 @@ Window {
         property real savedTempFactor: 1.0
     }
 
-    // Загружаем сохранённые значения при старте
+    // Загружаем сохранённые значения при старте приложения
     Component.onCompleted: {
         speedFactor = appSettings.savedSpeedFactor
         rpmFactor = appSettings.savedRpmFactor
         fuelFactor = appSettings.savedFuelFactor
         tempFactor = appSettings.savedTempFactor
+    }
+
+    function open() {
         updateInputs()
+        visible = true
     }
 
     function updateInputs() {
-        speedInput.text = speedFactor.toFixed(2)
-        rpmInput.text = rpmFactor.toFixed(2)
-        fuelInput.text = fuelFactor.toFixed(2)
-        tempInput.text = tempFactor.toFixed(2)
+        speedRow.field.text = speedFactor.toFixed(2)
+        rpmRow.field.text = rpmFactor.toFixed(2)
+        fuelRow.field.text = fuelFactor.toFixed(2)
+        tempRow.field.text = tempFactor.toFixed(2)
+        odometerRow.field.text = CanBackend.odometer.toFixed(1)
     }
 
-    // Фон
-    Rectangle {
-        anchors.fill: parent
-        color: "#1A1A1A"
-        radius: 10
-        border.color: "#444"
-        border.width: 1
+    // Применить и закрыть: коэффициенты уходят сигналом в Main.qml,
+    // пробег сразу отдаём в CanBackend — он его хранит и показывает.
+    function apply() {
+        const sf = parseFloat(speedRow.field.text)
+        const rf = parseFloat(rpmRow.field.text)
+        const ff = parseFloat(fuelRow.field.text)
+        const tf = parseFloat(tempRow.field.text)
+        const km = parseFloat(odometerRow.field.text)
+
+        // Пустое или битое поле не должно обнулять коэффициент — оставляем как было
+        if (isFinite(sf)) speedFactor = sf
+        if (isFinite(rf)) rpmFactor = rf
+        if (isFinite(ff)) fuelFactor = ff
+        if (isFinite(tf)) tempFactor = tf
+
+        appSettings.savedSpeedFactor = speedFactor
+        appSettings.savedRpmFactor = rpmFactor
+        appSettings.savedFuelFactor = fuelFactor
+        appSettings.savedTempFactor = tempFactor
+
+        settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
+
+        // Пробег проверяет сам бэкенд: отрицательное и NaN игнорирует
+        if (isFinite(km) && km >= 0) {
+            CanBackend.setOdometer(km)
+            odometerRow.field.text = CanBackend.odometer.toFixed(1)
+        }
+
+        visible = false
     }
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 12
+    // Отмена: возвращаем сохранённые значения, введённое забываем
+    function revert() {
+        speedFactor = appSettings.savedSpeedFactor
+        rpmFactor = appSettings.savedRpmFactor
+        fuelFactor = appSettings.savedFuelFactor
+        tempFactor = appSettings.savedTempFactor
+        settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
+        updateInputs()
+        visible = false
+    }
+
+    // Строка настройки: подпись — поле ввода — пояснение
+    component SettingsRow: Row {
+        property string label
+        property alias field: input
+        property string hint
+
+        spacing: 18
 
         Text {
-            text: "Настройка коэффициентов"
-            color: "white"
-            font.pixelSize: 22
-            font.bold: true
-            font.family: "DIN Condensed"
-            anchors.horizontalCenter: parent.horizontalCenter
+            text: parent.label
+            width: 320
+            horizontalAlignment: Text.AlignRight
+            anchors.verticalCenter: parent.verticalCenter
+            color: settingsOverlay.labelColor
+            font.pixelSize: 24
         }
 
-        // Скорость
-        Row {
-            spacing: 15
-            anchors.horizontalCenter: parent.horizontalCenter
+        TextField {
+            id: input
+            width: 220
+            anchors.verticalCenter: parent.verticalCenter
+            color: settingsOverlay.valueColor
+            font.pixelSize: 24
+            font.family: settingsOverlay.uiFont
+            horizontalAlignment: Text.AlignRight
+            selectByMouse: true
+            background: Rectangle {
+                color: "#2A2A2A"
+                radius: 6
+                border.color: "#555"
+            }
+        }
+
+        Text {
+            text: parent.hint
+            anchors.verticalCenter: parent.verticalCenter
+            color: "#8A8A8A"
+            font.pixelSize: 18
+        }
+    }
+
+    // Затемнение всего экрана и перехват нажатий: пока настройки открыты,
+    // клики не должны попадать на панель под ними
+    Rectangle {
+        anchors.fill: parent
+        color: "#CC000000"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {}   // гасим нажатие, но окно не закрываем
+        }
+    }
+
+    // Само окно настроек
+    Rectangle {
+        id: panel
+        width: 1000
+        height: 560
+        anchors.centerIn: parent
+        radius: 18
+        color: "#1A1A1A"
+        border.color: "#444"
+        border.width: 2
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 14
+
             Text {
-                text: "Скорость:"
-                color: "white"
-                font.pixelSize: 18
-                font.family: "DIN Condensed"
-                width: 120
+                text: "Настройки приборки"
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: settingsOverlay.valueColor
+                font.pixelSize: 34
+                font.bold: true
+                font.family: settingsOverlay.uiFont
             }
-            TextField {
-                id: speedInput
-                width: 100
-                text: "1.00"
-                validator: DoubleValidator { bottom: 0.1; top: 10.0 }
-                color: "white"
-                font.pixelSize: 16
-                background: Rectangle {
-                    color: "#2A2A2A"
-                    radius: 4
-                    border.color: "#555"
-                }
-            }
-        }
 
-        // Обороты
-        Row {
-            spacing: 15
-            anchors.horizontalCenter: parent.horizontalCenter
             Text {
-                text: "Обороты:"
-                color: "white"
+                text: "Коэффициенты подгоняют показания под конкретную машину"
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: "#8A8A8A"
                 font.pixelSize: 18
-                font.family: "DIN Condensed"
-                width: 120
-            }
-            TextField {
-                id: rpmInput
-                width: 100
-                text: "1.00"
-                validator: DoubleValidator { bottom: 0.1; top: 10.0 }
-                color: "white"
-                font.pixelSize: 16
-                background: Rectangle {
-                    color: "#2A2A2A"
-                    radius: 4
-                    border.color: "#555"
-                }
-            }
-        }
-
-        // Топливо
-        Row {
-            spacing: 15
-            anchors.horizontalCenter: parent.horizontalCenter
-            Text {
-                text: "Топливо:"
-                color: "white"
-                font.pixelSize: 18
-                font.family: "DIN Condensed"
-                width: 120
-            }
-            TextField {
-                id: fuelInput
-                width: 100
-                text: "1.00"
-                validator: DoubleValidator { bottom: 0.1; top: 10.0 }
-                color: "white"
-                font.pixelSize: 16
-                background: Rectangle {
-                    color: "#2A2A2A"
-                    radius: 4
-                    border.color: "#555"
-                }
-            }
-        }
-
-        // Температура
-        Row {
-            spacing: 15
-            anchors.horizontalCenter: parent.horizontalCenter
-            Text {
-                text: "Температура:"
-                color: "white"
-                font.pixelSize: 18
-                font.family: "DIN Condensed"
-                width: 120
-            }
-            TextField {
-                id: tempInput
-                width: 100
-                text: "1.00"
-                validator: DoubleValidator { bottom: 0.1; top: 10.0 }
-                color: "white"
-                font.pixelSize: 16
-                background: Rectangle {
-                    color: "#2A2A2A"
-                    radius: 4
-                    border.color: "#555"
-                }
-            }
-        }
-
-        Row {
-            spacing: 20
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            Button {
-                id: saveButton
-                text: "Сохранить"
-                width: 120
-                height: 40
-                background: Rectangle {
-                    color: "#2A7A3A"
-                    radius: 6
-                }
-                contentItem: Text {
-                    text: saveButton.text
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                    font.family: "DIN Condensed"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                onClicked: {
-                    speedFactor = parseFloat(speedInput.text) || 1.0
-                    rpmFactor = parseFloat(rpmInput.text) || 1.0
-                    fuelFactor = parseFloat(fuelInput.text) || 1.0
-                    tempFactor = parseFloat(tempInput.text) || 1.0
-
-                    appSettings.savedSpeedFactor = speedFactor
-                    appSettings.savedRpmFactor = rpmFactor
-                    appSettings.savedFuelFactor = fuelFactor
-                    appSettings.savedTempFactor = tempFactor
-
-                    settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
-                    settingsWindow.close()
-                }
             }
 
-            Button {
-                id: cancelButton
-                text: "Отмена"
-                width: 120
-                height: 40
-                background: Rectangle {
-                    color: "#4A4A4A"
-                    radius: 6
+            Item { width: 1; height: 8 }
+
+            SettingsRow {
+                id: speedRow
+                label: "Скорость"
+                hint: "множитель, 1.00 — как есть"
+                anchors.horizontalCenter: parent.horizontalCenter
+                field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
+            }
+
+            SettingsRow {
+                id: rpmRow
+                label: "Обороты"
+                hint: "множитель, 1.00 — как есть"
+                anchors.horizontalCenter: parent.horizontalCenter
+                field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
+            }
+
+            SettingsRow {
+                id: fuelRow
+                label: "Топливо"
+                hint: "множитель, 1.00 — как есть"
+                anchors.horizontalCenter: parent.horizontalCenter
+                field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
+            }
+
+            SettingsRow {
+                id: tempRow
+                label: "Температура"
+                hint: "множитель, 1.00 — как есть"
+                anchors.horizontalCenter: parent.horizontalCenter
+                field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
+            }
+
+            Item { width: 1; height: 6 }
+
+            Rectangle {
+                width: panel.width - 120
+                height: 2
+                anchors.horizontalCenter: parent.horizontalCenter
+                color: "#333"
+            }
+
+            Item { width: 1; height: 6 }
+
+            SettingsRow {
+                id: odometerRow
+                label: "Пробег, км"
+                hint: "показание старой приборки при замене"
+                anchors.horizontalCenter: parent.horizontalCenter
+                field.validator: DoubleValidator { bottom: 0.0; top: 9999999.0 }
+            }
+
+            Item { width: 1; height: 14 }
+
+            Row {
+                spacing: 24
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                Button {
+                    id: saveButton
+                    text: "Сохранить"
+                    width: 220
+                    height: 56
+                    background: Rectangle {
+                        color: "#2A7A3A"
+                        radius: 8
+                    }
+                    contentItem: Text {
+                        text: saveButton.text
+                        color: "white"
+                        font.pixelSize: 22
+                        font.bold: true
+                        font.family: settingsOverlay.uiFont
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: settingsOverlay.apply()
                 }
-                contentItem: Text {
-                    text: cancelButton.text
-                    color: "white"
-                    font.pixelSize: 16
-                    font.bold: true
-                    font.family: "DIN Condensed"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                onClicked: {
-                    // Восстанавливаем значения из сохранённых
-                    speedFactor = appSettings.savedSpeedFactor
-                    rpmFactor = appSettings.savedRpmFactor
-                    fuelFactor = appSettings.savedFuelFactor
-                    tempFactor = appSettings.savedTempFactor
-                    updateInputs()
-                    settingsWindow.close()
+
+                Button {
+                    id: cancelButton
+                    text: "Отмена"
+                    width: 220
+                    height: 56
+                    background: Rectangle {
+                        color: "#4A4A4A"
+                        radius: 8
+                    }
+                    contentItem: Text {
+                        text: cancelButton.text
+                        color: "white"
+                        font.pixelSize: 22
+                        font.bold: true
+                        font.family: settingsOverlay.uiFont
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: settingsOverlay.revert()
                 }
             }
         }
     }
+
+    // Клавиши: Esc — отмена, Enter — сохранить. На столе разработчика удобно,
+    // и это же понадобится, когда появятся кнопки на руле.
+    focus: visible
+    Keys.onEscapePressed: settingsOverlay.revert()
+    Keys.onReturnPressed: settingsOverlay.apply()
+    Keys.onEnterPressed: settingsOverlay.apply()
 }
