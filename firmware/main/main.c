@@ -129,15 +129,8 @@ static void task_can(void *arg)
         if (!vehicle_state_ignition_on()) {
             // Зажигание выключено: по протоколу блок может перестать
             // передавать кадры — приборка воспримет это как потерю связи,
-            // что допустимо. Дальше здесь появится сон (см. шапку файла).
-            static uint32_t last_note_ms;
-            const uint32_t now_ms = (uint32_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
-            if ((uint32_t)(now_ms - last_note_ms) > 10000u) {
-                ESP_LOGW(TAG, "зажигание выключено — кадры не отправляются");
-                last_note_ms = now_ms;
-            }
-            vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(CAN_PERIOD_FAST_MS));
-            continue;
+            // что допустимо. Дальше уходим в сон (см. app_sleep_until_ignition).
+            app_sleep_until_ignition();
         }
 
         if (!can_ok) {
