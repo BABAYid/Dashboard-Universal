@@ -102,7 +102,7 @@ LVDS — панель подходит):
 | `Dashboard/MapWebView.qml` | Карта (OpenStreetMap); WebView создаётся только в навигации |
 | `Dashboard/can/CanBackend.*` | Приём CAN, разбор протокола, демо-режим |
 | `Dashboard/tests/` | Тест разбора протокола |
-| `can_protocol_v1.1.txt`, `CAN_protocol_v1.1.odt` | Описание CAN-протокола (версия 1.1) |
+| `can_protocol_v1.2.txt`, `CAN_protocol_v1.2.odt` | Описание CAN-протокола (версия 1.2) |
 | `esp32_wiring.txt` | Таблица подключения сигналов к ESP32 (версия 2.0) |
 | `Приборная панель/` | Исходники дизайна (в т.ч. макет `Group 57.png` — источник геометрии) |
 | `образ для nanoPC-T6/` | Образы ОС (для этих плат не подходят, в git не хранятся) |
