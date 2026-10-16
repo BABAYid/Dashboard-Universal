@@ -100,19 +100,11 @@ Window {
     // Масштабирование всего макета под размер окна (на устройстве ровно 1.0)
     readonly property real canvasScale: Math.min(width / 1920, height / 720)
 
-    // ======================= КАЛИБРОВКА ПРИБОРОВ =======================
-    // Окно открывается двойным кликом по центральной области.
-    // Коэффициенты хранит Settings.qml (Qt.labs.settings).
-    Settings {
-        id: calibration
-
-        onSettingsApplied: function(sf, rf, ff, tf) {
-            root.speedFactor = sf
-            root.rpmFactor = rf
-            root.fuelFactor = ff
-            root.tempFactor = tf
-        }
-    }
+    // ======================= НАСТРОЙКИ ПРИБОРКИ =======================
+    // Открываются кнопкой «Настройки» внизу центральной полосы или двойным
+    // кликом по центральной области. Сам оверлей объявлен внутри canvas —
+    // там он масштабируется вместе с макетом (см. Settings.qml).
+    // Коэффициенты хранит Settings.qml, пробег — CanBackend.
 
     Component.onCompleted: {
         root.speedFactor = calibration.speedFactor
@@ -306,7 +298,7 @@ Window {
                 onClicked: centerTap.restart()
                 onDoubleClicked: {
                     centerTap.stop()
-                    calibration.visible = true
+                    calibration.open()
                 }
             }
 
@@ -457,6 +449,16 @@ Window {
             z: 2
         }
 
+        // Вход в настройки — тот же путь, что потом будет у кнопки на руле:
+        // одна функция calibration.open(), а не жест мышью.
+        Button {
+            text: "Настройки"
+            x: 860; y: 658
+            visible: !navigationMode
+            onClicked: calibration.open()
+            z: 2
+        }
+
         Rectangle {
             id: closeNavButton
             width: 60; height: 60
@@ -489,6 +491,24 @@ Window {
         }
 
 
+
+        // ====================================================================
+        //  Настройки приборки. Оверлей поверх всего остального (z 300):
+        //  объявлен внутри canvas, поэтому масштабируется вместе с макетом.
+        //  Открывается кнопкой «Настройки» или двойным кликом по центру.
+        // ====================================================================
+        Settings {
+            id: calibration
+
+            nightMode: root.nightMode
+
+            onSettingsApplied: function(sf, rf, ff, tf) {
+                root.speedFactor = sf
+                root.rpmFactor = rf
+                root.fuelFactor = ff
+                root.tempFactor = tf
+            }
+        }
 
         // ====================================================================
         //  Самопроверка ламп и стрелок при включении зажигания
