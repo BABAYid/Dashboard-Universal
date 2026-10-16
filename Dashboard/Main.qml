@@ -54,6 +54,10 @@ Window {
     // анимация идут вместе, а не вразнобой.
     property bool debugFullThrottle: false
     readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
+
+    // Приколы (анимация в правом верхнем углу) включаются и выключаются
+    // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
+    readonly property bool funEnabled: calibration.funEnabled
     readonly property bool leftTurn: CanBackend.leftTurn
     readonly property bool rightTurn: CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
@@ -494,7 +498,7 @@ Window {
             gasOn: root.gasDisplay
             highBurn: root.rpmShown > 5000
             rpm: root.rpmShown
-            visible: !navigationMode && (gasOn || highBurn)
+            visible: !navigationMode && root.funEnabled && (gasOn || highBurn)
             z: 2
         }
 
