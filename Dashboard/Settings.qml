@@ -43,6 +43,11 @@ Item {
     property real tempFactor: 1.0
     property bool nightMode: false
 
+    // «Приколы» — анимация в правом верхнем углу (монетки в кошелёк на газу и
+    // кочегар с пачками денег выше 5000 об/мин). Выключатель отдельной строкой:
+    // в серийной приборке шутку можно погасить, не трогая код.
+    property bool funEnabled: true
+
     // Сигнал при применении коэффициентов
     signal settingsApplied(real sf, real rf, real ff, real tf)
 
@@ -56,6 +61,7 @@ Item {
         property real savedRpmFactor: 1.0
         property real savedFuelFactor: 1.0
         property real savedTempFactor: 1.0
+        property bool savedFunEnabled: true
     }
 
     // Загружаем сохранённые значения при старте приложения
@@ -64,6 +70,7 @@ Item {
         rpmFactor = appSettings.savedRpmFactor
         fuelFactor = appSettings.savedFuelFactor
         tempFactor = appSettings.savedTempFactor
+        funEnabled = appSettings.savedFunEnabled
     }
 
     function open() {
