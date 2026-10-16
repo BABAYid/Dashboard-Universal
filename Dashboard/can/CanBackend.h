@@ -76,8 +76,10 @@ class CanBackend : public QObject
     Q_PROPERTY(double journeyKm READ journeyKm NOTIFY journeyKmChanged)              // км за поездку
     Q_PROPERTY(double fuelUsed READ fuelUsed NOTIFY fuelUsedChanged)                // литров за поездку
     Q_PROPERTY(double avgConsumption READ avgConsumption NOTIFY avgConsumptionChanged)  // л/100 км
+    Q_PROPERTY(double avgConsumption5min READ avgConsumption5min NOTIFY avgConsumption5minChanged)  // л/100 км за 5 мин
     Q_PROPERTY(double avgSpeed READ avgSpeed NOTIFY avgSpeedChanged)                // км/ч
     Q_PROPERTY(double rangeKm READ rangeKm NOTIFY rangeKmChanged)                   // запас хода, км
+    Q_PROPERTY(bool rangeKmValid READ rangeKmValid NOTIFY rangeKmValidChanged)      // запас достоверен
     Q_PROPERTY(int journeySeconds READ journeySeconds NOTIFY journeySecondsChanged)
     Q_PROPERTY(double tankCapacity READ tankCapacity WRITE setTankCapacity NOTIFY tankCapacityChanged)
 
@@ -233,8 +235,10 @@ signals:
     void journeyKmChanged();
     void fuelUsedChanged();
     void avgConsumptionChanged();
+    void avgConsumption5minChanged();
     void avgSpeedChanged();
     void rangeKmChanged();
+    void rangeKmValidChanged();
     void journeySecondsChanged();
     void tankCapacityChanged();
     void deviceAliveChanged();
