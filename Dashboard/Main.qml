@@ -240,7 +240,7 @@ Window {
                 handBrakeWarning: root.lampSelfTest || root.handBrake
                 fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
                 batteryWarning: root.lampSelfTest || (root.rpm > 400 && root.voltage < 12.8)
-                gasMode: root.gasMode
+                gasMode: root.gasDisplay
                 z: 1
             }
         }
@@ -410,13 +410,13 @@ Window {
                 // Если датчик уровня газа не отвечает, вместо числа прочерк:
                 // показывать «0 %» было бы враньём (протокол 1.2).
                 Text {
-                    text: !root.gasMode
+                    text: !root.gasDisplay
                           ? (root.fuelLevel * root.fuelFactor / 100 * root.tankCapacity).toFixed(1) + " л"
                           : (root.gasSensorValid
                              ? "газ " + root.gasLevelPercent + " %"
                              : "газ —")
-                    color: root.gasMode ? "#33CC44"
-                                        : (root.nightMode ? "#FF8800" : "white")
+                    color: root.gasDisplay ? "#33CC44"
+                                           : (root.nightMode ? "#FF8800" : "white")
                     font.pixelSize: 24
                     font.bold: true
                 }
