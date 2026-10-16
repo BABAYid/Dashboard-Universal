@@ -7,7 +7,7 @@ import QtQuick 2.15
 //  Смысл: не пихать всё сразу. Каждый режим показывает только то, что нужно
 //  сейчас. Навигация сюда не входит — она отдельный режим на весь экран.
 //
-//    0 — Стандарт:    цифровая скорость, передача, часы
+//    0 — Стандарт:    цифровая скорость, передача
 //    1 — Компьютер:   средний расход, запас хода, средняя скорость, время
 //    2 — Диагностика: состояние блока сбора (прошивка, время работы, сбои)
 //
@@ -18,7 +18,6 @@ Item {
 
     property int mode: 0
     readonly property int modeCount: 3
-    property string clockString: "--:--"
     property bool nightMode: false
 
     readonly property color valueColor: nightMode ? "#FF8800" : "white"
@@ -99,16 +98,9 @@ Item {
             font.family: "Kdam Thmor Pro"
         }
 
-        Item { width: 1; height: 10 }
-
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.clockString
-            color: root.valueColor
-            font.pixelSize: 34
-            font.bold: true
-            font.family: "Kdam Thmor Pro"
-        }
+        // Часы здесь были и дублировали часы верхней зоны (Indicators.qml) —
+        // убраны, время показывается только сверху, рядом с наружной
+        // температурой.
     }
 
     // ======================= РЕЖИМ 1: КОМПЬЮТЕР =======================
