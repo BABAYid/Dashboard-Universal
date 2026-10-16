@@ -246,6 +246,39 @@ int main(int argc, char *argv[])
     can.feedFrame(0x500, QByteArray(4, '\0'));
     check(can.framesReceived() == gasFramesBefore, "короткий кадр 0x500 игнорируется");
 
+    qInfo() << "Запас хода: средний расход за 5 минут";
+    check(!can.rangeKmValid(), "до первого расхода запас хода недостоверен");
+
+    // Уровень 42 % при баке 60 л → 25.2 л. Расход 8.5 л/100 км →
+    // запас = 25.2 / 8.5 × 100 ≈ 296 км
+    can.feedFrame(0x300, frame({90, 42, 142, 0, 0, 0, 85}));
+    can.feedConsumptionSample(8.5);
+    check(can.rangeKmValid(), "запас хода стал достоверным");
+    checkNum(qRound(can.rangeKm()), 296.0, "запас хода 296 км при 42 % и 8.5 л/100 км");
+    checkNum(can.avgConsumption5min(), 8.5, "средний расход за 5 минут 8.5 л/100 км");
+
+    // Стоянка: мгновенный расход ноль — запас не обнуляется и не мигает
+    const double rangeWhileParked = can.rangeKm();
+    for (int i = 0; i < 10; ++i)
+        can.feedConsumptionSample(0.0);
+    checkNum(can.rangeKm(), rangeWhileParked,
+             "на стоянке запас остаётся последним достоверным значением");
+
+    // Окно на 300 сэмплов: старые вытесняются новыми
+    for (int i = 0; i < 300; ++i)
+        can.feedConsumptionSample(12.0);
+    checkNum(can.avgConsumption5min(), 12.0, "окно целиком заполнилось новым расходом");
+    checkNum(qRound(can.rangeKm()), 210.0, "запас пересчитан: 25.2 л ÷ 12 л/100 км × 100");
+
+    // Объём бака — настройка пользователя: 42 % от 80 л → 33.6 л → 280 км
+    can.setTankCapacity(80.0);
+    checkNum(can.tankCapacity(), 80.0, "объём бака изменён на 80 л");
+    can.feedConsumptionSample(12.0);
+    checkNum(qRound(can.rangeKm()), 280.0, "запас учёл новый объём бака");
+
+    can.setTankCapacity(-5.0);
+    checkNum(can.tankCapacity(), 80.0, "неправдоподобный объём бака игнорируется");
+
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин
     checkNum(can.speed(), 200.0, "скорость 200 км/ч");
