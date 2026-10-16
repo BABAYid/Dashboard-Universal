@@ -341,6 +341,35 @@ void CanBackend::handleDeviceStatusFrame(const quint8 *d)
     set(m_deviceBusErrors, static_cast<int>(d[6]), &CanBackend::deviceBusErrorsChanged);
 }
 
+// 0x500: газовое оборудование — признак «едем на газе» и напряжение датчика
+// уровня газа 0…5 В. Добавлен в протоколе 1.2 (машина двухтопливная).
+// Проценты считает приборка, а не блок сбора: 0 В — пустой баллон, 5 В —
+// полный. Так владелец сможет задать кривую под свой датчик в настройках
+// панели, не перепрошивая ESP32.
+void CanBackend::handleGasFrame(const quint8 *d)
+{
+    m_sinceGasFrame.restart();
+
+    const bool onGas = (d[0] & 0x01) != 0;
+    const bool sensorOk = (d[0] & 0x02) != 0;
+    const int mv = (static_cast<int>(d[1]) << 8) | static_cast<int>(d[2]);
+
+    set(m_gasMode, onGas, &CanBackend::gasModeChanged);
+    set(m_gasSensorValid, sensorOk, &CanBackend::gasSensorValidChanged);
+
+    // Напряжение выше 5 В считаем полным баллоном: датчик или проводка могут
+    // дать завышенное значение, а показать больше 100 % нельзя.
+    const int mvClamped = qBound(0, mv, kGasSensorMaxMv);
+    set(m_gasSensorMv, mvClamped, &CanBackend::gasSensorVoltsChanged);
+
+    // Если датчик не отвечает, остаток не показываем (0 %), но режим газа
+    // всё равно знаем — значок бензоколонки окрашивается по нему.
+    const int percent = sensorOk
+        ? qRound(static_cast<double>(mvClamped) * 100.0 / kGasSensorMaxMv)
+        : 0;
+    set(m_gasLevelPercent, percent, &CanBackend::gasLevelPercentChanged);
+}
+
 // ------------------------------------------------------------------ контроль
 
 void CanBackend::updateDataValidity()
@@ -356,6 +385,14 @@ void CanBackend::updateDataValidity()
     // сами данные при этом могут продолжать идти.
     if (m_sinceDeviceStatus.elapsed() > kDeviceTimeoutMs)
         set(m_deviceAlive, false, &CanBackend::deviceAliveChanged);
+
+    // Кадр газа приходит раз в 200 мс. Если его нет дольше 1,5 с, данных о
+    // газе нет: показываем бензин, как раньше (протокол 1.2, правило свежести).
+    if (m_sinceGasFrame.isValid() && m_sinceGasFrame.elapsed() > kGasTimeoutMs) {
+        set(m_gasMode, false, &CanBackend::gasModeChanged);
+        set(m_gasSensorValid, false, &CanBackend::gasSensorValidChanged);
+        set(m_gasLevelPercent, 0, &CanBackend::gasLevelPercentChanged);
+    }
 
     if (++m_publishTick >= 4) {   // 4 * 250 мс = раз в секунду
         m_publishTick = 0;
