@@ -267,6 +267,17 @@ Item {
                 field.validator: DoubleValidator { bottom: 0.0; top: 9999999.0 }
             }
 
+            // Объём бака нужен для расчёта запаса хода: уровень топлива приходит
+            // в процентах, запас считается через литры, поэтому без объёма бака
+            // километры не посчитать.
+            SettingsRow {
+                id: tankRow
+                label: "Объём бака, л"
+                hint: "для расчёта запаса хода"
+                anchors.horizontalCenter: parent.horizontalCenter
+                field.validator: DoubleValidator { bottom: 1.0; top: 500.0 }
+            }
+
             Item { width: 1; height: 8 }
 
             Rectangle {
