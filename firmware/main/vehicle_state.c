@@ -29,8 +29,11 @@ static const char *TAG = "state";
 static vehicle_state_t   s_state;
 static SemaphoreHandle_t s_lock;
 static uint32_t          s_start_uptime_ms;
+#if IGNITION_OFF_TO_SLEEP_S > 0
+// Нужны только когда сон по зажиганию включён (см. config.h).
 static bool              s_ignition_lost;
 static uint32_t          s_ignition_off_since_ms;
+#endif
 static uint8_t           s_last_gear_mode = 2;   // N — если селектор ещё не читается
 
 // ---------------------------------------------------------------------------
