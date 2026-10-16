@@ -17,3 +17,9 @@ idf_component_register(
         esp_driver_gpio
         esp_driver_i2c
 )
+
+# Предупреждения компилятора включены строго: прошивка автомобильная, тихо
+# проглоченное предупреждение здесь дороже лишней строчки в сборке.
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra)
+endif()
