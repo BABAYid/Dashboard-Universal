@@ -88,6 +88,17 @@ class CanBackend : public QObject
     Q_PROPERTY(int deviceRestarts READ deviceRestarts NOTIFY deviceRestartsChanged)
     Q_PROPERTY(int deviceBusErrors READ deviceBusErrors NOTIFY deviceBusErrorsChanged)
 
+    // --- 0x500: газовое оборудование (протокол 1.2) ---
+    // Машина двухтопливная (бензин и газ). Блок сбора отдаёт признак «едем на
+    // газе» и сырое напряжение датчика уровня газа 0…5 В, а проценты считает
+    // приборка: 0 В — пустой баллон, 5 В — полный. Так задумано, чтобы кривую
+    // под конкретный датчик владелец мог задать в настройках панели, не
+    // перепрошивая ESP32.
+    Q_PROPERTY(bool gasMode READ gasMode NOTIFY gasModeChanged)
+    Q_PROPERTY(bool gasSensorValid READ gasSensorValid NOTIFY gasSensorValidChanged)
+    Q_PROPERTY(double gasSensorVolts READ gasSensorVolts NOTIFY gasSensorVoltsChanged)
+    Q_PROPERTY(int gasLevelPercent READ gasLevelPercent NOTIFY gasLevelPercentChanged)
+
     // --- пробег (в CAN-протоколе его нет, считаем сами и храним в настройках) ---
     Q_PROPERTY(double odometer READ odometer NOTIFY odometerChanged)      // км, всего
     Q_PROPERTY(double tripA READ tripA NOTIFY tripAChanged)               // км
@@ -173,6 +184,11 @@ public:
     int deviceRestarts() const { return m_deviceRestarts; }
     int deviceBusErrors() const { return m_deviceBusErrors; }
 
+    bool gasMode() const { return m_gasMode; }
+    bool gasSensorValid() const { return m_gasSensorValid; }
+    double gasSensorVolts() const { return m_gasSensorMv / 1000.0; }
+    int gasLevelPercent() const { return m_gasLevelPercent; }
+
 signals:
     void connectedChanged();
     void dataValidChanged();
@@ -215,6 +231,10 @@ signals:
     void deviceUptimeSecChanged();
     void deviceRestartsChanged();
     void deviceBusErrorsChanged();
+    void gasModeChanged();
+    void gasSensorValidChanged();
+    void gasSensorVoltsChanged();
+    void gasLevelPercentChanged();
 
 private:
     void openSocket();
