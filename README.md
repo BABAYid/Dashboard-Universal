@@ -15,7 +15,7 @@ ESP32 (сбор сигналов)  ──CAN 500 кбит/с──►  nanoPC-T6
 | `Dashboard/Main.qml` | Компоновка макета 1920×720, привязка данных к бэкенду |
 | `Dashboard/Speedometer.qml`, `Tachometer.qml` | Приборы (стрелки, шкалы) |
 | `Dashboard/Indicators.qml` | Лампы, часы, одометр/trip |
-| `Dashboard/Settings.qml` | Окно калибровки коэффициентов |
+| `Dashboard/Settings.qml` | Настройки приборки: коэффициенты показаний и ввод пробега при замене панели (оверлей, кнопка «Настройки») |
 | `Dashboard/MapWebView.qml` | Карта (OpenStreetMap) в режиме навигации |
 | `Dashboard/can/CanBackend.*` | Приём CAN, разбор протокола, демо-режим || `Dashboard/tests/` | Тест разбора протокола |
 | `can_protocol_v1.1.txt`, `CAN_protocol_v1.1.odt` | Описание CAN-протокола (версия 1.1) |
