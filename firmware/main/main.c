@@ -32,6 +32,7 @@
 #include "inputs_analog.h"
 #include "inputs_digital.h"
 #include "inputs_freq.h"
+#include "kline.h"
 #include "twai_bus.h"
 #include "vehicle_signals.h"
 #include "vehicle_state.h"
@@ -49,6 +50,7 @@ static void task_inputs(void *arg)
     for (;;) {
         inputs_digital_update();
         inputs_freq_update();
+        kline_poll();
         vehicle_state_update();
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(INPUTS_PERIOD_MS));
     }
@@ -247,11 +249,14 @@ void app_main(void)
     // 4. Состояние машины (и предупреждения о незаполненной таблице проводов).
     vehicle_state_init();
 
-    // 5. Шина CAN. Если не поднялась — задача CAN будет пробовать заново.
+    // 5. K-линия: пока только пассивный сниффер (см. config.h).
+    kline_init();
+
+    // 6. Шина CAN. Если не поднялась — задача CAN будет пробовать заново.
     if (twai_bus_init() != ESP_OK)
         ESP_LOGW(TAG, "CAN не поднялся с первого раза, задача попробует снова");
 
-    // 6. Задачи.
+    // 7. Задачи.
     xTaskCreate(task_inputs, "inputs", 4096, NULL, APP_TASK_PRIORITY_INPUTS, NULL);
     xTaskCreate(task_analog, "analog", 4096, NULL, APP_TASK_PRIORITY_INPUTS, NULL);
     xTaskCreate(task_can, "can", 4096, NULL, APP_TASK_PRIORITY_CAN, NULL);

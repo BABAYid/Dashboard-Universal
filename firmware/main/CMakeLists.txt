@@ -6,6 +6,7 @@ idf_component_register(
         "inputs_digital.c"
         "inputs_analog.c"
         "inputs_freq.c"
+        "kline.c"
         "vehicle_signals.c"
         "vehicle_state.c"
         "twai_bus.c"
