@@ -1,9 +1,10 @@
 // ============================================================================
-//  Тест разбора CAN-протокола (can_protocol_v1.1.txt).
+//  Тест разбора CAN-протокола (can_protocol_v1.2.txt).
 //
 //  Проверяются примеры кадров прямо из документации плюс граничные случаи:
 //  определение передачи по проводам S1/S2, режимы АКПП, отрицательная
-//  наружная температура, короткие кадры.
+//  наружная температура, газовое оборудование (кадр 0x500 и перевод напряжения
+//  датчика уровня газа в проценты), короткие кадры.
 //
 //  Сборка и запуск:
 //      cmake -S Dashboard -B build -DDASHBOARD_BUILD_TESTS=ON
@@ -211,6 +212,38 @@ int main(int argc, char *argv[])
     can.feedFrame(0x7F0, broken);
     check(can.deviceRestarts() == 1, "кадр с неверной контрольной суммой не считается");
     check(can.deviceUptimeSec() == 4u, "значения из повреждённого кадра не применены");
+
+    qInfo() << "0x500 — газовое оборудование (новое в 1.2)";
+    can.feedFrame(0x500, frame({0x03, 0x09, 0x2E}));   // газ включён, датчик 2350 мВ
+    check(can.gasMode(), "режим газа включён");
+    check(can.gasSensorValid(), "датчик уровня газа исправен");
+    checkNum(can.gasSensorVolts(), 2.35, "напряжение датчика 2.35 В");
+    check(can.gasLevelPercent() == 47,
+          QStringLiteral("остаток газа 47 %, получено %1 %").arg(can.gasLevelPercent()));
+
+    can.feedFrame(0x500, frame({0x03, 0x00, 0x00}));
+    check(can.gasLevelPercent() == 0, "0 В — пустой баллон");
+
+    can.feedFrame(0x500, frame({0x03, 0x13, 0x88}));   // 5000 мВ
+    check(can.gasLevelPercent() == 100, "5 В — полный баллон");
+
+    can.feedFrame(0x500, frame({0x03, 0xFF, 0xFF}));   // больше 5 В
+    check(can.gasLevelPercent() == 100,
+          QStringLiteral("напряжение выше 5 В считается полным баллоном, получено %1 %")
+              .arg(can.gasLevelPercent()));
+
+    can.feedFrame(0x500, frame({0x01, 0x0C, 0x80}));   // датчик не отвечает
+    check(can.gasMode(), "режим газа определяется и при неисправном датчике");
+    check(!can.gasSensorValid(), "неисправный датчик отмечен");
+    check(can.gasLevelPercent() == 0, "при неисправном датчике остаток не показывается");
+
+    can.feedFrame(0x500, frame({0x00, 0x09, 0x2E}));   // обратно на бензин
+    check(!can.gasMode(), "переключение обратно на бензин");
+    check(can.gasLevelPercent() == 47, "остаток газа читается и на бензине");
+
+    const int gasFramesBefore = can.framesReceived();
+    can.feedFrame(0x500, QByteArray(4, '\0'));
+    check(can.framesReceived() == gasFramesBefore, "короткий кадр 0x500 игнорируется");
 
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин
