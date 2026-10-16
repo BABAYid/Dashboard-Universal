@@ -86,7 +86,7 @@ static void print_debug_state(const vehicle_state_t *st)
              (unsigned)st->speed_kmh, (unsigned)st->rpm,
              (unsigned)st->gearbox.mode, (unsigned)st->gearbox.gear,
              st->gas_mode ? "да" : "нет");
-    ESP_LOGI(TAG, "даtчики: топливо %u %%, t двиг %u C, бортсеть %u.%u В, "
+    ESP_LOGI(TAG, "датчики: топливо %u %%, t двиг %u C, бортсеть %u.%u В, "
                   "t снаружи %d C, расход %u.%u л/100",
              (unsigned)st->sensors.fuel_level_pct,
              (unsigned)st->sensors.engine_temp_c,

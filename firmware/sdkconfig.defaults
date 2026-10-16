@@ -1,0 +1,39 @@
+# ============================================================================
+#  sdkconfig.defaults — настройки проекта по умолчанию (esp32, ESP-IDF 5.5).
+#  Применяются при первой сборке; дальше живут в sdkconfig.
+# ============================================================================
+
+# --- Целевой чип: классический ESP32 (DevKit V1 в разъёмах платы) ---
+CONFIG_IDF_TARGET="esp32"
+
+# --- Кристалл и частота ---
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
+
+# --- Флеш-память: у модуля ESP32-WROOM-32 обычно 4 МБ ---
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
+
+# --- Консоль: UART0, 115200. Внимание: на этом же UART0 висит GPS,
+#     поэтому при прошивке с подключённым модулем GPS возможны помехи
+#     (см. firmware/README.md). ---
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+
+# --- Логи ---
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_MAXIMUM_LEVEL_INFO=y
+
+# --- Сторожевой таймер задачи: если какая-то задача зациклится,
+#     устройство перезапустится, а приборка увидит это по кадру 0x7F0 ---
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=5
+
+# --- Размер прошивки: без Wi-Fi и Bluetooth ---
+CONFIG_BT_ENABLED=n
+CONFIG_ESP_WIFI_ENABLED=n
+
+# --- Оптимизация по размеру: экономит место, скорость нам не критична ---
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
