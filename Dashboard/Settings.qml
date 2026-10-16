@@ -84,6 +84,7 @@ Item {
         fuelRow.field.text = fuelFactor.toFixed(2)
         tempRow.field.text = tempFactor.toFixed(2)
         odometerRow.field.text = CanBackend.odometer.toFixed(1)
+        tankRow.field.text = CanBackend.tankCapacity.toFixed(0)
     }
 
     // Применить и закрыть: коэффициенты уходят сигналом в Main.qml,
