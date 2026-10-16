@@ -230,6 +230,25 @@ cmake --build build --target test_canprotocol
 ./build/test_canprotocol --mock-watch   # наблюдение за демо-генератором
 ```
 
+### Прошивка блока сбора (`firmware/`)
+
+```bash
+. $IDF_PATH/export.sh                  # ESP-IDF 5.5
+cd firmware
+idf.py set-target esp32
+idf.py build
+idf.py -p /dev/ttyUSB0 flash monitor   # при прошивке GPS отключить — он на UART0
+```
+
+Проверка кода прошивки **без железа и без ESP-IDF** — обычным gcc на компьютере:
+
+```bash
+cmake -S firmware/test -B firmware-build
+cmake --build firmware-build
+./firmware-build/test_frames     # байты кадров против примеров из протокола
+./firmware-build/test_signals    # таблица проводов: диапазоны входов и коллизии
+```
+
 ### Подготовка CAN на устройстве
 
 ```bash
