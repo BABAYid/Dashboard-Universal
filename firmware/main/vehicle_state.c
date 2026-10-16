@@ -39,12 +39,23 @@ static uint8_t           s_last_gear_mode = 2;   // N — если селект�
 // ---------------------------------------------------------------------------
 //  Доступ к дискретным сигналам
 // ---------------------------------------------------------------------------
+//  Для проводов, которые замыкаются на массу (ручник, давление масла, ремень,
+//  концевики), на провод ставится внешняя подтяжка 4.7 кОм на +12 В
+//  (см. vehicle_signals.h). Тогда вход платы ведёт себя так:
+//      провод замкнут на массу (сигнал ЕСТЬ)   → светодиод оптопары погашен → вход = 1
+//      провод отпущен       (сигнала НЕТ)     → по подтяжке течёт ток     → вход = 0
+//  То есть состояние входа получается обратным смыслу сигнала, и флаг
+//  SIG_FLAG_GROUND_SWITCHED в таблице проводов как раз это и означает.
 static bool sig_on(vehicle_signal_id_t id)
 {
     const vehicle_signal_t *s = vehicle_signal(id);
     if (s->source != SRC_DIN && s->source != SRC_PCF)
         return false;
-    return din_signal(s->channel);
+
+    const bool input_active = din_signal(s->channel);
+    if (s->flags & SIG_FLAG_GROUND_SWITCHED)
+        return !input_active;
+    return input_active;
 }
 
 static bool sig_assigned(vehicle_signal_id_t id)
