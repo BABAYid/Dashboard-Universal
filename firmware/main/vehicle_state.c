@@ -273,8 +273,8 @@ void vehicle_state_init(void)
         }
         ++assigned;
         if (s->flags & SIG_FLAG_GROUND_SWITCHED) {
-            ESP_LOGW(TAG, "«%s»: провод замыкается на массу — вход платы рассчитан "
-                          "на плюс 12 В, канал нужно переделать (см. vehicle_signals.h)",
+            ESP_LOGW(TAG, "«%s»: провод замыкается на массу — нужна подтяжка 4.7 кОм "
+                          "на +12 В (лучше от ACC), прошивка читает вход инверсно",
                      s->name);
         }
     }
