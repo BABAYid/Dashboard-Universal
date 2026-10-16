@@ -393,9 +393,19 @@ Window {
                     color: "#555555"
                     font.pixelSize: 24
                 }
+                // Топливо: на газу вместо литров бензина показываем остаток газа
+                // в процентах — уровень бензина и так виден стрелкой на шкале
+                // прибора, а на газу важно, сколько осталось в баллоне.
+                // Если датчик уровня газа не отвечает, вместо числа прочерк:
+                // показывать «0 %» было бы враньём (протокол 1.2).
                 Text {
-                    text: (root.fuelLevel * root.fuelFactor / 100 * root.tankCapacity).toFixed(1) + " л"
-                    color: root.nightMode ? "#FF8800" : "white"
+                    text: !root.gasMode
+                          ? (root.fuelLevel * root.fuelFactor / 100 * root.tankCapacity).toFixed(1) + " л"
+                          : (root.gasSensorValid
+                             ? "газ " + root.gasLevelPercent + " %"
+                             : "газ —")
+                    color: root.gasMode ? "#33CC44"
+                                        : (root.nightMode ? "#FF8800" : "white")
                     font.pixelSize: 24
                     font.bold: true
                 }
