@@ -37,7 +37,12 @@ static uint32_t s_last_rx_us;
 
 esp_err_t kline_init(void)
 {
-#if KLINE_ENABLED
+    // UART2 поднимаем ВСЕГДА, даже когда сниффер выключен — чтобы передающая
+    // линия не висела в воздухе. В покое UART TX держит высокий уровень,
+    // а значит K-линия через MC33290 отпущена и штатной диагностике машины
+    // не мешает. Если оставить вывод неподключённым, уровень на входе
+    // передатчика K-линии окажется неопределённым, и блок может «прижать»
+    // линию к земле — это уже помеха машине.
     const uart_config_t cfg = {
         .baud_rate = KLINE_BAUD,
         .data_bits = UART_DATA_8_BITS,
@@ -64,12 +69,14 @@ esp_err_t kline_init(void)
         return err;
     }
 
+#if KLINE_ENABLED
     s_enabled = true;
     ESP_LOGW(TAG, "K-линия: включён сниффер (%d бод, только слушаем). "
                   "Запустите диагностический сканер и смотрите дамп ниже",
              KLINE_BAUD);
 #else
-    ESP_LOGI(TAG, "K-линия: сниффер выключен (KLINE_ENABLED = 0 в config.h)");
+    ESP_LOGI(TAG, "K-линия: линия отпущена, сниффер выключен "
+                  "(KLINE_ENABLED = 0 в config.h)");
 #endif
     return ESP_OK;
 }
