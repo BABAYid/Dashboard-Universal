@@ -156,6 +156,7 @@ public:
     double fuelLevel() const { return m_fuelLevel; }
     double engineTemp() const { return m_engineTemp; }
     double voltage() const { return m_voltage; }
+    QVariantList voltageHistory() const { return m_voltageHistoryList; }
     double outsideTemp() const { return m_outsideTemp; }
     double fuelRate() const { return m_fuelRate; }
     bool oilPressureAlarm() const { return m_oilPressureAlarm; }
@@ -222,6 +223,7 @@ signals:
     void fuelLevelChanged();
     void engineTempChanged();
     void voltageChanged();
+    void voltageHistoryChanged();
     void outsideTempChanged();
     void fuelRateChanged();
     void oilPressureAlarmChanged();
