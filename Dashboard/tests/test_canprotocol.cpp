@@ -279,6 +279,24 @@ int main(int argc, char *argv[])
     can.setTankCapacity(-5.0);
     checkNum(can.tankCapacity(), 80.0, "неправдоподобный объём бака игнорируется");
 
+    qInfo() << "История напряжения: кольцевой буфер на 5 минут";
+    for (int i = 0; i < 300; ++i)
+        can.feedVoltageSample(12.0 + i * 0.001);
+    check(can.voltageHistory().size() == 300, "набралось ровно 300 замеров");
+    checkNum(can.voltageHistory().last().toDouble(), 12.0 + 299 * 0.001,
+             "последний замер в списке — самый свежий");
+
+    can.feedVoltageSample(13.9);
+    check(can.voltageHistory().size() == 300,
+          "буфер не растёт выше 300 — старое вытесняется");
+    checkNum(can.voltageHistory().last().toDouble(), 13.9, "новый замер попал в конец");
+    checkNum(can.voltageHistory().first().toDouble(), 12.0 + 1 * 0.001,
+             "самый старый замер вытеснен");
+
+    can.feedVoltageSample(qQNaN());
+    check(qIsNaN(can.voltageHistory().last().toDouble()),
+          "нет данных — в истории NaN (на графике это разрыв)");
+
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин
     checkNum(can.speed(), 200.0, "скорость 200 км/ч");
