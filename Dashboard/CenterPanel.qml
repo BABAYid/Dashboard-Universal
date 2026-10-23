@@ -211,6 +211,126 @@ Item {
         }
     }
 
+    // ======================= РЕЖИМ 3: НАПРЯЖЕНИЕ =======================
+    // График напряжения АКБ за последние 5 минут (300 замеров по секунде).
+    // Canvas, а не ShaderEffect: перерисовываем только по приходу нового
+    // замера (раз в секунду), а не каждый кадр, поэтому график не отнимает
+    // кадры у приборов. Замер частоты кадров с графиком и без — в
+    // PROJECT_STATE.md, раздел «Производительность графиков».
+    Item {
+        anchors.fill: parent
+        visible: root.mode === 3
+
+        Text {
+            text: "Напряжение АКБ, 5 мин"
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 4
+            color: root.labelColor
+            font.pixelSize: 18
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 24
+            text: CanBackend.voltage.toFixed(1) + " В"
+            color: root.zoneColour(CanBackend.voltage)
+            font.pixelSize: 28
+            font.bold: true
+            font.family: "Kdam Thmor Pro"
+        }
+
+        Canvas {
+            id: voltageGraph
+            x: 12
+            y: 62
+            width: parent.width - 24
+            height: parent.height - 96
+
+            // Перерисовка по данным, а не по кадрам: раз в секунду.
+            Connections {
+                target: CanBackend
+                function onVoltageHistoryChanged() { voltageGraph.requestPaint() }
+            }
+            Component.onCompleted: requestPaint()
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+
+                const w = width
+                const h = height
+                const yMin = 10.0
+                const yMax = 15.0
+                const left = 46                       // место под подписи оси Y
+                const plotW = w - left - 4
+                const yFor = v => h - 18 - (v - yMin) / (yMax - yMin) * (h - 26)
+
+                // Зоны: красная < 11.5, жёлтая 11.5…12.8, зелёная > 12.8
+                ctx.fillStyle = "rgba(255, 68, 68, 0.10)"
+                ctx.fillRect(left, yFor(11.5), plotW, yFor(yMin) - yFor(11.5))
+                ctx.fillStyle = "rgba(255, 198, 74, 0.08)"
+                ctx.fillRect(left, yFor(12.8), plotW, yFor(11.5) - yFor(12.8))
+                ctx.fillStyle = "rgba(51, 204, 68, 0.07)"
+                ctx.fillRect(left, yFor(15.0), plotW, yFor(12.8) - yFor(15.0))
+
+                // Сетка и подписи оси Y
+                ctx.font = "13px sans-serif"
+                ctx.textAlign = "left"
+                const marks = [15.0, 12.8, 11.5, 10.0]
+                for (let i = 0; i < marks.length; ++i) {
+                    const v = marks[i]
+                    const y = yFor(v)
+                    ctx.strokeStyle = "rgba(255,255,255,0.10)"
+                    ctx.beginPath()
+                    ctx.moveTo(left, y)
+                    ctx.lineTo(left + plotW, y)
+                    ctx.stroke()
+                    ctx.fillStyle = "#9A9A9A"
+                    ctx.fillText(v.toFixed(1), 2, y + 4)
+                }
+
+                // Подписи оси X
+                ctx.fillStyle = "#9A9A9A"
+                ctx.textAlign = "left"
+                ctx.fillText("−5 мин", left + 2, h - 3)
+                ctx.textAlign = "right"
+                ctx.fillText("сейчас", left + plotW, h - 3)
+
+                // Линия: цвет отрезка по его значению. Свежий замер — у правого
+                // края, поэтому график «растёт» справа налево по мере накопления.
+                const data = CanBackend.voltageHistory
+                const n = data.length
+                if (n < 2)
+                    return
+                const slots = 300
+                const xFor = i => left + plotW * (i + (slots - n)) / (slots - 1)
+
+                ctx.lineWidth = 2
+                ctx.lineJoin = "round"
+                for (let i = 1; i < n; ++i) {
+                    const a = data[i - 1]
+                    const b = data[i]
+                    if (isNaN(a) || isNaN(b))
+                        continue                   // нет данных — разрыв линии
+                    ctx.strokeStyle = root.zoneColour(b)
+                    ctx.beginPath()
+                    ctx.moveTo(xFor(i - 1), yFor(a))
+                    ctx.lineTo(xFor(i), yFor(b))
+                    ctx.stroke()
+                }
+
+                // Точка на последнем замере
+                const last = data[n - 1]
+                if (!isNaN(last)) {
+                    ctx.fillStyle = root.zoneColour(last)
+                    ctx.beginPath()
+                    ctx.arc(xFor(n - 1), yFor(last), 3, 0, Math.PI * 2)
+                    ctx.fill()
+                }
+            }
+        }
+    }
+
     // ======================= ТОЧКИ-ИНДИКАТОРЫ =======================
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
