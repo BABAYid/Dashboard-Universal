@@ -106,10 +106,14 @@ Window {
     property bool navigationMode: false
     property real navigationAnimDuration: 400
 
-    // Режим центральной зоны: 0 — стандарт, 1 — компьютер, 2 — диагностика.
-    // Переключается нажатием по центру или клавишами (стрелки, пробел).
+    // Режим центральной зоны: 0 — стандарт, 1 — компьютер, 2 — диагностика,
+    // 3 — напряжение. Переключается нажатием по центру или клавишами.
+    //
+    // Счётчик режимов берём у самой панели, а не держим своё число: раньше их
+    // было два (здесь 3, в CenterPanel 4), и четвёртый режим не включался —
+    // цикл переключения упирался в старое число.
     property int centerMode: 0
-    readonly property int centerModeCount: 3
+    readonly property int centerModeCount: centerPanelView.modeCount
 
     function nextCenterMode() {
         centerMode = (centerMode + 1) % centerModeCount
@@ -327,6 +331,7 @@ Window {
             height: 404
 
             CenterPanel {
+                id: centerPanelView
                 anchors.fill: parent
                 mode: root.centerMode
                 nightMode: root.nightMode
