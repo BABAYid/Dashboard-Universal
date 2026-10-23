@@ -143,6 +143,10 @@ public:
     // секундами ожидания. В обычной работе сэмплы берутся из кадров 0x300.
     Q_INVOKABLE void feedConsumptionSample(double rate);
 
+    // Подать один замер напряжения в историю для графика. Тоже для тестов:
+    // 300 секунд ожидания в тесте не нужны.
+    Q_INVOKABLE void feedVoltageSample(double volts);
+
     void setInterfaceName(const QString &name) { m_interfaceName = name; }
     void setMockMode(bool on) { m_mockMode = on; }
 
@@ -360,6 +364,17 @@ private:
     int m_consumptionIndex = 0;        // куда писать следующий сэмпл
     int m_consumptionCount = 0;        // сколько сэмплов уже набрано (до 300)
     double m_avgConsumption5min = 0;
+
+    // История напряжения АКБ для графика на экране «Напряжение»: кольцо на 300
+    // замеров по секунде (5 минут). В QML отдаём готовый список от старых
+    // к новым — на 300 значений в секунду это ничтожная работа, зато QML не
+    // пересчитывает индексы сам.
+    static constexpr int kVoltageHistorySize = 300;
+    double m_voltageHistory[kVoltageHistorySize] = {};
+    int m_voltageIndex = 0;
+    int m_voltageCount = 0;
+    QVariantList m_voltageHistoryList;
+    void pushVoltageSample(double volts);
 
     // Статус блока сбора (кадр 0x7F0)
     bool m_deviceAlive = false;
