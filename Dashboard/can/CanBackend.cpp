@@ -445,6 +445,38 @@ void CanBackend::publishJourney()
     // Окно среднего расхода за 5 минут и запас хода от него. Приходят нули,
     // когда данных нет (стоим или шина молчит) — в среднее они не идут.
     updateConsumptionWindow(m_dataValid ? m_fuelRate : 0.0);
+
+    // Напряжение в историю для графика: один замер в секунду, 300 замеров —
+    // это 5 минут. Если кадров нет, пишем NaN: на графике будет разрыв,
+    // а не придуманное «12.0 В».
+    pushVoltageSample(m_dataValid ? m_voltage : qQNaN());
+}
+
+// Один замер напряжения в историю для графика. Храним кольцом, а в QML отдаём
+// готовый список от старых к новым: на 300 значений в секунду это ничтожная
+// работа, зато Canvas не пересчитывает индексы и не ошибается в них.
+void CanBackend::pushVoltageSample(double volts)
+{
+    m_voltageHistory[m_voltageIndex] = volts;
+    m_voltageIndex = (m_voltageIndex + 1) % kVoltageHistorySize;
+    if (m_voltageCount < kVoltageHistorySize)
+        ++m_voltageCount;
+
+    QVariantList list;
+    list.reserve(m_voltageCount);
+    for (int i = 0; i < m_voltageCount; ++i) {
+        const int idx = (m_voltageIndex - m_voltageCount + i + kVoltageHistorySize * 2)
+                        % kVoltageHistorySize;
+        list.append(m_voltageHistory[idx]);
+    }
+    m_voltageHistoryList = list;
+    emit voltageHistoryChanged();
+}
+
+// Только для тестов: подать замер напряжения в историю вручную
+void CanBackend::feedVoltageSample(double volts)
+{
+    pushVoltageSample(volts);
 }
 
 // Один шаг окна среднего расхода за последние 5 минут (300 сэмплов по 1 секунде)
