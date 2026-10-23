@@ -106,6 +106,11 @@ class CanBackend : public QObject
     Q_PROPERTY(double tripA READ tripA NOTIFY tripAChanged)               // км
     Q_PROPERTY(double tripB READ tripB NOTIFY tripBChanged)               // км
 
+    // --- история напряжения АКБ для графика: 300 замеров по секунде (5 минут) ---
+    // Список от старых к новым. Невалидные замеры — NaN: на графике это разрыв,
+    // а не выдуманное значение.
+    Q_PROPERTY(QVariantList voltageHistory READ voltageHistory NOTIFY voltageHistoryChanged)
+
 public:
     // Внимание: конструктор намеренно объявлен БЕЗ аргумента по умолчанию.
     // Qt при регистрации QML-синглтона сначала проверяет, можно ли создать
