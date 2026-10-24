@@ -267,7 +267,12 @@ def build(gltf, binary, eps):
             new_pos, new_nrm, new_uv, tris = result
 
             out = {"attributes": {"POSITION": add_accessor(new_pos, "VEC3", with_bounds=True)},
-                   "mode": prim.get("mode", 4)}
+                   # В файле индексы уже треугольные (strips развёрнуты в
+                   # primitive_triangles), поэтому режим обязан быть 4 —
+                   # треугольники. Если оставить исходный mode 5, рендерер
+                   # прочитает тройки как полосу и нарисует мусор («полоску»
+                   # вместо машины) — проверено.
+                   "mode": 4}
             if new_nrm is not None:
                 out["attributes"]["NORMAL"] = add_accessor(new_nrm.astype(np.float32), "VEC3")
             if new_uv is not None:
