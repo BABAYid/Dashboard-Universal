@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import Qt5Compat.GraphicalEffects
 
 // ============================================================================
 //  Gauge.qml — общая основа круглого прибора: спидометра и тахометра.
@@ -74,9 +75,9 @@ Item {
     property bool showTrail: true
     // Поправка угла шлейфа: арт стрелки нарисован с наклоном −79.3°
     // (замерено по кадру: при needleAngle = −22.7° стрелка смотрит
-    // на −102°). Значение 191.2°, которое даёт комментарий в
-    // Speedometer.qml, смещало шлейф на 90°.
-    property real trailRotationOffset: -79.3
+    // на −102°), а маска-сектор нарисована от «3 часов» (−25°..0°),
+    // поэтому сверх наклона нужно ещё −90°: −79.3 − 90 = −169.3.
+    property real trailRotationOffset: -169.3
 
     // ======================= ОТРИСОВКА =======================
 
@@ -88,53 +89,66 @@ Item {
     }
 
     // --- НАЧАЛО ШЛЕЙФА ---
-    // Объявлен ДО стрелок и центрального круга — они рисуются поверх,
-    // поэтому шлейф не перекрывает ни основную, ни малую стрелку.
-    // Canvas-сектор: хвост 25° позади стрелки с плавным затуханием.
-    // createConicGradient в этой сборке Qt отсутствует (не функция) —
-    // замена: линейный градиент поперёк сектора (та же плавная альфа).
-    // Угол 0 Canvas = «на 3 часа», поэтому сектор построен вокруг «верха»
-    // ([−130°..−90°]), а поворот item = угол стрелки − 79.3° (замерено по
-    // кадру: при needleAngle = −22.7° стрелка смотрит на −102°).
-    Canvas {
+    // Canvas больше не рисует градиент: createConicGradient в этой сборке
+    // Qt не работает (заливает сплошным цветом). Теперь Canvas — только
+    // МАСКА формы (сектор 25° позади стрелки), а плавное затухание даёт
+    // аппаратный ConicalGradient, наложенный через OpacityMask.
+    // Объявлен ДО стрелок и центрального круга — они рисуются поверх.
+    Item {
         id: needleTrail
-        width: parent.width
-        height: parent.height
-        x: 0; y: 0
-        visible: gauge.showTrail && !gauge.startup
-        antialiasing: true
+        anchors.fill: parent
+        // Весь контейнер вращается вместе со стрелкой.
         rotation: (gauge.startup ? gauge.sweepAngle : gauge.needleAngle) + gauge.trailRotationOffset
-        onRotationChanged: requestPaint()
+        visible: gauge.showTrail && !gauge.startup
 
-        onPaint: {
-            var ctx = getContext("2d");
-            ctx.reset();
-            var cx = width / 2;
-            var cy = height / 2;
-            // Ровно как в сниппете заказчика: полный радиус до края шкалы.
-            var radius = width / 2 - 10;
+        // 1. Маска формы: сектор 25° позади стрелки (от −25° до 0°).
+        Canvas {
+            id: trailMask
+            anchors.fill: parent
+            visible: false            // используется только как маска
+            antialiasing: true
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.reset();
+                var cx = width / 2;
+                var cy = height / 2;
+                var radius = width / 2 - 10;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, -25 * Math.PI / 180, 0, false);
+                ctx.closePath();
+                ctx.fillStyle = "white";
+                ctx.fill();
+            }
+        }
 
-            // Хвост шире 25° (40°): часть сектора у стрелки прячется
-            // под её артом; 40° оставляет видимый «веер» сбоку.
-            var a0 = -130 * Math.PI / 180;   // хвост
-            var a1 = -90 * Math.PI / 180;    // у стрелки
+        // 2. Источник градиента: плавно затухает от стрелки к хвосту.
+        // ВАЖНО: не Rectangle, а Item — у Rectangle цвет по умолчанию
+        // белый, и он заливал маску сплошным белым (та самая «серая
+        // заливка» вместо градиента).
+        Item {
+            id: trailGradientSource
+            anchors.fill: parent
+            visible: false
+            ConicalGradient {
+                anchors.fill: parent
+                // position 0.0 у ConicalGradient — «на 12 часов» локально,
+                // а позиции растут по часовой. Маска-сектор занимает
+                // 65°…90° (от «3 часов» −25°…0°), поэтому градиент стартует
+                // с 65°: прозрачный у хвоста → 0.7 белого у стрелки.
+                angle: 65
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.07; color: "#B3FFFFFF" }
+                }
+            }
+        }
 
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, radius, a0, a1, false);
-            ctx.closePath();
-
-            var r09 = radius * 0.9;
-            var gx0 = cx + r09 * Math.cos(a1);
-            var gy0 = cy + r09 * Math.sin(a1);
-            var gx1 = cx + r09 * Math.cos(a0);
-            var gy1 = cy + r09 * Math.sin(a0);
-            var grad = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
-            grad.addColorStop(0.0, "rgba(255, 255, 255, 0.7)");
-            grad.addColorStop(1.0, "transparent");
-
-            ctx.fillStyle = grad;
-            ctx.fill();
+        // 3. Градиент, обрезанный по маске.
+        OpacityMask {
+            anchors.fill: parent
+            source: trailGradientSource
+            maskSource: trailMask
         }
     }
     // --- КОНЕЦ ШЛЕЙФА ---
