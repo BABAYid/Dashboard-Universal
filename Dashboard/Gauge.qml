@@ -1,5 +1,4 @@
 import QtQuick 2.15
-import QtQuick.Effects
 
 // ============================================================================
 //  Gauge.qml — общая основа круглого прибора: спидометра и тахометра.
@@ -127,49 +126,27 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // ===== ШЛЕЙФ: размытая копия стрелки (MultiEffect) =====
-    // Самый простой и «чистый» способ: копия арта стрелки, отстаёт от
-    // основной (Behavior с задержкой), размывается и красится в белый.
-    // Никакой геометрии/линий — нет сетки и артефактов, нет перекрытия
-    // шкалы (ширина = ширина стрелки + размытие), никаких «догоняющих
-    // стрелок»: отставание в 220 мс даёт мягкий след при движении.
-    // «Пивот» вдвое больше прибора — поворот длинной стрелки не обрезается.
-    Item {
-        id: trailPivot
-        visible: false            // источник только для MultiEffect
-        width: parent.width * 2
-        height: parent.height * 2
-        x: -parent.width / 2
-        y: -parent.height / 2
+    // ===== ШЛЕЙФ: заранее размытая копия стрелки =====
+    // Размытие сделано ОФЛАЙН (PIL) в images/needle_glow.png: белый арт
+    // стрелки с гауссовым размытием и запасом 120 px от краёв. В рантайме —
+    // просто одна картинка с отставанием по углу (Behavior): никакой
+    // per-frame размывки (MultiEffect душил рендер до 2 к/с), нет линий
+    // и сетки, ширина = ширина стрелки + размытие — цифры шкалы не трогает.
+    Image {
+        source: "images/needle_glow.png"
+        // 990 px холст / 750 px стрелка → 1.32, вместе с needleScale 1.05
+        width: parent.width * gauge.needleScale * (990.0 / 750.0)
+        height: width
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
         rotation: gauge.startup ? gauge.sweepAngle : gauge.needleAngle
         Behavior on rotation {
             enabled: !gauge.startup
             NumberAnimation { duration: gauge.trailLagMs; easing.type: Easing.OutCubic }
         }
-        Image {
-            source: gauge.needleSource
-            width: parent.width / 2 * gauge.needleScale
-            height: parent.height / 2 * gauge.needleScale
-            anchors.centerIn: parent
-            fillMode: Image.PreserveAspectFit
-        }
-    }
-
-    MultiEffect {
-        source: trailPivot
-        x: trailPivot.x
-        y: trailPivot.y
-        width: trailPivot.width
-        height: trailPivot.height
         visible: gauge.showTrail && !gauge.startup
-        autoPaddingEnabled: true
-        blurEnabled: true
-        blur: 0.85
-        blurMax: 64
-        colorization: 1.0
-        colorizationColor: "#FFFFFF"
-        brightness: 0.10
         opacity: 0.5
     }
 
