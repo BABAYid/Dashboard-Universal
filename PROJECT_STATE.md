@@ -712,29 +712,36 @@ installed`, и приборка работает без 3D — не падает
 **Зависимости и команды:**
 
 ```bash
-sudo apt install qml6-module-qtquick3d-assetutils   # RuntimeLoader для .glb
+sudo apt install qml6-module-qtquick3d-assetutils   # RuntimeLoader (тип)
+sudo apt install qt6-quick3d-assetimporters-plugin  # плагины импорта: assimp + draco + pugixml
 ```
+
+Первый пакет даёт QML-тип `RuntimeLoader`/`Model` с `source` из `AssetUtils`,
+второй — **плагин импортёра** (`plugins/assetimporters/libassimp.so`), без
+которого любой рантайм-импорт glTF падает с «Unsupported: Unknown error»
+(проверено: без плагина — ошибка, с плагином — `Success!`). Плагин тянет
+`libassimp6`, а тот — `libdraco9` и `libpugixml1v5`; это и есть полный набор.
 
 Плюс нужен рабочий OpenGL/GLES: QtQuick3D рисует только через RHI. В среде без
 драйвера (или с `QT_QPA_PLATFORM=offscreen`) View3D честно пишет «The View3D
 item is not going to display anything» — приборка при этом работает, но без 3D.
 
-**Почему 3D может не показываться (диагноз 24.10.2026).** Две независимые
-причины, обе проверены:
+**Почему 3D не показывалось — окончательный диагноз (проверено 25.10.2026).**
 
-1. **Нет рабочего OpenGL.** Без него Qt Quick 3D не рисует вообще: в offscreen
-   платформа не RHI-based («The View3D item is not going to display anything»),
-   а на дисплее падает `egl: failed to create dri2 screen` и
-   `ZINK: failed to choose pdev`. Обходится переменной `LIBGL_ALWAYS_SOFTWARE=1`
-   (программный llvmpipe) — после неё ошибки EGL исчезают.
-2. **Не работает рантайм-импорт glTF.** `RuntimeLoader` в статусе Error с
-   текстом «Unsupported: Unknown error» — причём **на исходном `audi3D.glb`
-   тоже**, то есть дело не в прореженной модели. Диагностика пишется в лог
-   (`3D: статус модели …, ошибка: …`) — без неё причина не видна вообще.
+1. `RuntimeLoader` без плагина импортёра валится с «Unsupported: Unknown
+   error» и **очищает `source`** — в логе пустой `источник …`. Это и сбивало
+   с толку: казалось, что модель «не грузится», хотя плагина просто не было.
+2. С `qt6-quick3d-assetimporters-plugin` (распакован в `.dashcheck` и подан
+   через `QT_PLUGIN_PATH`/`LD_LIBRARY_PATH`) в приложении видно
+   `3D: статус модели 1 | ошибка: Success! | источник: qrc:/…/car.glb` —
+   модель импортируется из qrc, дело было только в пакетах.
+3. Без рабочего GL (offscreen или битый драйвер) рендеринга всё равно не будет:
+   `egl: failed to create dri2 screen` / `ZINK: failed to choose pdev` лечатся
+   `LIBGL_ALWAYS_SOFTWARE=1`; offscreen-платформа не RHI-based и 3D там не
+   рисует принципиально.
 
-Пути решения: собрать модель в формат `.mesh` утилитой `balsam` из пакета
-`qt6-quick3d-dev-tools` (тогда RuntimeLoader не нужен — ассеты импортируются
-на этапе сборки) либо поставить Qt, где рантайм-импорт glTF работает.
+Диагностика в сцене (`3D: статус модели …, ошибка: …, источник: …`) остаётся
+в коде — она и позволила найти причину; без неё ошибки не видно вообще.
 
 **Флаг `--no-3d`.** Приборка стартует без 3D-заставки: лампы и стрелки сразу,
 самопроверка 2.5 с, как раньше. Флаг читается в `main.cpp` и передаётся в QML
