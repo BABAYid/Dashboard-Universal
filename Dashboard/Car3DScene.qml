@@ -205,48 +205,13 @@ Item {
                     id: carModel
                 }
 
-                // ===== ФАРЫ И ЗАДНИЕ ФОНАРИ (по CAN) =====
-                // Светящиеся шарики на местах фар: белые впереди, красные
-                // сзади. Работает с любой моделью — узлы фар искать не нужно.
-                // Локальные координаты в метрах: нос -2.5…0 по X, корма +2.5.
+                // ===== СВЕТ ФАР И СТОПОВ (по CAN, объёмный) =====
+                // Только новый эффект: мягкий bloom (сферы с радиальной
+                // текстурой) и лучи-конусы вперёд; жёсткие «шарики» старого
+                // варианта убраны. Локальные координаты в метрах: нос -2.5,
+                // корма +2.5.
                 Node {
                     visible: scene.headlightsOn && !scene.viewSide
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.62, -0.72)
-                        scale: Qt.vector3d(0.0025, 0.0025, 0.0025)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FFF6DC"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.62, 0.72)
-                        scale: Qt.vector3d(0.0025, 0.0025, 0.0025)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FFF6DC"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(2.72, 0.68, -0.72)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FF2A1A"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(2.72, 0.68, 0.72)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FF2A1A"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
                     // ===== Фейковый bloom вокруг фар: сферы с радиальной
                     // текстурой, полупрозрачные (замена HDR-глоу без
                     // пост-обработки — на RK3588 дешевле).
@@ -322,19 +287,6 @@ Item {
                         materials: PrincipledMaterial {
                             baseColorMap: lightsGlowTexture
                             baseColor: Qt.rgba(1.0, 0.12, 0.06, 0.55)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
-                    }
-
-                    // Пятно света от фар на дороге перед машиной
-                    Model {
-                        source: "#Cube"
-                        position: Qt.vector3d(-4.6, 0.003, 0)
-                        scale: Qt.vector3d(0.044, 0.0004, 0.03)
-                        materials: PrincipledMaterial {
-                            baseColor: Qt.rgba(1.0, 0.94, 0.78, 0.20)
                             lighting: PrincipledMaterial.NoLighting
                             alphaMode: PrincipledMaterial.Blend
                             cullMode: PrincipledMaterial.NoCulling
