@@ -22,6 +22,7 @@ Item {
     property bool headlightsOn: false
     property bool leftTurn: false
     property bool rightTurn: false
+    property bool turnBlink: false
 
     // Необязательная зависимость: отсутствие модуля не ломает приборку
     readonly property bool sceneLoaded: sceneLoader.status === Loader.Ready
@@ -46,6 +47,7 @@ Item {
             scene.headlightsOn = Qt.binding(function() { return root.headlightsOn })
             scene.leftTurn = Qt.binding(function() { return root.leftTurn })
             scene.rightTurn = Qt.binding(function() { return root.rightTurn })
+            scene.turnBlink = Qt.binding(function() { return root.turnBlink })
             scene.modelReady.connect(root.modelReady)
             scene.modelFailed.connect(root.modelFailed)
         }

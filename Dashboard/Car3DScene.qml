@@ -41,17 +41,9 @@ Item {
     property bool headlightsOn: false
     property bool leftTurn: false
     property bool rightTurn: false
-    // Мигание поворотников: CAN присылает состояние (бит постоянный пока
-    // включён), а мигаем сами — тем же ритмом, что панель (1.5 Гц).
-    property bool turnPhase: true
-
-    Timer {
-        interval: 333
-        repeat: true
-        running: scene.leftTurn || scene.rightTurn
-        onRunningChanged: if (!running) scene.turnPhase = true
-        onTriggered: scene.turnPhase = !scene.turnPhase
-    }
+    // Фаза мигания приходит из Main (общий таймер) — стрелки на панели и
+    // лампы на модели мигают синхронно.
+    property bool turnBlink: false
 
     signal modelReady()
     signal modelFailed()
@@ -215,29 +207,11 @@ Item {
                 }
 
                 // ===== ПОВОРОТНИКИ (мигают вместе с лампой на панели) =====
+                // Левый борт в локальных осях модели — +z (перед у неё −x):
+                // тогда при виде спереди «левый» поворотник светится справа
+                // на экране, как на настоящей машине.
                 Node {
-                    visible: scene.leftTurn && scene.turnPhase
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.55, -1.30)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FF9A1A"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(2.72, 0.60, -1.30)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FF9A1A"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
-                }
-                Node {
-                    visible: scene.rightTurn && scene.turnPhase
+                    visible: scene.leftTurn && scene.turnBlink
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(-2.72, 0.55, 1.30)
@@ -250,6 +224,27 @@ Item {
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(2.72, 0.60, 1.30)
+                        scale: Qt.vector3d(0.003, 0.003, 0.003)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FF9A1A"
+                            lighting: PrincipledMaterial.NoLighting
+                        }
+                    }
+                }
+                Node {
+                    visible: scene.rightTurn && scene.turnBlink
+                    Model {
+                        source: "#Sphere"
+                        position: Qt.vector3d(-2.72, 0.55, -1.30)
+                        scale: Qt.vector3d(0.003, 0.003, 0.003)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FF9A1A"
+                            lighting: PrincipledMaterial.NoLighting
+                        }
+                    }
+                    Model {
+                        source: "#Sphere"
+                        position: Qt.vector3d(2.72, 0.60, -1.30)
                         scale: Qt.vector3d(0.003, 0.003, 0.003)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"

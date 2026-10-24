@@ -71,6 +71,15 @@ Window {
     property bool rangeBlinkOn: true   // фаза мигания предупреждения о запасе
 
     readonly property bool leftTurn: CanBackend.leftTurn
+    // Общая фаза мигания поворотников: одна на панель и на 3D-модель
+    property bool turnBlink: false
+    Timer {
+        interval: 333
+        repeat: true
+        running: root.leftTurn || root.rightTurn
+        onRunningChanged: if (!running) root.turnBlink = false
+        onTriggered: root.turnBlink = !root.turnBlink
+    }
     readonly property bool rightTurn: CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
     readonly property bool lowBeam: CanBackend.lowBeam
@@ -624,6 +633,7 @@ Window {
             z: 2
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
+            blinkOn: root.turnBlink
             highBeam: root.highBeam
             lowBeam: root.lowBeam
             positionLights: root.positionLights

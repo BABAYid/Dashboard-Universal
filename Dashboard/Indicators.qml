@@ -30,22 +30,15 @@ Item {
     // Самопроверка ламп при включении зажигания: все лампы горят ~2,5 с
     property bool selfTest: false
 
-    // Мигание поворотников — 1,5 Гц, как у штатного реле
+    // Фаза мигания поворотников приходит снаружи (Main.qml, один таймер):
+    // так стрелки на панели и лампы на 3D-модели мигают синхронно.
     property bool blinkOn: false
-
-    Timer {
-        interval: 333
-        repeat: true
-        running: root.leftTurn || root.rightTurn
-        onRunningChanged: if (!running) root.blinkOn = false
-        onTriggered: root.blinkOn = !root.blinkOn
-    }
 
     // Левый поворотник (на циферблате спидометра, прибор сдвинут по макету)
     Image {
         source: "images/left_turn.png"
-        x: 550
-        y: 80
+        x: 332
+        y: 130
         width: 50
         height: 50
         fillMode: Image.PreserveAspectFit
@@ -56,8 +49,8 @@ Item {
     // Правый поворотник
     Image {
         source: "images/right_turn.png"
-        x: 1320
-        y: 80
+        x: 1538
+        y: 130
         width: 50
         height: 50
         fillMode: Image.PreserveAspectFit
