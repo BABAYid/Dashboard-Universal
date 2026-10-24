@@ -220,12 +220,14 @@ cmake --build build --target test_canprotocol
 приборы (стрелки проходят шкалу). После запуска машина остаётся фоном панели
 режимов — притушена и медленно покачивается. В навигации скрыта.
 
-Нужны два условия: модуль `qml6-module-qtquick3d-assetutils` (грузит `.glb`
-через `RuntimeLoader`) и рабочий OpenGL/GLES — QtQuick3D рисует только через
-RHI. Без модуля приборка работает, просто без 3D (в логе одна строка).
-Модель лежит в `Dashboard/assets/car.glb` (36 тысяч треугольников, 1.66 МБ;
-исходные 3.09 млн прорежены скриптом `tools/decimate_glb.py`).
-Отключить заставку: `./appDashboard --no-3d`.
+Нужны три условия: модуль `qml6-module-qtquick3d-assetutils` (даёт
+`RuntimeLoader`), пакет `qt6-quick3d-assetimporters-plugin` (плагин импорта
+glTF; без него RuntimeLoader падает с «Unsupported: Unknown error» и очищает
+`source`) и рабочий OpenGL/GLES — QtQuick3D рисует только через RHI. Без
+пакетов приборка работает, просто без 3D (в логе видна строка
+`3D: статус модели …`). Модель лежит в `Dashboard/assets/car.glb` (43 тысячи
+треугольников, 1.82 МБ; исходные 3.09 млн прорежены скриптом
+`tools/decimate_glb.py`). Отключить заставку: `./appDashboard --no-3d`.
 
 ### График напряжения АКБ
 
