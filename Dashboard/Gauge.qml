@@ -80,6 +80,11 @@ Item {
     // Шлейф-«след»: одна плавная текстура-клин, поворачивается вместе со
     // стрелкой; видна только при движении — прозрачность от скорости.
     // Направление: d>0 — по часовой (клин сзади-против часовой).
+    // Чувствительность шлейфа: скорость стрелки (град/кадр), при которой
+    // шлейф выходит на полную. У спидометра ход плавный, у тахометра —
+    // резкий, поэтому у каждого своё значение.
+    property real trailSensitivity: 0.8
+
     property real trailCwOpacity: 0.0
     property real trailCcwOpacity: 0.0
     property real trailLastRotation: 0.0
@@ -91,10 +96,13 @@ Item {
         onTriggered: {
             const d = gauge.mainNeedleRotation - gauge.trailLastRotation
             gauge.trailLastRotation = gauge.mainNeedleRotation
-            // |d| — градусы за 16 мс; 0.8°/кадр — уже заметное движение.
-            const v = Math.min(1.0, Math.abs(d) / 0.8)
-            gauge.trailCwOpacity = d > 0.02 ? v * 0.9 : gauge.trailCwOpacity * 0.5
-            gauge.trailCcwOpacity = d < -0.02 ? v * 0.9 : gauge.trailCcwOpacity * 0.5
+            // |d| — градусы за 16 мс; нормируем на чувствительность прибора.
+            // Направление: клин без отражения лежит в углах [-38..0] от
+            // стрелки (против часовой) — он «за стрелкой» при движении
+            // ПРОТИВ часовой (d < 0), зеркальный — при движении по часовой.
+            const v = Math.min(1.0, Math.abs(d) / Math.max(0.05, gauge.trailSensitivity))
+            gauge.trailCwOpacity = d < -0.02 ? v * 0.9 : gauge.trailCwOpacity * 0.5
+            gauge.trailCcwOpacity = d > 0.02 ? v * 0.9 : gauge.trailCcwOpacity * 0.5
         }
     }
 
