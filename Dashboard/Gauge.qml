@@ -92,6 +92,10 @@ Item {
     property real trailCwOpacity: 0.0
     property real trailCcwOpacity: 0.0
     property real trailLastRotation: 0.0
+    // Сглаженные скорость и направление: без них прозрачность «дёргается»
+    // на каждом кадре пружины (мерцание).
+    property real trailSmoothVel: 0.0
+    property real trailSmoothDir: 0.0
 
     Timer {
         interval: 16
@@ -104,11 +108,15 @@ Item {
             // Направление: клин без отражения лежит в углах [-38..0] от
             // стрелки (против часовой) — он «за стрелкой» при движении
             // ПРОТИВ часовой (d < 0), зеркальный — при движении по часовой.
-            const v = Math.min(1.0, Math.abs(d) / Math.max(0.05, gauge.trailSensitivity))
-            // По часовой (d>0) — прямой клин (лежит против часовой от
-            // стрелки, т.е. позади движения); против часовой — зеркальный.
-            gauge.trailCwOpacity = d > 0.02 ? v * 0.9 : gauge.trailCwOpacity * 0.5
-            gauge.trailCcwOpacity = d < -0.02 ? v * 0.9 : gauge.trailCcwOpacity * 0.5
+            const raw = Math.max(-1.0, Math.min(1.0,
+                d / Math.max(0.05, gauge.trailSensitivity)))
+            // Низкочастотный фильтр: плавно «набираем» скорость и плавно
+            // гасим — никакого мерцания от кадровых колебаний пружины.
+            gauge.trailSmoothVel = gauge.trailSmoothVel * 0.82 + Math.abs(raw) * 0.18
+            gauge.trailSmoothDir = gauge.trailSmoothDir * 0.85 + raw * 0.15
+            const o = Math.min(1.0, gauge.trailSmoothVel * 1.15)
+            gauge.trailCwOpacity = gauge.trailSmoothDir > 0.05 ? o : gauge.trailCwOpacity * 0.85
+            gauge.trailCcwOpacity = gauge.trailSmoothDir < -0.05 ? o : gauge.trailCcwOpacity * 0.85
         }
     }
 
