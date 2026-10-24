@@ -32,6 +32,7 @@ qt_add_qml_module(appDashboard
         GasAnimation.qml
         Car3DView.qml
         Car3DScene.qml
+        CarModel.qml
         Speedometer.qml
         Tachometer.qml
         Settings.qml
@@ -41,18 +42,8 @@ qt_add_qml_module(appDashboard
         # 3D-машина, предобработанная balsam из assets/car.glb (см.
         # tools/decimate_glb.py и README): нативная сцена + .mesh вместо
         # рантайм-импорта glTF, который в этой сборке Qt работает ненадёжно.
-        assets/balsam/Car.qml
-        assets/balsam/maps/textureData.web
-        assets/balsam/meshes/mesh_mesh.mesh
-        assets/balsam/meshes/mesh_mesh115.mesh
-        assets/balsam/meshes/mesh_mesh132.mesh
-        assets/balsam/meshes/mesh_mesh148.mesh
-        assets/balsam/meshes/mesh_mesh167.mesh
-        assets/balsam/meshes/mesh_mesh186.mesh
-        assets/balsam/meshes/mesh_mesh191.mesh
-        assets/balsam/meshes/mesh_mesh214.mesh
-        assets/balsam/meshes/mesh_mesh216.mesh
-        assets/balsam/meshes/mesh_mesh218.mesh
+        assets/cruiser/maps/textureData.web
+        assets/cruiser/meshes/meshes_0__mesh.mesh
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
         images/around_in.png

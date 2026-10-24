@@ -5,12 +5,13 @@ import QtQuick3D
 // ============================================================================
 //  3D-сцена с моделью машины: View3D, камера, света, загрузка сцены.
 //
-//  Модель предобработана balsam (glb → Car.qml + .mesh + упакованные
-//  текстуры) и лежит в resources готовой сценой. Рантайм-импорт glTF
-//  (RuntimeLoader) не используется: в этой сборке Qt он импортирует GLB
-//  «успешно», но с испорченной геометрией (проверено: вместо машины —
-//  «полоска» из мусорных треугольников). Готовая сцена грузится
-//  обычным Loader без импортёров и не требует никаких пакетов.
+//  Модель (cruiser300.glb) предобработана на этапе разработки:
+//  tools/bake_glb.py запекает мир в вершины, balsam собирает готовую
+//  сцену (Dashboard/CarModel.qml + assets/cruiser/.mesh + WebP-атлас).
+//  В рантайме — обычный QML-компонент в модуле, без импортёров.
+//  Почему не RuntimeLoader: в этой сборке Qt рантайм-импорт glTF
+//  «успешен», но даёт испорченную геометрию. Почему не Loader:
+//  загруженный через Loader 3D-узел не получает сцену и не рисуется.
 //
 //  Раскладка progress (0…1, 4 секунды) — здесь же:
 //     0.000–0.125  всё тёмное, фары погашены, машина за кадром
@@ -51,12 +52,16 @@ Item {
             position: Qt.vector3d(0, 1.6, 9.5)
             eulerRotation: Qt.vector3d(-6, 0, 0)
             fieldOfView: 38
+            // clipNear по умолчанию 10: машина ближе него — и не рисуется
+            // вообще (нашли по «красному фону»: он рисовался, модели нет).
+            clipNear: 0.5
+            clipFar: 1000
         }
 
         // Слабая заливка, чтобы кузов не был чёрным силуэтом
         DirectionalLight {
             eulerRotation: Qt.vector3d(-35, -20, 0)
-            brightness: 0.18 * Math.min(1.0, scene.progress / 0.125)
+            brightness: 1.5 * Math.min(1.0, scene.progress / 0.125)
             castsShadow: false
         }
 
@@ -85,9 +90,10 @@ Item {
             position: Qt.vector3d(0, 0, scene.carDepth)
             scale: Qt.vector3d(scene.carScale, scene.carScale, scene.carScale)
 
-            // модель длиной ~7 «единиц» — приводим к ~4.2, чтобы влезала в кадр
+            // Модель cruiser300 в сантиметрах: CarModel.qml сам ставит
+            // масштаб 0.001, здесь ещё 0.75 — подгонка под кадр.
             Node {
-                scale: Qt.vector3d(0.6, 0.6, 0.6)
+                scale: Qt.vector3d(0.75, 0.75, 0.75)
 
                 SequentialAnimation on eulerRotation.y {
                     running: scene.progress >= 0.99 && scene.idleMotion
@@ -96,19 +102,11 @@ Item {
                     NumberAnimation { from: 6; to: -6; duration: 7000; easing.type: Easing.InOutSine }
                 }
 
-                // Готовая сцена от balsam: Car.qml ссылается на meshes/*.mesh
-                // и maps/textureData.web относительными путями из того же
-                // каталога ресурсов.
-                Loader {
-                    id: carLoader
-                    source: "qrc:/qt/qml/Dashboard/assets/balsam/Car.qml"
-                    onStatusChanged: {
-                        console.log("3D: сцена статус", status)
-                        if (status === Loader.Ready)
-                            scene.modelReady()
-                        else if (status === Loader.Error)
-                            scene.modelFailed()
-                    }
+                // Готовая сцена от balsam, объявленная как компонент модуля.
+                // Важно: через Loader 3D-узел не привязывается к сцене и не
+                // рисуется — поэтому это обычное объявление типа, как Model.
+                CarModel {
+                    id: carModel
                 }
             }
         }

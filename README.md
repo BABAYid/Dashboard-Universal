@@ -220,25 +220,30 @@ cmake --build build --target test_canprotocol
 приборы (стрелки проходят шкалу). После запуска машина остаётся фоном панели
 режимов — притушена и медленно покачивается. В навигации скрыта.
 
-Нужно одно условие: модуль `qml6-module-qtquick3d` (он ставится с Qt) и
-рабочий OpenGL/GLES — QtQuick3D рисует только через RHI. **Модель
-предобработана `balsam`** ещё на этапе сборки: `Dashboard/assets/balsam/`
-— это готовый `Car.qml` + меши `.mesh` + упакованный WebP-атлас текстур.
-В рантайме сцена грузится обычным `Loader` без импортёров и без
-`QtQuick3D.AssetUtils`: в этой сборке Qt рантайм-импорт glTF импортирует
-модель «успешно», но с испорченной геометрией (проверено — вместо машины
-«полоска» из мусорных треугольников), поэтому путь через balsam. Модель
-лежит в `Dashboard/assets/car.glb` (36 тысяч треугольников, 1.66 МБ;
-исходные 3.09 млн прорежены скриптом `tools/decimate_glb.py`).
-Пересобрать 3D-активы:
+Нужно одно условие: модуль `qml6-module-qtquick3d` (идёт с Qt) и рабочий
+OpenGL/GLES — QtQuick3D рисует только через RHI. Модель — белый
+**cruiser300** (`cruiser300.glb` в корне проекта): `tools/bake_glb.py`
+запекает мировые трансформации в вершины, `balsam` собирает готовую
+сцену `Dashboard/CarModel.qml` + `Dashboard/assets/cruiser/` (`.mesh` +
+WebP-атлас). В рантайме это обычный QML-компонент модуля — никаких
+импортёров. Три ловушки Qt Quick 3D, на которые уже потрачены часы
+(подробно — `PROJECT_STATE.md`): рантайм-импорт glTF (`RuntimeLoader`)
+«успешен», но с испорченной геометрией; **`Loader` не привязывает 3D-узел
+к сцене** (машина не рисуется) — только прямое объявление компонента;
+**`PerspectiveCamera.clipNear` по умолчанию 10** — всё ближе 10 единиц
+отсекается, поэтому камера обязана ставить `clipNear: 0.5`.
+
+Пересобрать 3D-активы (balsam — только на машине разработки):
 
 ```bash
-sudo apt install qt6-quick3d-dev-tools            # утилита balsam
-python3 tools/decimate_glb.py audi3D.glb Dashboard/assets/car.glb --tris 30000
-balsam Dashboard/assets/car.glb -o Dashboard/assets/balsam/
+sudo apt install qt6-quick3d-dev-tools
+python3 tools/bake_glb.py cruiser300.glb /tmp/cruiser_baked.glb
+balsam /tmp/cruiser_baked.glb -o /tmp/cruiser_out/
+# потом: CarModel.qml из /tmp/cruiser_out/Cruiser_baked.qml, пути →
+# assets/cruiser/..., к Model добавить scale: 0.001 (модель в см)
 ```
 
-Отключить заставку: `./appDashboard --no-3d`.
+Отключить заставку и 3D-машину: `./appDashboard --no-3d`.
 
 ### График напряжения АКБ
 
