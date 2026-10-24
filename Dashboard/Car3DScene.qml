@@ -85,11 +85,12 @@ Item {
 
         PerspectiveCamera {
             id: camera
-            // Обычный вид — сбоку-сверху; в 6-м режиме (подвеска) — сверху,
-            // 0 градусов: взгляд строго вниз.
-            position: scene.viewSide ? Qt.vector3d(0, 12, 0.3)
+            // Обычный вид — сбоку-сверху; в 6-м режиме (подвеска) — сверху
+            // с наклоном ~12° от вертикали: так виден подъём кузова
+            // (дорожный просвет), но машина остаётся почти «сверху».
+            position: scene.viewSide ? Qt.vector3d(0, 8.6, 2.0)
                                      : Qt.vector3d(0, 6.0, 11.0)
-            eulerRotation: scene.viewSide ? Qt.vector3d(-90, 0, 0)
+            eulerRotation: scene.viewSide ? Qt.vector3d(-78, 0, 0)
                                           : Qt.vector3d(-28, 0, 0)
             fieldOfView: 40
             clipNear: 0.5
