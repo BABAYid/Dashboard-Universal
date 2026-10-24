@@ -220,14 +220,25 @@ cmake --build build --target test_canprotocol
 приборы (стрелки проходят шкалу). После запуска машина остаётся фоном панели
 режимов — притушена и медленно покачивается. В навигации скрыта.
 
-Нужны три условия: модуль `qml6-module-qtquick3d-assetutils` (даёт
-`RuntimeLoader`), пакет `qt6-quick3d-assetimporters-plugin` (плагин импорта
-glTF; без него RuntimeLoader падает с «Unsupported: Unknown error» и очищает
-`source`) и рабочий OpenGL/GLES — QtQuick3D рисует только через RHI. Без
-пакетов приборка работает, просто без 3D (в логе видна строка
-`3D: статус модели …`). Модель лежит в `Dashboard/assets/car.glb` (43 тысячи
-треугольников, 1.82 МБ; исходные 3.09 млн прорежены скриптом
-`tools/decimate_glb.py`). Отключить заставку: `./appDashboard --no-3d`.
+Нужно одно условие: модуль `qml6-module-qtquick3d` (он ставится с Qt) и
+рабочий OpenGL/GLES — QtQuick3D рисует только через RHI. **Модель
+предобработана `balsam`** ещё на этапе сборки: `Dashboard/assets/balsam/`
+— это готовый `Car.qml` + меши `.mesh` + упакованный WebP-атлас текстур.
+В рантайме сцена грузится обычным `Loader` без импортёров и без
+`QtQuick3D.AssetUtils`: в этой сборке Qt рантайм-импорт glTF импортирует
+модель «успешно», но с испорченной геометрией (проверено — вместо машины
+«полоска» из мусорных треугольников), поэтому путь через balsam. Модель
+лежит в `Dashboard/assets/car.glb` (36 тысяч треугольников, 1.66 МБ;
+исходные 3.09 млн прорежены скриптом `tools/decimate_glb.py`).
+Пересобрать 3D-активы:
+
+```bash
+sudo apt install qt6-quick3d-dev-tools            # утилита balsam
+python3 tools/decimate_glb.py audi3D.glb Dashboard/assets/car.glb --tris 30000
+balsam Dashboard/assets/car.glb -o Dashboard/assets/balsam/
+```
+
+Отключить заставку: `./appDashboard --no-3d`.
 
 ### График напряжения АКБ
 
