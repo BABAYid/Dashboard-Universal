@@ -81,6 +81,25 @@ Item {
             backgroundMode: SceneEnvironment.Color
             clearColor: "black"
             antialiasingMode: SceneEnvironment.NoAA
+            // Дымка: дальний край дороги и лучи фар уходят в синеватый мрак —
+            // эффект объёма без пост-обработки (на Mali так дешевле).
+            fog: Fog {
+                enabled: true
+                color: "#0D151C"
+                density: 0.55
+                depthEnabled: true
+                depthNear: 6
+                depthFar: 40
+            }
+        }
+
+        // Текстура мягкого свечения (радиальный градиент) — для «bloom»
+        // вокруг фар и стоп-сигналов без HDR-постобработки.
+        Texture {
+            id: lightsGlowTexture
+            source: "images/lights_glow.png"
+            generateMipmaps: true
+            mipFilter: Texture.Linear
         }
 
         PerspectiveCamera {
@@ -228,6 +247,87 @@ Item {
                             lighting: PrincipledMaterial.NoLighting
                         }
                     }
+                    // ===== Фейковый bloom вокруг фар: сферы с радиальной
+                    // текстурой, полупрозрачные (замена HDR-глоу без
+                    // пост-обработки — на RK3588 дешевле).
+                    Model {
+                        source: "#Sphere"
+                        position: Qt.vector3d(-2.72, 0.62, -0.72)
+                        scale: Qt.vector3d(0.009, 0.009, 0.009)
+                        materials: PrincipledMaterial {
+                            baseColorMap: lightsGlowTexture
+                            baseColor: Qt.rgba(1.0, 0.94, 0.78, 0.50)
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                        }
+                    }
+                    Model {
+                        source: "#Sphere"
+                        position: Qt.vector3d(-2.72, 0.62, 0.72)
+                        scale: Qt.vector3d(0.009, 0.009, 0.009)
+                        materials: PrincipledMaterial {
+                            baseColorMap: lightsGlowTexture
+                            baseColor: Qt.rgba(1.0, 0.94, 0.78, 0.50)
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                        }
+                    }
+
+                    // ===== Лучи фар: два конуса вперёд (вдаль от машины),
+                    // полупрозрачные, туман даёт им объём.
+                    Model {
+                        source: "#Cone"
+                        position: Qt.vector3d(-6.0, 0.62, -0.72)
+                        scale: Qt.vector3d(0.03, 0.07, 0.03)
+                        eulerRotation: Qt.vector3d(0, 0, -90)
+                        materials: PrincipledMaterial {
+                            baseColor: Qt.rgba(1.0, 0.95, 0.80, 0.10)
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                        }
+                    }
+                    Model {
+                        source: "#Cone"
+                        position: Qt.vector3d(-6.0, 0.62, 0.72)
+                        scale: Qt.vector3d(0.03, 0.07, 0.03)
+                        eulerRotation: Qt.vector3d(0, 0, -90)
+                        materials: PrincipledMaterial {
+                            baseColor: Qt.rgba(1.0, 0.95, 0.80, 0.10)
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                        }
+                    }
+
+                    // Красный bloom вокруг задних фонарей/стопов
+                    Model {
+                        source: "#Sphere"
+                        position: Qt.vector3d(2.92, 0.68, -0.72)
+                        scale: Qt.vector3d(0.012, 0.012, 0.012)
+                        materials: PrincipledMaterial {
+                            baseColorMap: lightsGlowTexture
+                            baseColor: Qt.rgba(1.0, 0.12, 0.06, 0.55)
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                        }
+                    }
+                    Model {
+                        source: "#Sphere"
+                        position: Qt.vector3d(2.92, 0.68, 0.72)
+                        scale: Qt.vector3d(0.012, 0.012, 0.012)
+                        materials: PrincipledMaterial {
+                            baseColorMap: lightsGlowTexture
+                            baseColor: Qt.rgba(1.0, 0.12, 0.06, 0.55)
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                        }
+                    }
+
                     // Пятно света от фар на дороге перед машиной
                     Model {
                         source: "#Cube"
