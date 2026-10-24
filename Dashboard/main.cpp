@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include <QQuickWindow>
 #include <QFontDatabase>
 #include <QCommandLineParser>
@@ -39,6 +40,13 @@ int main(int argc, char *argv[])
         QStringLiteral("Демо-режим: данные генерируются программно, CAN не нужен."));
     parser.addOption(mockOption);
 
+    // Отключает кинематографичный запуск с 3D-машиной: на слабом железе
+    // (или если 3D не завёлся) приборка стартует по-старому, за 2.5 с.
+    QCommandLineOption no3dOption(
+        QStringLiteral("no-3d"),
+        QStringLiteral("Не запускать 3D-заставку с машиной при старте."));
+    parser.addOption(no3dOption);
+
     parser.process(app);
 
     // Поднимаем приём данных до загрузки QML, чтобы окно сразу получило значения.
@@ -58,6 +66,12 @@ int main(int argc, char *argv[])
         qInfo() << "Шрифт приборки загружен:" << QFontDatabase::applicationFontFamilies(fontId);
 
     QQmlApplicationEngine engine;
+
+    // Main.qml читает это свойство: false — стартовать без 3D-заставки.
+    // Контекстное свойство, а не синглтон: флаг нужен ровно один раз и только
+    // при загрузке дерева QML, заводить ради него отдельный C++-класс незачем.
+    engine.rootContext()->setContextProperty(QStringLiteral("car3dAllowed"),
+                                             !parser.isSet(no3dOption));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,

@@ -30,12 +30,15 @@ qt_add_qml_module(appDashboard
         CenterPanel.qml
         Gauge.qml
         GasAnimation.qml
+        Car3DView.qml
+        Car3DScene.qml
         Speedometer.qml
         Tachometer.qml
         Settings.qml
         Indicators.qml
         MapWebView.qml
     RESOURCES
+        assets/car.glb
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
         images/around_in.png

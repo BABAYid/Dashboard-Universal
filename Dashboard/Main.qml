@@ -106,6 +106,15 @@ Window {
     property bool navigationMode: false
     property real navigationAnimDuration: 400
 
+    // --- Кинематографичный запуск с 3D-машиной (см. Car3DView.qml) ---
+    // car3dAllowed приходит из main.cpp: false при запуске с --no-3d.
+    readonly property bool car3d: typeof car3dAllowed !== "undefined" ? car3dAllowed : true
+    property real startupStage: 1.0     // 0…1: стартовая анимация машины, 4 секунды
+    property real gaugesOpacity: 1.0    // проявление приборов на 2.5…3.5 с
+
+    // Сигнал «запуск закончен»: по нему приборка переходит в штатный режим.
+    signal startupFinished()
+
     // Режим центральной зоны: 0 — стандарт, 1 — компьютер, 2 — диагностика,
     // 3 — напряжение. Переключается нажатием по центру или клавишами.
     //
@@ -154,6 +163,57 @@ Window {
         root.rpmFactor = calibration.rpmFactor
         root.fuelFactor = calibration.fuelFactor
         root.tempFactor = calibration.tempFactor
+
+        // С 3D-машиной старт идёт по сценарию 4 секунды: сначала темно, потом
+        // фары, выезд машины и только на 2.5–3.5 с проявляются приборы.
+        // Без 3D (--no-3d) всё как раньше: лампы и стрелки сразу, 2.5 секунды.
+        if (root.car3d) {
+            root.startupStage = 0.0
+            root.gaugesOpacity = 0.0
+            root.startup = false
+            root.lampSelfTest = false
+            startupSequence.start()
+        }
+    }
+
+    // Сценарий запуска: машина едет 0–4 с, приборы проявляются 2.5–3.5 с,
+    // затем обычная самопроверка ламп и стрелок (2.5 с).
+    SequentialAnimation {
+        id: startupSequence
+
+        ParallelAnimation {
+            NumberAnimation {
+                target: root
+                property: "startupStage"
+                from: 0.0
+                to: 1.0
+                duration: 4000
+                easing.type: Easing.InOutQuad
+            }
+            SequentialAnimation {
+                PauseAnimation { duration: 2500 }
+                // Самопроверка запускается вместе с проявлением приборов,
+                // иначе проход стрелок проходит, пока приборов ещё не видно
+                ScriptAction { script: { root.startup = true; root.lampSelfTest = true } }
+                NumberAnimation {
+                    target: root
+                    property: "gaugesOpacity"
+                    from: 0.0
+                    to: 1.0
+                    duration: 1000
+                }
+            }
+        }
+
+        // Лампы горят 2.5 с (как в исходной самопроверке), затем штатный режим
+        PauseAnimation { duration: 2500 }
+        ScriptAction {
+            script: {
+                root.startup = false
+                root.lampSelfTest = false
+                root.startupFinished()
+            }
+        }
     }
 
     // Мигание предупреждения о запасе хода: 1 Гц — 500 мс горит, 500 мс нет.
@@ -175,6 +235,29 @@ Window {
         scale: root.canvasScale
         x: (root.width - width * scale) / 2
         y: (root.height - height * scale) / 2
+
+        // ============ 3D-МАШИНА: фон центральной зоны (714, 154, 492×404) ============
+        // Лежит ПОД слоем приборов, поэтому после запуска остаётся фоном панели
+        // режимов. После старта притушена и медленно покачивается.
+        Car3DView {
+            id: carView
+            x: 714
+            y: 154
+            width: 492
+            height: 404
+            progress: root.startupStage
+            opacity: root.startupStage >= 0.999 ? 0.5 : 1.0
+            visible: !navigationMode
+        }
+
+        // ============ СЛОЙ ПРИБОРОВ ============
+        // Всё остальное лежит здесь: на старте слой погашен и проявляется
+        // на 2.5–3.5 с. Машина — снаружи слоя, поэтому она видна всё время
+        // и не гаснет вместе с приборами.
+        Item {
+            id: dashboardLayer
+            anchors.fill: parent
+            opacity: root.gaugesOpacity
 
         // ========== РАЗДЕЛИТЕЛЬНЫЕ ЛИНИИ ЦЕНТРАЛЬНОЙ ОБЛАСТИ ==========
         // Натуральный размер картинок 641x5 (раньше их растягивали до 500x10 —
@@ -675,7 +758,8 @@ Window {
         // ====================================================================
         Timer {
             interval: 2500
-            running: true
+            // С 3D-заставкой самопроверку запускает startupSequence
+            running: !root.car3d
             onTriggered: {
                 root.lampSelfTest = false
                 root.startup = false
@@ -696,5 +780,6 @@ Window {
                                 + now.getMinutes().toString().padStart(2, '0')
             }
         }
+        }   // dashboardLayer
     }
 }
