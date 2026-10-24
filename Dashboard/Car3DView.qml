@@ -19,6 +19,9 @@ Item {
     property bool idleMotion: true
     property bool roadVisible: true
     property real roadSpeed: 0
+    property bool headlightsOn: false
+    property bool leftTurn: false
+    property bool rightTurn: false
 
     // Необязательная зависимость: отсутствие модуля не ломает приборку
     readonly property bool sceneLoaded: sceneLoader.status === Loader.Ready
@@ -40,6 +43,9 @@ Item {
             scene.idleMotion = Qt.binding(function() { return root.idleMotion })
             scene.roadVisible = Qt.binding(function() { return root.roadVisible })
             scene.roadSpeed = Qt.binding(function() { return root.roadSpeed })
+            scene.headlightsOn = Qt.binding(function() { return root.headlightsOn })
+            scene.leftTurn = Qt.binding(function() { return root.leftTurn })
+            scene.rightTurn = Qt.binding(function() { return root.rightTurn })
             scene.modelReady.connect(root.modelReady)
             scene.modelFailed.connect(root.modelFailed)
         }

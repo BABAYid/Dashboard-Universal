@@ -265,6 +265,11 @@ Window {
             progress: root.startupStage
             roadVisible: root.panelReady
             roadSpeed: root.speed
+            // Свет по CAN: фары/габариты зажигают фары и задние фонари на
+            // модели, поворотники мигают вместе с лампой на панели.
+            headlightsOn: root.lowBeam || root.positionLights
+            leftTurn: root.leftTurn
+            rightTurn: root.rightTurn
             opacity: 1.0
             // Видна в 5-м режиме всегда; во время заставки — пока приборы
             // ещё погашены (gaugesOpacity < 0.01), чтобы данные не ложились
