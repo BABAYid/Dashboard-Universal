@@ -20,7 +20,7 @@ Node {
         baseColorMap: _0_texture
         roughness: 0.6000000238418579
         emissiveMap: _0_texture
-        emissiveFactor: Qt.vector3d(0.5, 0.5, 0.5)
+        emissiveFactor: Qt.vector3d(0.0, 0.0, 0.0)
         alphaMode: PrincipledMaterial.Opaque
     }
 

@@ -249,7 +249,7 @@ Window {
             width: 492
             height: 404
             progress: root.startupStage
-            opacity: root.startupStage >= 0.999 ? 0.65 : 1.0
+            opacity: root.startupStage >= 0.999 ? 0.8 : 1.0
             visible: root.car3d && !root.navigationMode
         }
 

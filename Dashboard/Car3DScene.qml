@@ -35,6 +35,20 @@ Item {
     readonly property real carDepth: -7.0 * (1.0 - carTravel)
     readonly property real carScale: 0.78 + 0.22 * carTravel
 
+    // 0 — нос к камере, 180 — корма к камере. Модель cruiser300 в сантиметрах
+    // длиной вдоль X: -90° ставит её вдоль Z (носом на камеру), после
+    // заставки разворачиваем на 180° — остаётся фоном кормой к зрителю.
+    property real carYaw: -90
+    SequentialAnimation on carYaw {
+        running: scene.progress >= 0.999
+        PauseAnimation { duration: 800 }
+        NumberAnimation {
+            from: -90; to: 90
+            duration: 2200
+            easing.type: Easing.InOutCubic
+        }
+    }
+
     View3D {
         anchors.fill: parent
         // Рендер только в зону компонента (492×404), не в полный экран
@@ -87,8 +101,10 @@ Item {
         }
 
         Node {
+            id: carPivot
             position: Qt.vector3d(0, 0, scene.carDepth)
             scale: Qt.vector3d(scene.carScale, scene.carScale, scene.carScale)
+            eulerRotation: Qt.vector3d(0, scene.carYaw, 0)
 
             // Модель cruiser300 в сантиметрах: CarModel.qml сам ставит
             // масштаб 0.001, здесь ещё 0.75 — подгонка под кадр.
