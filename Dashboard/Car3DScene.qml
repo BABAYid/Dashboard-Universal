@@ -30,6 +30,7 @@ Item {
     signal modelFailed()
 
     readonly property real spotPower: Math.min(1.0, Math.max(0.0, (progress - 0.125) / 0.25))
+    readonly property real lampPower: spotPower
     readonly property real spotCone: 8 + 14 * spotPower
     readonly property real carTravel: Math.min(1.0, Math.max(0.0, (progress - 0.375) / 0.375))
     readonly property real carDepth: -7.0 * (1.0 - carTravel)
@@ -99,6 +100,56 @@ Item {
             castsShadow: false
         }
 
+        // «Фары из темноты»: два объёмных луча к зрителю + сами лампы.
+        // Луч — конус от машины на камеру, полупрозрачный и аддитивный
+        // по цвету; лампы — светящиеся шарики на месте фар.
+        Model {
+            source: "#Cone"
+            position: Qt.vector3d(-0.9, 0.85, 4.1)
+            scale: Qt.vector3d(0.008, 0.038, 0.008)
+            eulerRotation: Qt.vector3d(-90, 0, 8)
+            visible: scene.lampPower > 0.01
+            materials: PrincipledMaterial {
+                baseColor: Qt.rgba(1.0, 0.95, 0.82, 0.5 * scene.lampPower * Math.max(0.0, (scene.carYaw + 90) / 180))
+                lighting: PrincipledMaterial.NoLighting
+                alphaMode: PrincipledMaterial.Blend
+                cullMode: PrincipledMaterial.NoCulling
+            }
+        }
+        Model {
+            source: "#Cone"
+            position: Qt.vector3d(0.9, 0.85, 4.1)
+            scale: Qt.vector3d(0.008, 0.038, 0.008)
+            eulerRotation: Qt.vector3d(-90, 0, -8)
+            visible: scene.lampPower > 0.01
+            materials: PrincipledMaterial {
+                baseColor: Qt.rgba(1.0, 0.95, 0.82, 0.5 * scene.lampPower * Math.max(0.0, (scene.carYaw + 90) / 180))
+                lighting: PrincipledMaterial.NoLighting
+                alphaMode: PrincipledMaterial.Blend
+                cullMode: PrincipledMaterial.NoCulling
+            }
+        }
+        Model {
+            source: "#Sphere"
+            position: Qt.vector3d(-0.8, 0.62, 2.1)
+            scale: Qt.vector3d(0.04, 0.04, 0.04)
+            visible: scene.lampPower > 0.01
+            materials: PrincipledMaterial {
+                baseColor: Qt.rgba(1.0, 0.97, 0.88, Math.max(0.0, (scene.carYaw + 90) / 180))
+                lighting: PrincipledMaterial.NoLighting
+            }
+        }
+        Model {
+            source: "#Sphere"
+            position: Qt.vector3d(0.8, 0.62, 2.1)
+            scale: Qt.vector3d(0.04, 0.04, 0.04)
+            visible: scene.lampPower > 0.01
+            materials: PrincipledMaterial {
+                baseColor: Qt.rgba(1.0, 0.97, 0.88, Math.max(0.0, (scene.carYaw + 90) / 180))
+                lighting: PrincipledMaterial.NoLighting
+            }
+        }
+
         Node {
             id: carPivot
             position: Qt.vector3d(0, 0, scene.carDepth)
@@ -108,7 +159,7 @@ Item {
             // Модель cruiser300 в сантиметрах: CarModel.qml сам ставит
             // масштаб 0.001, здесь ещё 0.75 — подгонка под кадр.
             Node {
-                scale: Qt.vector3d(0.75, 0.75, 0.75)
+                scale: Qt.vector3d(0.9, 0.9, 0.9)
 
                 SequentialAnimation on eulerRotation.y {
                     running: scene.progress >= 0.99 && scene.idleMotion

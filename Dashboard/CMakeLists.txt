@@ -46,6 +46,7 @@ qt_add_qml_module(appDashboard
         assets/cruiser/meshes/meshes_0__mesh.mesh
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
+        images/headlight_beam.png
         images/around_in.png
         images/batt.png
         images/belt.png
