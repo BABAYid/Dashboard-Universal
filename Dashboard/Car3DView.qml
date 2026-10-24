@@ -31,10 +31,13 @@ Item {
         onStatusChanged: console.log("3D: Loader статус", status)
         onLoaded: {
             console.log("3D: сцена загружена")
-            item.progress = Qt.binding(function() { return root.progress })
-            item.idleMotion = Qt.binding(function() { return root.idleMotion })
-            item.modelReady.connect(root.modelReady)
-            item.modelFailed.connect(root.modelFailed)
+            // Явное приведение: у Loader.item тип QObject, без него
+            // компилятор QML не знает свойств и сигналов Car3DScene.
+            const scene = item as Car3DScene
+            scene.progress = Qt.binding(function() { return root.progress })
+            scene.idleMotion = Qt.binding(function() { return root.idleMotion })
+            scene.modelReady.connect(root.modelReady)
+            scene.modelFailed.connect(root.modelFailed)
         }
     }
 }

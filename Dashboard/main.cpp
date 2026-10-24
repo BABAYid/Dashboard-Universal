@@ -42,6 +42,8 @@ int main(int argc, char *argv[])
 
     // Отключает кинематографичный запуск с 3D-машиной: на слабом железе
     // (или если 3D не завёлся) приборка стартует по-старому, за 2.5 с.
+    // QML читает флаг сам из аргументов приложения (см. Main.qml); здесь он
+    // объявлен, чтобы попал в --help и QCommandLineParser его принял.
     QCommandLineOption no3dOption(
         QStringLiteral("no-3d"),
         QStringLiteral("Не запускать 3D-заставку с машиной при старте."));
@@ -67,11 +69,6 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    // Main.qml читает это свойство: false — стартовать без 3D-заставки.
-    // Контекстное свойство, а не синглтон: флаг нужен ровно один раз и только
-    // при загрузке дерева QML, заводить ради него отдельный C++-класс незачем.
-    engine.rootContext()->setContextProperty(QStringLiteral("car3dAllowed"),
-                                             !parser.isSet(no3dOption));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,

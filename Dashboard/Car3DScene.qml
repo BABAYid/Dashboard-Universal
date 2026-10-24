@@ -103,8 +103,7 @@ Item {
                     id: carLoader
                     source: "qrc:/qt/qml/Dashboard/assets/balsam/Car.qml"
                     onStatusChanged: {
-                        console.log("3D: сцена статус", status,
-                                    "| ошибка:", carLoader.errorString)
+                        console.log("3D: сцена статус", status)
                         if (status === Loader.Ready)
                             scene.modelReady()
                         else if (status === Loader.Error)

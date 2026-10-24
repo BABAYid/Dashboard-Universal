@@ -107,8 +107,11 @@ Window {
     property real navigationAnimDuration: 400
 
     // --- Кинематографичный запуск с 3D-машиной (см. Car3DView.qml) ---
-    // car3dAllowed приходит из main.cpp: false при запуске с --no-3d.
-    readonly property bool car3d: typeof car3dAllowed !== "undefined" ? car3dAllowed : true
+    // Приборка читает флаг командной строки сама: при --no-3d старт без
+    // 3D-заставки (экономия на слабом железе). main.cpp объявляет тот же
+    // флаг для --help, а QML берёт его из аргументов приложения: так имя
+    // не «зовётся из воздуха» и qmllint молчит.
+    readonly property bool car3d: Qt.application.arguments.indexOf("--no-3d") === -1
     property real startupStage: 1.0     // 0…1: стартовая анимация машины, 4 секунды
     property real gaugesOpacity: 1.0    // проявление приборов на 2.5…3.5 с
 
@@ -247,7 +250,7 @@ Window {
             height: 404
             progress: root.startupStage
             opacity: root.startupStage >= 0.999 ? 0.5 : 1.0
-            visible: !navigationMode
+            visible: root.car3d && !root.navigationMode
         }
 
         // ============ СЛОЙ ПРИБОРОВ ============
@@ -623,14 +626,14 @@ Window {
             gasOn: root.gasDisplay
             highBurn: root.rpmShown > 5000
             rpm: root.rpmShown
-            visible: !root.navigationMode && root.funEnabled && (gasOn || highBurn)
+            visible: root.car3d && !root.navigationMode && root.funEnabled && (gasOn || highBurn)
             z: 2
         }
 
         Button {
             text: "Навигация"
             x: 730; y: 658
-            visible: !root.navigationMode
+            visible: root.car3d && !root.navigationMode
             onClicked: root.navigationMode = true
             z: 2
         }
@@ -640,7 +643,7 @@ Window {
         Button {
             text: "Настройки"
             x: 860; y: 658
-            visible: !root.navigationMode
+            visible: root.car3d && !root.navigationMode
             onClicked: calibration.open()
             z: 2
         }
@@ -652,7 +655,7 @@ Window {
         Button {
             id: gasDebugButton
             x: 990; y: 658
-            visible: !root.navigationMode
+            visible: root.car3d && !root.navigationMode
             z: 2
             text: root.gasDisplay ? "Газ: вкл" : "Газ: выкл"
             onClicked: {
@@ -682,7 +685,7 @@ Window {
         Button {
             id: fullThrottleButton
             x: 1110; y: 658
-            visible: !root.navigationMode
+            visible: root.car3d && !root.navigationMode
             z: 2
             text: "Газ в пол"
             onClicked: root.debugFullThrottle = !root.debugFullThrottle
