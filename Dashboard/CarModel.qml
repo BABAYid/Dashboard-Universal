@@ -1,6 +1,6 @@
-// Сгенерировано balsam из assets/cruiser300.glb (см. tools/bake_glb.py и README):
-// не редактировать вручную. Пересборка: bake → balsam → добавить
-// масштаб 0.001 (модель в сантиметрах) к Model.
+// Сгенерировано balsam из cruiser300.glb (см. tools/bake_glb.py и README):
+// не редактировать вручную. Пересборка: bake → balsam → пути и
+// масштаб 0.001 (модель в сантиметрах).
 import QtQuick
 import QtQuick3D
 

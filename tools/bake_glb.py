@@ -124,7 +124,19 @@ def main(src,dst):
          "meshes":[{"primitives":prims_out}],
          "materials":gltf.get("materials",[]),
          "accessors":accessors,"bufferViews":views}
-    if "images" in gltf: out["images"]=gltf["images"]
+    # Изображения переписываем на новые bufferView: старые индексы в новом
+    # файле указывают на чужие данные, и текстура получается мусором
+    # (проверено: balsam выгружал float-данные вместо WebP → плоская машина).
+    if "images" in gltf:
+        images=[]
+        for image in gltf["images"]:
+            view=gltf["bufferViews"][image["bufferView"]]
+            start=view.get("byteOffset",0)
+            data=binary[start:start+view["byteLength"]]
+            image=dict(image)
+            image["bufferView"]=add_view(bytes(data))
+            images.append(image)
+        out["images"]=images
     if "textures" in gltf: out["textures"]=gltf["textures"]
     if "samplers" in gltf: out["samplers"]=gltf["samplers"]
     while len(new_bin)%4: new_bin.append(0)

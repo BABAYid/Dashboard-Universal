@@ -35,15 +35,14 @@ Item {
     readonly property real carDepth: -7.0 * (1.0 - carTravel)
     readonly property real carScale: 0.78 + 0.22 * carTravel
 
-    // 0 — нос к камере, 180 — корма к камере. Модель cruiser300 в сантиметрах
-    // длиной вдоль X: -90° ставит её вдоль Z (носом на камеру), после
-    // заставки разворачиваем на 180° — остаётся фоном кормой к зрителю.
-    property real carYaw: -90
+    // Модель cruiser300 в сантиметрах, длина вдоль X: +90° ставит её вдоль Z
+    // носом к камере; после заставки разворот на 180° — корма к зрителю.
+    property real carYaw: 90
     SequentialAnimation on carYaw {
         running: scene.progress >= 0.999
         PauseAnimation { duration: 800 }
         NumberAnimation {
-            from: -90; to: 90
+            from: 90; to: -90
             duration: 2200
             easing.type: Easing.InOutCubic
         }
