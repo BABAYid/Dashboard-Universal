@@ -50,6 +50,13 @@ int main(int argc, char *argv[])
         QStringLiteral("Не запускать 3D-заставку с машиной при старте."));
     parser.addOption(no3dOption);
 
+    // Отключает шлейф за стрелками (для замера FPS и проверки «без эффекта»).
+    // В QML флаг читается из Qt.application.arguments, здесь — для --help.
+    QCommandLineOption noTrailOption(
+        QStringLiteral("no-trail"),
+        QStringLiteral("Выключить шлейф за стрелками (для замера FPS)."));
+    parser.addOption(noTrailOption);
+
     parser.process(app);
 
     // Поднимаем приём данных до загрузки QML, чтобы окно сразу получило значения.

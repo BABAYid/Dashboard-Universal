@@ -69,6 +69,14 @@ Item {
     // «застывает» (ловили это раньше, см. «Грабли» в PROJECT_STATE.md).
     property real sweepAngle: 0
 
+    // Включён ли шлейф-«хвост» за стрелкой (настройка «Внешний вид»).
+    // false — компоненты шлейфа невидимы и не тратят ресурсы.
+    property bool showTrail: true
+
+    // Фактический угол основной стрелки (с учётом пружины) — за ним
+    // следуют копии шлейфа.
+    readonly property real mainNeedleRotation: mainNeedle.rotation
+
     // ======================= ОТРИСОВКА =======================
 
     // Шкала прибора
@@ -96,8 +104,15 @@ Item {
             return gauge.secondaryStartAngle
                    + k * (gauge.secondaryEndAngle - gauge.secondaryStartAngle)
         }
+        // Пружина: у топлива/температуры ход медленный — мягкая, без
+        // раскачки (damping 0.45 = почти критическое затухание).
         Behavior on rotation {
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            SpringAnimation {
+                spring: 2.0
+                damping: 0.45
+                mass: 1.0
+                epsilon: 0.1
+            }
         }
     }
 
@@ -111,7 +126,12 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // Основная стрелка (поверх всего, кроме цифр и ламп)
+    // ===== ШЛЕЙФ («ХВОСТ») ЗА СТРЕЛКОЙ =====
+    // Вариант А (копии стрелки) выбран осознанно: ConicalGradient/Canvas на
+    // Mali-G610 дороже — тут лишние полупрозрачные текстурированные квады,
+    // GPU их почти не замечает. Копии следуют за РЕАЛЬНЫМ углом основной
+    // стрелки (а не за целевым значением), поэтому хвост повторяет и
+    // пружинный перелёт. Две копии с разным отставанием дают плавный веер.
     Image {
         source: gauge.needleSource
         width: parent.width * gauge.needleScale
@@ -120,10 +140,53 @@ Item {
         y: (parent.height - height) / 2
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        rotation: gauge.startup ? gauge.sweepAngle : gauge.needleAngle
+        visible: gauge.showTrail && !gauge.startup
+        opacity: 0.30
+        rotation: gauge.mainNeedleRotation
         Behavior on rotation {
             enabled: !gauge.startup
-            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+        }
+    }
+    Image {
+        source: gauge.needleSource
+        width: parent.width * gauge.needleScale
+        height: parent.height * gauge.needleScale
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        fillMode: Image.PreserveAspectFit
+        transformOrigin: Item.Center
+        visible: gauge.showTrail && !gauge.startup
+        opacity: 0.14
+        rotation: gauge.mainNeedleRotation
+        Behavior on rotation {
+            enabled: !gauge.startup
+            NumberAnimation { duration: 380; easing.type: Easing.OutCubic }
+        }
+    }
+
+    // Основная стрелка (поверх всего, кроме цифр и ламп)
+    Image {
+        id: mainNeedle
+        source: gauge.needleSource
+        width: parent.width * gauge.needleScale
+        height: parent.height * gauge.needleScale
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        fillMode: Image.PreserveAspectFit
+        transformOrigin: Item.Center
+        rotation: gauge.startup ? gauge.sweepAngle : gauge.needleAngle
+        // Пружина: при резком изменении значения (педаль в пол) стрелка
+        // перелетает на 2–3 % и возвращается за ~0.5 с. damping 0.2 — лёгкий
+        // недодемпфированный ход, но без бесконечной раскачки.
+        Behavior on rotation {
+            enabled: !gauge.startup
+            SpringAnimation {
+                spring: 2.0
+                damping: 0.2
+                mass: 1.0
+                epsilon: 0.1
+            }
         }
     }
 
@@ -185,13 +248,18 @@ Item {
             duration: 800
             easing.type: Easing.OutCubic
         }
-        NumberAnimation {
+        // Возврат к текущему значению — пружиной: стрелка «доезжает»
+        // с лёгким перелётом, как живая (первый проход по шкале оставляем
+        // линейным — так самопроверка читается чётче).
+        SpringAnimation {
             target: gauge
             property: "sweepAngle"
             from: gauge.endAngle
             to: gauge.needleAngle
-            duration: 400
-            easing.type: Easing.InOutQuad
+            spring: 2.0
+            damping: 0.25
+            mass: 1.0
+            epsilon: 0.1
         }
     }
 }

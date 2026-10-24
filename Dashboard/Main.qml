@@ -60,6 +60,9 @@ Window {
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
     // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
     readonly property bool funEnabled: calibration.funEnabled
+    // Шлейф стрелок: настройка «Внешний вид» + флаг --no-trail для замера.
+    readonly property bool needleTrail: calibration.needleTrailEnabled
+        && Qt.application.arguments.indexOf("--no-trail") === -1
     readonly property bool weatherEnabled: calibration.weatherEnabled
 
     // Запас хода (считает CanBackend по среднему расходу за 5 минут).
@@ -130,6 +133,14 @@ Window {
 
     // Сигнал «запуск закончен»: по нему приборка переходит в штатный режим.
     signal startupFinished()
+
+    // Применить коэффициенты из настроек (после их загрузки с диска).
+    function applyCalibration() {
+        root.speedFactor = calibration.speedFactor
+        root.rpmFactor = calibration.rpmFactor
+        root.fuelFactor = calibration.fuelFactor
+        root.tempFactor = calibration.tempFactor
+    }
 
     // Режим центральной зоны: 0 — стандарт, 1 — компьютер, 2 — диагностика,
     // 3 — напряжение. Переключается нажатием по центру или клавишами.
@@ -208,10 +219,11 @@ Window {
     // Коэффициенты хранит Settings.qml, пробег — CanBackend.
 
     Component.onCompleted: {
-        root.speedFactor = calibration.speedFactor
-        root.rpmFactor = calibration.rpmFactor
-        root.fuelFactor = calibration.fuelFactor
-        root.tempFactor = calibration.tempFactor
+        // Коэффициенты и настройки загружаются в Settings.qml в ЕГО
+        // Component.onCompleted, а он выполняется ПОСЛЕ родительского —
+        // поэтому читаем значения отложенно, иначе сохраноённые брались бы
+        // как значения по умолчанию.
+        Qt.callLater(root.applyCalibration)
 
         // С 3D-машиной старт идёт по сценарию 4 секунды: сначала темно,
         // потом машина выезжает по дороге, и только на 3–4 с проявляются
@@ -225,6 +237,7 @@ Window {
             // Стартовый экран — это 5-й вид: машина на дороге, никаких данных.
             // Так и остаётся: нужный вид пользователь выберет сам (щелчок по
             // центру листает режимы).
+
             root.centerMode = 4
             startupSequence.start()
         }
@@ -432,6 +445,7 @@ Window {
                 // цифры на циферблате и индикатор АКПП не дублируем.
                 showDigital: root.centerMode !== 0
                 showGear: root.centerMode !== 0
+                showTrail: root.needleTrail
                 fuelLevel: root.fuelLevel * root.fuelFactor
                 startup: root.startup
                 nightMode: root.nightMode
@@ -472,6 +486,7 @@ Window {
                 anchors.fill: parent
                 // В 1-м виде обороты уже в центре — цифры на циферблате скрыты
                 showDigital: root.centerMode !== 0
+                showTrail: root.needleTrail
                 rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
                 startup: root.startup

@@ -53,6 +53,9 @@ Item {
     // «Погода» — дождь/снег на панели, когда за окном непогода (Open-Meteo).
     property bool weatherEnabled: true
 
+    // «Шлейф стрелок» — полупрозрачный «хвост» за стрелками (внешний вид).
+    property bool needleTrailEnabled: true
+
     // Сигнал при применении коэффициентов
     signal settingsApplied(real sf, real rf, real ff, real tf)
 
@@ -68,6 +71,7 @@ Item {
         property real savedTempFactor: 1.0
         property bool savedFunEnabled: true
         property bool savedWeatherEnabled: true
+        property bool savedNeedleTrailEnabled: true
     }
 
     // Загружаем сохранённые значения при старте приложения
@@ -78,6 +82,7 @@ Item {
         tempFactor = appSettings.savedTempFactor
         funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
+        needleTrailEnabled = appSettings.savedNeedleTrailEnabled
     }
 
     function open() {
@@ -115,6 +120,7 @@ Item {
         appSettings.savedTempFactor = tempFactor
         appSettings.savedFunEnabled = funEnabled
         appSettings.savedWeatherEnabled = weatherEnabled
+        appSettings.savedNeedleTrailEnabled = needleTrailEnabled
 
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
 
@@ -359,6 +365,57 @@ Item {
                 }
             }
             Item { width: 1; height: 8 }
+
+            // «Шлейф стрелок»: полупрозрачный хвост за стрелками (внешний вид).
+            Row {
+                spacing: 18
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                Text {
+                    text: "Шлейф стрелок"
+                    width: 320
+                    horizontalAlignment: Text.AlignRight
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.labelColor
+                    font.pixelSize: 24
+                }
+
+                Switch {
+                    id: trailSwitch
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: settingsOverlay.needleTrailEnabled
+                    onToggled: settingsOverlay.needleTrailEnabled = checked
+
+                    indicator: Rectangle {
+                        implicitWidth: 78
+                        implicitHeight: 36
+                        radius: 18
+                        color: trailSwitch.checked ? "#2A7A3A" : "#3A3A3A"
+                        border.color: trailSwitch.checked ? "#3FBF57" : "#5A5A5A"
+                        border.width: 2
+
+                        Rectangle {
+                            y: 4
+                            x: trailSwitch.checked ? parent.width - width - 4 : 4
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: trailSwitch.checked ? "#E8FFE8" : "#9A9A9A"
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+                    }
+
+                    contentItem: Item {}
+                }
+
+                Text {
+                    text: settingsOverlay.needleTrailEnabled ? "включён" : "выключен"
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.needleTrailEnabled ? "#3FBF57" : "#8A8A8A"
+                    font.pixelSize: 20
+                    font.family: settingsOverlay.uiFont
+                }
+            }
 
             // «Погода»: дождь/снег на панели, когда за окном непогода
             // (WeatherProvider, Open-Meteo). Выключатель отдельной строкой.
