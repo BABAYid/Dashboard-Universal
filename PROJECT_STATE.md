@@ -719,6 +719,23 @@ sudo apt install qml6-module-qtquick3d-assetutils   # RuntimeLoader для .glb
 драйвера (или с `QT_QPA_PLATFORM=offscreen`) View3D честно пишет «The View3D
 item is not going to display anything» — приборка при этом работает, но без 3D.
 
+**Почему 3D может не показываться (диагноз 24.10.2026).** Две независимые
+причины, обе проверены:
+
+1. **Нет рабочего OpenGL.** Без него Qt Quick 3D не рисует вообще: в offscreen
+   платформа не RHI-based («The View3D item is not going to display anything»),
+   а на дисплее падает `egl: failed to create dri2 screen` и
+   `ZINK: failed to choose pdev`. Обходится переменной `LIBGL_ALWAYS_SOFTWARE=1`
+   (программный llvmpipe) — после неё ошибки EGL исчезают.
+2. **Не работает рантайм-импорт glTF.** `RuntimeLoader` в статусе Error с
+   текстом «Unsupported: Unknown error» — причём **на исходном `audi3D.glb`
+   тоже**, то есть дело не в прореженной модели. Диагностика пишется в лог
+   (`3D: статус модели …, ошибка: …`) — без неё причина не видна вообще.
+
+Пути решения: собрать модель в формат `.mesh` утилитой `balsam` из пакета
+`qt6-quick3d-dev-tools` (тогда RuntimeLoader не нужен — ассеты импортируются
+на этапе сборки) либо поставить Qt, где рантайм-импорт glTF работает.
+
 **Флаг `--no-3d`.** Приборка стартует без 3D-заставки: лампы и стрелки сразу,
 самопроверка 2.5 с, как раньше. Флаг читается в `main.cpp` и передаётся в QML
 контекстным свойством `car3dAllowed`.
