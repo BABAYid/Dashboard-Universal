@@ -370,8 +370,8 @@ Item {
             id: suspUpButton
             width: 84; height: 84; radius: 42
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.horizontalCenterOffset: -60
-            y: 200
+            anchors.horizontalCenterOffset: -110
+            y: 250
             color: "#1A1A1A"
             border.color: root.valueColor
             border.width: 2
@@ -391,8 +391,8 @@ Item {
             id: suspDownButton
             width: 84; height: 84; radius: 42
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.horizontalCenterOffset: 60
-            y: 200
+            anchors.horizontalCenterOffset: 110
+            y: 250
             color: "#1A1A1A"
             border.color: root.valueColor
             border.width: 2

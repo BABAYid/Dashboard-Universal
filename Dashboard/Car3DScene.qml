@@ -85,11 +85,17 @@ Item {
 
         PerspectiveCamera {
             id: camera
-            position: Qt.vector3d(0, 6.0, 11.0)
-            eulerRotation: Qt.vector3d(-28, 0, 0)
+            // Обычный вид — сбоку-сверху; в 6-м режиме (подвеска) — сверху,
+            // 0 градусов: взгляд строго вниз.
+            position: scene.viewSide ? Qt.vector3d(0, 12, 0.3)
+                                     : Qt.vector3d(0, 6.0, 11.0)
+            eulerRotation: scene.viewSide ? Qt.vector3d(-90, 0, 0)
+                                          : Qt.vector3d(-28, 0, 0)
             fieldOfView: 40
             clipNear: 0.5
             clipFar: 1000
+            Behavior on position { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
+            Behavior on eulerRotation { NumberAnimation { duration: 600; easing.type: Easing.InOutQuad } }
         }
 
         // Заливка, чтобы кузов читался: разгорается за первые 0.5 с.
@@ -105,7 +111,7 @@ Item {
         // Видна только после загрузки панели (roadVisible): на стартовом
         // экране с машиной дороги нет.
         Node {
-            visible: scene.roadVisible
+            visible: scene.roadVisible && !scene.viewSide
 
             Repeater3D {
                 model: 44                       // 2 полосы × 22 штриха
@@ -135,6 +141,21 @@ Item {
                         running: scene.roadSpeed > 0.5
                     }
                 }
+            }
+        }
+
+        // Тень на земле для 6-го вида: остаётся на месте, когда кузов
+        // поднимается, — так читается дорожный просвет.
+        Model {
+            source: "#Cylinder"
+            visible: scene.viewSide
+            position: Qt.vector3d(0, 0.002, 0)
+            scale: Qt.vector3d(0.034, 0.0004, 0.034)
+            materials: PrincipledMaterial {
+                baseColor: Qt.rgba(0, 0, 0, 0.55)
+                lighting: PrincipledMaterial.NoLighting
+                alphaMode: PrincipledMaterial.Blend
+                cullMode: PrincipledMaterial.NoCulling
             }
         }
 
@@ -169,7 +190,7 @@ Item {
                 // сзади. Работает с любой моделью — узлы фар искать не нужно.
                 // Локальные координаты в метрах: нос -2.5…0 по X, корма +2.5.
                 Node {
-                    visible: scene.headlightsOn
+                    visible: scene.headlightsOn && !scene.viewSide
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(-2.72, 0.62, -0.72)
@@ -225,7 +246,7 @@ Item {
                 // тогда при виде спереди «левый» поворотник светится справа
                 // на экране, как на настоящей машине.
                 Node {
-                    visible: scene.leftTurn && scene.turnBlink
+                    visible: scene.leftTurn && scene.turnBlink && !scene.viewSide
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(-2.72, 0.55, 1.30)
@@ -246,7 +267,7 @@ Item {
                     }
                 }
                 Node {
-                    visible: scene.rightTurn && scene.turnBlink
+                    visible: scene.rightTurn && scene.turnBlink && !scene.viewSide
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(-2.72, 0.55, -1.30)
