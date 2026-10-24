@@ -20,7 +20,7 @@ Item {
     id: root
 
     property int mode: 0
-    readonly property int modeCount: 4
+    readonly property int modeCount: 5
     property bool nightMode: false
 
     readonly property color valueColor: nightMode ? "#FF8800" : "white"
@@ -328,6 +328,23 @@ Item {
                     ctx.fill()
                 }
             }
+        }
+    }
+
+    // ======================= РЕЖИМ 4: МАШИНА =======================
+    // Пятый вид центральной зоны: никаких показаний — видна только 3D-машина
+    // (Car3DView лежит прямо под этим слоем, прозрачная панель её не закрывает).
+    // Сюда переключаемся обычным щелчком по центру: 0→1→2→3→4→0.
+    Item {
+        anchors.fill: parent
+        visible: root.mode === 4
+
+        Text {
+            text: "Машина"
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 4
+            color: root.labelColor
+            font.pixelSize: 18
         }
     }
 
