@@ -279,6 +279,7 @@ Window {
             headlightsOn: root.lowBeam || root.positionLights
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
+            turnBlink: root.turnBlink
             opacity: 1.0
             // Видна в 5-м режиме всегда; во время заставки — пока приборы
             // ещё погашены (gaugesOpacity < 0.01), чтобы данные не ложились

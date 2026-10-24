@@ -37,8 +37,8 @@ Item {
     // Левый поворотник (на циферблате спидометра, прибор сдвинут по макету)
     Image {
         source: "images/left_turn.png"
-        x: 332
-        y: 130
+        x: 850
+        y: 18
         width: 50
         height: 50
         fillMode: Image.PreserveAspectFit
@@ -49,8 +49,8 @@ Item {
     // Правый поворотник
     Image {
         source: "images/right_turn.png"
-        x: 1538
-        y: 130
+        x: 1100
+        y: 18
         width: 50
         height: 50
         fillMode: Image.PreserveAspectFit
