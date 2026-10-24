@@ -31,6 +31,9 @@ Item {
     property real progress: 1.0
     property bool idleMotion: true
 
+    // Дорога появляется только когда панель полностью прогрузилась
+    property bool roadVisible: true
+
     signal modelReady()
     signal modelFailed()
 
@@ -82,7 +85,11 @@ Item {
         // ===== ДОРОГА: две полосы разметки, уходящие в даль =====
         // Штрихи сдвигаются на период шага и перескакивают обратно: рисунок
         // повторяется, поэтому скачок не виден — получается эффект движения.
+        // Видна только после загрузки панели (roadVisible): на стартовом
+        // экране с машиной дороги нет.
         Node {
+            visible: scene.roadVisible
+
             Repeater3D {
                 model: 44                       // 2 полосы × 22 штриха
                 delegate: Model {
@@ -91,7 +98,7 @@ Item {
                     readonly property int dashIndex: Math.floor(dash.index / 2)
                     readonly property real zStart: -36 + dashIndex * 2.0
                     source: "#Cube"
-                    x: (dash.index % 2) === 0 ? -1.5 : 1.5
+                    x: (dash.index % 2) === 0 ? -2.2 : 2.2
                     y: 0.008
                     z: dash.zStart
                     scale: Qt.vector3d(0.0009, 0.0002, 0.009)
@@ -119,14 +126,7 @@ Item {
             // Временная cruiser300 в сантиметрах: CarModel.qml сам ставит
             // масштаб 0.001, здесь ещё 0.9 — подгонка под кадр.
             Node {
-                scale: Qt.vector3d(1.02, 1.02, 1.02)
-
-                SequentialAnimation on eulerRotation.y {
-                    running: scene.progress >= 0.99 && scene.idleMotion
-                    loops: Animation.Infinite
-                    NumberAnimation { from: -6; to: 6; duration: 7000; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 6; to: -6; duration: 7000; easing.type: Easing.InOutSine }
-                }
+                scale: Qt.vector3d(1.25, 1.25, 1.25)
 
                 // Готовая сцена от balsam, объявленная как компонент модуля.
                 // Важно: через Loader 3D-узел не привязывается к сцене и не

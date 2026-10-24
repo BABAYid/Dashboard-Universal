@@ -17,6 +17,7 @@ Item {
 
     property real progress: 1.0
     property bool idleMotion: true
+    property bool roadVisible: true
 
     // Необязательная зависимость: отсутствие модуля не ломает приборку
     readonly property bool sceneLoaded: sceneLoader.status === Loader.Ready
@@ -36,6 +37,7 @@ Item {
             const scene = item as Car3DScene
             scene.progress = Qt.binding(function() { return root.progress })
             scene.idleMotion = Qt.binding(function() { return root.idleMotion })
+            scene.roadVisible = Qt.binding(function() { return root.roadVisible })
             scene.modelReady.connect(root.modelReady)
             scene.modelFailed.connect(root.modelFailed)
         }
