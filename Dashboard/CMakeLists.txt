@@ -4,7 +4,7 @@ project(Dashboard VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick WebView)
+find_package(Qt6 REQUIRED COMPONENTS Quick WebView Network)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -25,6 +25,8 @@ qt_add_qml_module(appDashboard
     SOURCES
         can/CanBackend.h
         can/CanBackend.cpp
+        WeatherProvider.h
+        WeatherProvider.cpp
     QML_FILES
         Main.qml
         CenterPanel.qml
@@ -33,6 +35,7 @@ qt_add_qml_module(appDashboard
         Car3DView.qml
         Car3DScene.qml
         CarModel.qml
+        WeatherFx.qml
         Speedometer.qml
         Tachometer.qml
         Settings.qml
@@ -88,7 +91,7 @@ set_target_properties(appDashboard PROPERTIES
 )
 
 target_link_libraries(appDashboard
-    PRIVATE Qt6::Quick Qt6::WebView
+    PRIVATE Qt6::Quick Qt6::WebView Qt6::Network
 )
 
 include(GNUInstallDirs)
