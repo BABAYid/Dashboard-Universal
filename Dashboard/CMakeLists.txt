@@ -50,7 +50,6 @@ qt_add_qml_module(appDashboard
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
         images/lights_glow.png
-        images/needle_glow.png
         images/around_in.png
         images/batt.png
         images/belt.png

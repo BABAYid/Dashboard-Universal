@@ -72,10 +72,9 @@ Item {
     // Включён ли шлейф-«хвост» за стрелкой (настройка «Внешний вид»).
     // false — компоненты шлейфа невидимы и не тратят ресурсы.
     property bool showTrail: true
-
-    // Длина шлейфа: он реализован размытой копией стрелки с задержкой —
-    // «длина» = величина отставания (trailLagMs).
-    property real trailLagMs: 220
+    // Поправка угла шлейфа: арт стрелки нарисован с наклоном +191.2°
+    // (см. Speedometer.qml: при rotation = 0 стрелка смотрит на 191.2°).
+    property real trailRotationOffset: 191.2
 
     // ======================= ОТРИСОВКА =======================
 
@@ -85,6 +84,58 @@ Item {
         source: gauge.dialSource
         fillMode: Image.PreserveAspectFit
     }
+
+    // --- НАЧАЛО ШЛЕЙФА ---
+    // Объявлен ДО стрелок и центрального круга — они рисуются поверх,
+    // поэтому шлейф не перекрывает ни основную, ни малую стрелку.
+    // Canvas-сектор: хвост 25° позади стрелки с плавным затуханием.
+    // createConicGradient в этой сборке Qt отсутствует (не функция) —
+    // замена: линейный градиент поперёк сектора (та же плавная альфа).
+    // Угол 0 Canvas = «на 3 часа», поэтому сектор построен вокруг «верха»
+    // ([−115°..−90°]), а поворот item = угол стрелки + 191.2° (арт стрелки
+    // нарисован с наклоном — при rotation = 0 стрелка смотрит на 191.2°).
+    Canvas {
+        id: needleTrail
+        width: parent.width
+        height: parent.height
+        x: 0; y: 0
+        visible: gauge.showTrail && !gauge.startup
+        antialiasing: true
+        rotation: (gauge.startup ? gauge.sweepAngle : gauge.needleAngle) + gauge.trailRotationOffset
+        onRotationChanged: requestPaint()
+
+        onPaint: {
+            var ctx = getContext("2d");
+            ctx.reset();
+            var cx = width / 2;
+            var cy = height / 2;
+            // Радиус ограничен 0.55R: цифры и метки нарисованы на диске
+            // (радиусы ~0.6R..1.0R), а Canvas рисуется поверх диска —
+            // полный радиус заливал бы шкалу белой пеленой.
+            var radius = width * 0.55 / 2;
+
+            var a0 = -115 * Math.PI / 180;   // хвост
+            var a1 = -90 * Math.PI / 180;    // у стрелки
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, a0, a1, false);
+            ctx.closePath();
+
+            var r09 = radius * 0.9;
+            var gx0 = cx + r09 * Math.cos(a1);
+            var gy0 = cy + r09 * Math.sin(a1);
+            var gx1 = cx + r09 * Math.cos(a0);
+            var gy1 = cy + r09 * Math.sin(a0);
+            var grad = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
+            grad.addColorStop(0.0, "rgba(255, 255, 255, 0.5)");
+            grad.addColorStop(1.0, "transparent");
+
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+    }
+    // --- КОНЕЦ ШЛЕЙФА ---
 
     // Малая стрелка (под центральным кругом)
     Image {
@@ -126,29 +177,6 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // ===== ШЛЕЙФ: заранее размытая копия стрелки =====
-    // Размытие сделано ОФЛАЙН (PIL) в images/needle_glow.png: белый арт
-    // стрелки с гауссовым размытием и запасом 120 px от краёв. В рантайме —
-    // просто одна картинка с отставанием по углу (Behavior): никакой
-    // per-frame размывки (MultiEffect душил рендер до 2 к/с), нет линий
-    // и сетки, ширина = ширина стрелки + размытие — цифры шкалы не трогает.
-    Image {
-        source: "images/needle_glow.png"
-        // 990 px холст / 750 px стрелка → 1.32, вместе с needleScale 1.05
-        width: parent.width * gauge.needleScale * (990.0 / 750.0)
-        height: width
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        rotation: gauge.startup ? gauge.sweepAngle : gauge.needleAngle
-        Behavior on rotation {
-            enabled: !gauge.startup
-            NumberAnimation { duration: gauge.trailLagMs; easing.type: Easing.OutCubic }
-        }
-        visible: gauge.showTrail && !gauge.startup
-        opacity: 0.5
-    }
 
     // ======================= ОСНОВНАЯ СТРЕЛКА =======================
     // Шлейф рисуется ПОД ней (объявлен выше), по ней же считаются
