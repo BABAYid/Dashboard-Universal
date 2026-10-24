@@ -173,65 +173,201 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // ===== ШЛЕЙФ: конический градиент (без наложения картинок) =====
-    // Статичная геометрия: сектор от «верха» по часовой на trailAngleSpan.
-    // Заливка — ConicalGradient: у стрелки alpha 0.8, к хвосту 0. Поворот/
-    // зеркало делаем трансформом item — без перестройки пути и без
-    // Z-fighting (один слой строго под стрелкой, над циферблатом).
-    // Зеркалим при движении по часовой: тогда сектор оказывается позади
-    // движения (против часовой стороны стрелки).
+    // ===== ШЛЕЙФ: статичная геометрия из узких секторов =====
+    // ConicalGradient в QtQuick.Shapes рисует сектор грубой нарезкой (полосы),
+    // а шейдеры недоступны (нет qsb). Поэтому шлейф собран из 24 статичных
+    // треугольников с плавным шагом альфы (~1° на шаг): геометрия строится
+    // один раз, а поворот/зеркало — только трансформ item.
     Shape {
         id: trailShape
-        width: parent.width
-        height: parent.height
+        width: 714
+        height: 714
         transformOrigin: Item.Center
         visible: gauge.showTrail && !gauge.startup && gauge.trailSmoothVel > 0.02
         opacity: Math.min(1.0, gauge.trailSmoothVel * 1.15)
         rotation: gauge.mainNeedleRotation + gauge.trailRotationOffset
-        // Зеркалим по горизонтали (при движении по часовой — сектор позади).
+        // По часовой (d>0): хвост позади = против часовой стороны —
+        // зеркалим сектор; против часовой — без зеркала.
         transform: Scale {
             origin.x: trailShape.width / 2
             origin.y: trailShape.height / 2
-            // По часовой (d>0): хвост позади = против часовой стороны —
-            // сектор без зеркала. Против часовой — зеркальный.
-            xScale: gauge.trailSmoothDir > 0 ? 1 : -1
+            xScale: gauge.trailSmoothDir > 0 ? -1 : 1
             yScale: 1
         }
         ShapePath {
-            fillGradient: ConicalGradient {
-                centerX: trailShape.width / 2
-                centerY: trailShape.height / 2
-                angle: 0
-                // Позиции градиента: 0 — на «3 часа»; «верх» — 0.75.
-                // Сектор [0.75 .. 0.75 + span/360]: яркий у стрелки, 0 в конце.
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.749; color: "transparent" }
-                GradientStop { position: 0.75; color: Qt.rgba(1.0, 1.0, 1.0, 0.8) }
-                GradientStop { position: 0.75 + gauge.trailAngleSpan / 360.0; color: "transparent" }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-            startX: trailShape.width / 2
-            startY: trailShape.height / 2
-            PathLine {
-                x: trailShape.width / 2
-                y: trailShape.height / 2 - trailShape.width / 2 * 0.95
-            }
-            PathAngleArc {
-                centerX: trailShape.width / 2
-                centerY: trailShape.height / 2
-                radiusX: trailShape.width / 2 * 0.95
-                radiusY: trailShape.height / 2 * 0.95
-                startAngle: -90
-                sweepAngle: gauge.trailAngleSpan
-            }
-            PathLine {
-                x: trailShape.width / 2
-                y: trailShape.height / 2
-            }
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.783)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 357.0; y: 17.9 }
+            PathLine { x: 363.2; y: 17.9 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.750)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 363.2; y: 17.9 }
+            PathLine { x: 369.3; y: 18.1 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.717)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 369.3; y: 18.1 }
+            PathLine { x: 375.5; y: 18.4 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.683)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 375.5; y: 18.4 }
+            PathLine { x: 381.6; y: 18.7 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.650)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 381.6; y: 18.7 }
+            PathLine { x: 387.8; y: 19.3 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.617)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 387.8; y: 19.3 }
+            PathLine { x: 393.9; y: 19.9 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.583)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 393.9; y: 19.9 }
+            PathLine { x: 400.0; y: 20.6 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.550)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 400.0; y: 20.6 }
+            PathLine { x: 406.2; y: 21.4 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.517)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 406.2; y: 21.4 }
+            PathLine { x: 412.2; y: 22.4 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.483)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 412.2; y: 22.4 }
+            PathLine { x: 418.3; y: 23.4 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.450)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 418.3; y: 23.4 }
+            PathLine { x: 424.4; y: 24.6 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.417)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 424.4; y: 24.6 }
+            PathLine { x: 430.4; y: 25.9 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.383)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 430.4; y: 25.9 }
+            PathLine { x: 436.4; y: 27.3 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.350)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 436.4; y: 27.3 }
+            PathLine { x: 442.4; y: 28.8 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.317)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 442.4; y: 28.8 }
+            PathLine { x: 448.3; y: 30.4 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.283)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 448.3; y: 30.4 }
+            PathLine { x: 454.3; y: 32.1 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.250)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 454.3; y: 32.1 }
+            PathLine { x: 460.2; y: 33.9 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.217)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 460.2; y: 33.9 }
+            PathLine { x: 466.0; y: 35.8 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.183)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 466.0; y: 35.8 }
+            PathLine { x: 471.8; y: 37.9 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.150)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 471.8; y: 37.9 }
+            PathLine { x: 477.6; y: 40.0 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.117)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 477.6; y: 40.0 }
+            PathLine { x: 483.4; y: 42.3 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.083)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 483.4; y: 42.3 }
+            PathLine { x: 489.1; y: 44.6 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.050)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 489.1; y: 44.6 }
+            PathLine { x: 494.7; y: 47.1 }
+            PathLine { x: 357.0; y: 357.0 }
+        }
+        ShapePath {
+            fillColor: Qt.rgba(1.0, 1.0, 1.0, 0.020)
+            startX: 357.0; startY: 357.0
+            PathLine { x: 494.7; y: 47.1 }
+            PathLine { x: 500.3; y: 49.6 }
+            PathLine { x: 357.0; y: 357.0 }
         }
     }
 
-    // Основная стрелка (поверх всего, кроме цифр и ламп)
+
+    // ======================= ОСНОВНАЯ СТРЕЛКА =======================
+    // Шлейф рисуется ПОД ней (объявлен выше), по ней же считаются
+    // скорость/направление для шлейфа (id: mainNeedle).
     Image {
         id: mainNeedle
         source: gauge.needleSource
@@ -242,9 +378,8 @@ Item {
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
         rotation: gauge.startup ? gauge.sweepAngle : gauge.needleAngle
-        // Пружина: при резком изменении значения (педаль в пол) стрелка
-        // перелетает на 2–3 % и возвращается за ~0.5 с. damping 0.2 — лёгкий
-        // недодемпфированный ход, но без бесконечной раскачки.
+        // Пружина: при резком изменении значения стрелка перелетает на 2–3 %
+        // и возвращается за ~0.5 с.
         Behavior on rotation {
             enabled: !gauge.startup
             SpringAnimation {
