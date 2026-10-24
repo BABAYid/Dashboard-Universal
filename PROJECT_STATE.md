@@ -703,45 +703,47 @@ y 658) или двойным кликом по центральной облас
 и медленно покачивается ±6° за 14 с. В навигации скрыта (`visible: false`).
 
 **Файлы.** `Dashboard/Car3DView.qml` — обёртка с `Loader`; `Dashboard/Car3DScene.qml`
-— вся 3D-сцена (View3D, камера, DirectionalLight + 2 SpotLight, RuntimeLoader).
-Сцена вынесена в отдельный файл специально: она грузит модель через модуль
-`QtQuick3D.AssetUtils`, которого может не быть в системе. Без него `Loader`
-остаётся пустым, в логе одна строка `module "QtQuick3D.AssetUtils" is not
-installed`, и приборка работает без 3D — не падает.
+— вся 3D-сцена (View3D, камера, DirectionalLight + 2 SpotLight) и загрузка
+готовой модели из `assets/balsam/Car.qml`. Сцена вынесена в отдельный файл
+специально: если QtQuick3D в системе нет, `Loader` остаётся пустым, в логе
+одна строка, и приборка работает без 3D — не падает.
 
 **Зависимости и команды:**
 
-```bash
-sudo apt install qml6-module-qtquick3d-assetutils   # RuntimeLoader (тип)
-sudo apt install qt6-quick3d-assetimporters-plugin  # плагины импорта: assimp + draco + pugixml
-```
+Нужен только `qml6-module-qtquick3d` (идёт с Qt). Модель **предобработана
+balsam** на этапе сборки — рантайм-импорт glTF не используется, пакеты
+`qt6-quick3d-assetimporters-plugin` и `qml6-module-qtquick3d-assetutils`
+не нужны. `Dashboard/assets/balsam/` содержит `Car.qml`, меши `.mesh` и
+упакованный WebP-атлас текстур; пересборка:
 
-Первый пакет даёт QML-тип `RuntimeLoader`/`Model` с `source` из `AssetUtils`,
-второй — **плагин импортёра** (`plugins/assetimporters/libassimp.so`), без
-которого любой рантайм-импорт glTF падает с «Unsupported: Unknown error»
-(проверено: без плагина — ошибка, с плагином — `Success!`). Плагин тянет
-`libassimp6`, а тот — `libdraco9` и `libpugixml1v5`; это и есть полный набор.
+```bash
+sudo apt install qt6-quick3d-dev-tools   # утилита balsam (нужна для пересборки)
+python3 tools/decimate_glb.py audi3D.glb Dashboard/assets/car.glb --tris 30000
+balsam Dashboard/assets/car.glb -o Dashboard/assets/balsam/
+```
 
 Плюс нужен рабочий OpenGL/GLES: QtQuick3D рисует только через RHI. В среде без
 драйвера (или с `QT_QPA_PLATFORM=offscreen`) View3D честно пишет «The View3D
 item is not going to display anything» — приборка при этом работает, но без 3D.
 
-**Почему 3D не показывалось — окончательный диагноз (проверено 25.10.2026).**
+**Почему 3D не показывалось — окончательный диагноз (проверено 24.10.2026).**
 
-1. `RuntimeLoader` без плагина импортёра валится с «Unsupported: Unknown
-   error» и **очищает `source`** — в логе пустой `источник …`. Это и сбивало
-   с толку: казалось, что модель «не грузится», хотя плагина просто не было.
-2. С `qt6-quick3d-assetimporters-plugin` (распакован в `.dashcheck` и подан
-   через `QT_PLUGIN_PATH`/`LD_LIBRARY_PATH`) в приложении видно
-   `3D: статус модели 1 | ошибка: Success! | источник: qrc:/…/car.glb` —
-   модель импортируется из qrc, дело было только в пакетах.
-3. Без рабочего GL (offscreen или битый драйвер) рендеринга всё равно не будет:
-   `egl: failed to create dri2 screen` / `ZINK: failed to choose pdev` лечатся
-   `LIBGL_ALWAYS_SOFTWARE=1`; offscreen-платформа не RHI-based и 3D там не
-   рисует принципиально.
+1. **Рантайм-импорт glTF в этой сборке Qt сломан.** `RuntimeLoader` без
+   плагина падает с «Unsupported: Unknown error» и очищает `source`; с
+   плагином (`qt6-quick3d-assetimporters-plugin`) импорт «успешен», но
+   даёт испорченную геометрию — на экране «полоска»/пара точек вместо
+   машины. Это не лечится — дефект импортёра.
+2. **Отдельный баг нашего конвейера:** при прореживании примитивы писались
+   с `mode: 5` (triangle strip), хотя данные уже треугольные — рендерер
+   читал мусор. Исправлено: `mode: 4` (см. `tools/decimate_glb.py`).
+3. **Решение — balsam:** glb конвертируется на этапе сборки в нативную
+   сцену `.mesh`; в рантайме её грузит обычный `Loader`. Это работает на
+   любом Qt Quick 3D без импортёров — и на RK3588 тоже.
+4. Без рабочего GL (offscreen или битый драйвер) рендеринга не будет:
+   `egl: failed to create dri2 screen` / `ZINK: failed to choose pdev`
+   лечатся `LIBGL_ALWAYS_SOFTWARE=1`; offscreen-платформа не RHI-based.
 
-Диагностика в сцене (`3D: статус модели …, ошибка: …, источник: …`) остаётся
-в коде — она и позволила найти причину; без неё ошибки не видно вообще.
+Диагностика в сцене (`3D: сцена статус …`) остаётся в коде.
 
 **Флаг `--no-3d`.** Приборка стартует без 3D-заставки: лампы и стрелки сразу,
 самопроверка 2.5 с, как раньше. Флаг читается в `main.cpp` и передаётся в QML
