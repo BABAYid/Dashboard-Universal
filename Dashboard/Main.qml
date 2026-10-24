@@ -264,6 +264,7 @@ Window {
             height: 406
             progress: root.startupStage
             roadVisible: root.panelReady
+            roadSpeed: root.speed
             opacity: 1.0
             // Видна в 5-м режиме всегда; во время заставки — пока приборы
             // ещё погашены (gaugesOpacity < 0.01), чтобы данные не ложились
@@ -375,6 +376,10 @@ Window {
                 anchors.fill: parent
                 speed: root.speed * root.speedFactor
                 gearMode: root.gearMode
+                // В 1-м виде (стандарт) скорость и передача уже в центре:
+                // цифры на циферблате и индикатор АКПП не дублируем.
+                showDigital: root.centerMode !== 0
+                showGear: root.centerMode !== 0
                 fuelLevel: root.fuelLevel * root.fuelFactor
                 startup: root.startup
                 nightMode: root.nightMode
@@ -413,6 +418,8 @@ Window {
             Tachometer {
                 id: tacho
                 anchors.fill: parent
+                // В 1-м виде обороты уже в центре — цифры на циферблате скрыты
+                showDigital: root.centerMode !== 0
                 rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
                 startup: root.startup

@@ -60,6 +60,8 @@ Item {
 
     // ======================= СОСТОЯНИЕ =======================
     property bool startup: false     // идёт самопроверка: стрелку ведёт анимация
+    // Цифровое значение на циферблате (в 1-м виде центра оно дублируется)
+    property bool showDigital: true
     property bool nightMode: false
 
     // Угол основной стрелки во время самопроверки. Отдельное свойство, а не
@@ -134,8 +136,9 @@ Item {
         y: parent.height * 0.317
         width: parent.width * 0.22
 
-        // Появляются после самопроверки приборов, как в серийных панелях
-        opacity: gauge.startup ? 0.0 : 1.0
+        // Появляются после самопроверки приборов, как в серийных панелях;
+    // в виде «стандарт» (1-й) цифры скрываются — они уже есть в центре.
+        opacity: (gauge.startup || !gauge.showDigital) ? 0.0 : 1.0
         Behavior on opacity { NumberAnimation { duration: 400 } }
 
         Text {

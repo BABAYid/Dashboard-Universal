@@ -33,6 +33,8 @@ Item {
 
     // Дорога появляется только когда панель полностью прогрузилась
     property bool roadVisible: true
+    // Скорость автомобиля (км/ч): дорога стоит на 0 и ускоряется с набором
+    property real roadSpeed: 0
 
     signal modelReady()
     signal modelFailed()
@@ -109,9 +111,13 @@ Item {
                     NumberAnimation on z {
                         from: dash.zStart
                         to: dash.zStart + 2.0
-                        duration: 900
+                        // Период ~900 мс на 30 км/ч, минимум 150 мс;
+                        // на 0 км/ч дорога стоит.
+                        duration: Math.max(150,
+                                           Math.min(8000,
+                                                   900 * 30 / Math.max(scene.roadSpeed, 1)))
                         loops: Animation.Infinite
-                        running: true
+                        running: scene.roadSpeed > 0.5
                     }
                 }
             }

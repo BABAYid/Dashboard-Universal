@@ -56,6 +56,7 @@ Gauge {
     centerCircleRatio: 0.623
 
     property string gearMode: "P"
+    property bool showGear: true
 
     // Состояние ламп (приходит из Main.qml, источник — CanBackend)
     property bool seatBeltWarning: false
@@ -143,7 +144,7 @@ Gauge {
         x: parent.width * 0.55
         y: parent.height * 0.58
         fillMode: Image.PreserveAspectFit
-        opacity: (root.gearMode === "L") ? 1.0 : 0.0
+        opacity: (root.showGear && root.gearMode === "L") ? 1.0 : 0.0
         visible: opacity > 0
     }
 
@@ -155,5 +156,6 @@ Gauge {
         x: parent.width * 0.6
         y: parent.height * 0.43
         fillMode: Image.PreserveAspectFit
+        opacity: root.showGear ? 1.0 : 0.0
     }
 }
