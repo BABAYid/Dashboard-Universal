@@ -37,7 +37,7 @@ Item {
     // Левый поворотник (на циферблате спидометра, прибор сдвинут по макету)
     Image {
         source: "images/left_turn.png"
-        x: 850
+        x: 818
         y: 18
         width: 50
         height: 50
@@ -49,7 +49,7 @@ Item {
     // Правый поворотник
     Image {
         source: "images/right_turn.png"
-        x: 1100
+        x: 1150
         y: 18
         width: 50
         height: 50
