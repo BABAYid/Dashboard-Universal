@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick 2.15
+import Dashboard
 
 // ============================================================================
 //  Дождь и снег на фоне приборки.
@@ -23,9 +24,11 @@ Item {
     visible: active
     opacity: 0.55
 
+
     Repeater {
         model: fx.rain ? 90 : 70
         delegate: Rectangle {
+            id: drop
             readonly property real startX: Math.random() * fx.width
             readonly property real startY: -(Math.random() * fx.height + 40)
             readonly property real fallMs: fx.rain
@@ -39,16 +42,16 @@ Item {
             color: fx.rain ? "#7FA8DD" : "#F2F6FF"
 
             NumberAnimation on y {
-                from: startY
+                from: drop.startY
                 to: fx.height + 40
-                duration: fallMs
+                duration: drop.fallMs
                 loops: Animation.Infinite
                 running: fx.active
             }
             NumberAnimation on x {
-                from: startX
-                to: startX + driftX
-                duration: fx.rain ? fallMs : fallMs * 1.5
+                from: drop.startX
+                to: drop.startX + drop.driftX
+                duration: fx.rain ? drop.fallMs : drop.fallMs * 1.5
                 loops: Animation.Infinite
                 running: fx.active
                 easing.type: Easing.InOutSine

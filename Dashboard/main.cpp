@@ -8,6 +8,7 @@
 #include <QDebug>
 
 #include "can/CanBackend.h"
+#include "WeatherProvider.h"
 
 // Путь к ресурсам QML-модуля Dashboard (см. qt_add_qml_module в CMakeLists.txt)
 static const char *kFontResource = ":/qt/qml/Dashboard/fonts/KdamThmorPro-Regular.ttf";
@@ -56,6 +57,12 @@ int main(int argc, char *argv[])
     can->setInterfaceName(parser.value(canOption));
     can->setMockMode(parser.isSet(mockOption));
     can->start();
+
+    // Погода за окном: Open-Meteo раз в 10 минут; в --mock — демо-цикл
+    // дождь → снег → ясно, чтобы эффект было видно без сети.
+    WeatherProvider *weather = WeatherProvider::instance();
+    weather->setMockMode(parser.isSet(mockOption));
+    weather->start();
 
     // Шрифт приборки. Регистрируем в приложении целиком: раньше это делал FontLoader
     // в Main.qml и писал в несуществующее свойство Window.font (ошибка QML).

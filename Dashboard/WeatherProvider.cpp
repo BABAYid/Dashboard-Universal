@@ -6,6 +6,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QSettings>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -64,6 +65,19 @@ void WeatherProvider::start()
     if (m_started)
         return;
     m_started = true;
+
+    // Координаты можно переопределить в QSettings (weather/latitude,
+    // weather/longitude) — на устройстве без интерфейса удобно задать
+    // город один раз. По умолчанию — Москва.
+    {
+        QSettings settings;
+        m_latitude = settings
+                         .value(QStringLiteral("weather/latitude"), m_latitude)
+                         .toDouble();
+        m_longitude = settings
+                          .value(QStringLiteral("weather/longitude"), m_longitude)
+                          .toDouble();
+    }
 
     // Первый запрос — чуть позже старта окна, чтобы не конкурировать
     // с загрузкой QML и CAN.

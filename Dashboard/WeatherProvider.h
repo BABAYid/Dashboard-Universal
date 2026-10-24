@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QQmlEngine>
 #include <QString>
 #include <QTimer>
 
@@ -38,7 +39,10 @@ class WeatherProvider : public QObject
     Q_PROPERTY(double temperature READ temperature NOTIFY stateChanged)
 
 public:
-    explicit WeatherProvider(QObject *parent = nullptr);
+    // Без аргумента по умолчанию — иначе QML создаст ВТОРОЙ экземпляр
+    // (как в CanBackend); с create() без default-конструктора QML берёт
+    // именно тот объект, что настроил main.cpp.
+    explicit WeatherProvider(QObject *parent);
 
     static WeatherProvider *instance();
     static WeatherProvider *create(QQmlEngine *, QJSEngine *) { return instance(); }
