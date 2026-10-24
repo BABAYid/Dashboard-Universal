@@ -21,7 +21,7 @@ Item {
     readonly property bool snow: WeatherProvider.state === "snow"
     readonly property bool active: rain || snow
 
-    visible: active
+    visible: enabled && active
     opacity: 0.55
 
 

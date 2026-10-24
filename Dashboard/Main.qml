@@ -60,6 +60,7 @@ Window {
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
     // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
     readonly property bool funEnabled: calibration.funEnabled
+    readonly property bool weatherEnabled: calibration.weatherEnabled
 
     // Запас хода (считает CanBackend по среднему расходу за 5 минут).
     // Пока расчёт недостоверен — в QML это «—», и предупреждение не горит:
@@ -167,8 +168,9 @@ Window {
         root.fuelFactor = calibration.fuelFactor
         root.tempFactor = calibration.tempFactor
 
-        // С 3D-машиной старт идёт по сценарию 4 секунды: сначала темно, потом
-        // фары, выезд машины и только на 2.5–3.5 с проявляются приборы.
+        // С 3D-машиной старт идёт по сценарию 4 секунды: сначала темно,
+        // потом машина выезжает по дороге, и только на 3–4 с проявляются
+        // приборы (пока видна машина — никаких показаний).
         // Без 3D (--no-3d) всё как раньше: лампы и стрелки сразу, 2.5 секунды.
         if (root.car3d) {
             root.startupStage = 0.0
@@ -194,7 +196,8 @@ Window {
                 easing.type: Easing.InOutQuad
             }
             SequentialAnimation {
-                PauseAnimation { duration: 2500 }
+                // Машина одна на экране до 3 с — потом проявляются приборы
+                PauseAnimation { duration: 3000 }
                 // Самопроверка запускается вместе с проявлением приборов,
                 // иначе проход стрелок проходит, пока приборов ещё не видно
                 ScriptAction { script: { root.startup = true; root.lampSelfTest = true } }
@@ -791,6 +794,7 @@ Window {
         // Полупрозрачно, чтобы показания читались.
         WeatherFx {
             anchors.fill: parent
+            enabled: root.weatherEnabled
         }
     }
 }

@@ -65,9 +65,9 @@ Item {
 
         PerspectiveCamera {
             id: camera
-            position: Qt.vector3d(0, 1.6, 9.5)
-            eulerRotation: Qt.vector3d(-6, 0, 0)
-            fieldOfView: 38
+            position: Qt.vector3d(0, 6.0, 11.0)
+            eulerRotation: Qt.vector3d(-28, 0, 0)
+            fieldOfView: 40
             clipNear: 0.5
             clipFar: 1000
         }
@@ -79,6 +79,37 @@ Item {
             castsShadow: false
         }
 
+        // ===== ДОРОГА: две полосы разметки, уходящие в даль =====
+        // Штрихи сдвигаются на период шага и перескакивают обратно: рисунок
+        // повторяется, поэтому скачок не виден — получается эффект движения.
+        Node {
+            Repeater3D {
+                model: 44                       // 2 полосы × 22 штриха
+                delegate: Model {
+                    id: dash
+                    required property int index
+                    readonly property int dashIndex: Math.floor(dash.index / 2)
+                    readonly property real zStart: -36 + dashIndex * 2.0
+                    source: "#Cube"
+                    x: (dash.index % 2) === 0 ? -1.5 : 1.5
+                    y: 0.008
+                    z: dash.zStart
+                    scale: Qt.vector3d(0.0009, 0.0002, 0.009)
+                    materials: PrincipledMaterial {
+                        baseColor: "#9A9A9A"
+                        lighting: PrincipledMaterial.NoLighting
+                    }
+                    NumberAnimation on z {
+                        from: dash.zStart
+                        to: dash.zStart + 2.0
+                        duration: 900
+                        loops: Animation.Infinite
+                        running: true
+                    }
+                }
+            }
+        }
+
         Node {
             id: carPivot
             position: Qt.vector3d(0, 0, scene.carDepth)
@@ -88,7 +119,7 @@ Item {
             // Временная cruiser300 в сантиметрах: CarModel.qml сам ставит
             // масштаб 0.001, здесь ещё 0.9 — подгонка под кадр.
             Node {
-                scale: Qt.vector3d(0.9, 0.9, 0.9)
+                scale: Qt.vector3d(1.02, 1.02, 1.02)
 
                 SequentialAnimation on eulerRotation.y {
                     running: scene.progress >= 0.99 && scene.idleMotion
