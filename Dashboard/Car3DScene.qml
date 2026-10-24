@@ -41,8 +41,17 @@ Item {
     property bool headlightsOn: false
     property bool leftTurn: false
     property bool rightTurn: false
-    // Мигание поворотников приходит из CAN (бит меняется с частотой реле);
-    // свой таймер не нужен — иначе мигание получалось двойным.
+    // Мигание поворотников: CAN присылает состояние (бит постоянный пока
+    // включён), а мигаем сами — тем же ритмом, что панель (1.5 Гц).
+    property bool turnPhase: true
+
+    Timer {
+        interval: 333
+        repeat: true
+        running: scene.leftTurn || scene.rightTurn
+        onRunningChanged: if (!running) scene.turnPhase = true
+        onTriggered: scene.turnPhase = !scene.turnPhase
+    }
 
     signal modelReady()
     signal modelFailed()
@@ -207,7 +216,7 @@ Item {
 
                 // ===== ПОВОРОТНИКИ (мигают вместе с лампой на панели) =====
                 Node {
-                    visible: scene.leftTurn
+                    visible: scene.leftTurn && scene.turnPhase
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(-2.72, 0.55, -1.30)
@@ -228,7 +237,7 @@ Item {
                     }
                 }
                 Node {
-                    visible: scene.rightTurn
+                    visible: scene.rightTurn && scene.turnPhase
                     Model {
                         source: "#Sphere"
                         position: Qt.vector3d(-2.72, 0.55, 1.30)

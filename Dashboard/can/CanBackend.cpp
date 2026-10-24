@@ -676,8 +676,11 @@ void CanBackend::generateMockFrames()
     const bool braking = cycle >= 40.0 && cycle < 50.0;
 
     quint8 lights = 0;
-    if (turningLeft && blink)  lights |= 0x01;
-    if (turningRight && blink) lights |= 0x02;
+    // Биты поворотников — СОСТОЯНИЕ переключателя (как шлёт прошивка),
+    // мигание рисуют панель (blinkOn) и 3D-модель; раньше mock мигал сам,
+    // и двойное мигание оставляло стрелки на панели почти всегда погашенными.
+    if (turningLeft)  lights |= 0x01;
+    if (turningRight) lights |= 0x02;
     if (lightsOn)              lights |= 0x08;   // ближний
     if (lightsOn)              lights |= 0x10;   // габариты
     if (lightsOn && cycle > 30.0 && cycle < 36.0) lights |= 0x20;  // противотуманки

@@ -618,6 +618,10 @@ Window {
         }
 
         Indicators {
+            // Индикаторы (стрелки поворотников и лампы) — НАД циферблатами:
+            // у контейнеров приборов z: 1, и без этого стрелки прятались
+            // под непрозрачной подложкой спидометра.
+            z: 2
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
             highBeam: root.highBeam
