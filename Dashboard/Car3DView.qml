@@ -27,7 +27,9 @@ Item {
         anchors.fill: parent
         source: "Car3DScene.qml"
 
+        onStatusChanged: console.log("3D: Loader статус", status)
         onLoaded: {
+            console.log("3D: сцена загружена")
             item.progress = Qt.binding(function() { return root.progress })
             item.idleMotion = Qt.binding(function() { return root.idleMotion })
             item.modelReady.connect(root.modelReady)

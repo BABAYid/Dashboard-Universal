@@ -102,13 +102,16 @@ Item {
                 }
 
                 RuntimeLoader {
-                    source: "assets/car.glb"
+                    source: "qrc:/qt/qml/Dashboard/assets/car.glb"
                     onStatusChanged: {
+                        console.log("3D: статус модели", status, "| ошибка:", errorString,
+                                    "| источник:", source)
                         if (status === RuntimeLoader.Success)
                             scene.modelReady()
                         else if (status === RuntimeLoader.Error)
                             scene.modelFailed()
                     }
+                    Component.onCompleted: console.log("3D: RuntimeLoader создан, source =", source)
                 }
             }
         }

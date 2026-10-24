@@ -245,8 +245,9 @@ def build(gltf, binary, eps):
         image["bufferView"] = add_view(bytes(data))
 
     meshes_out = []
+    mesh_map = {}       # старый индекс меша → новый (пустые выбрасываем)
     triangles = 0
-    for mesh in gltf.get("meshes", []):
+    for old_index, mesh in enumerate(gltf.get("meshes", [])):
         primitives_out = []
         for prim in mesh.get("primitives", []):
             attrs = prim["attributes"]
@@ -283,7 +284,19 @@ def build(gltf, binary, eps):
             primitives_out.append(out)
             triangles += tris.shape[0]
         if primitives_out:
+            mesh_map[old_index] = len(meshes_out)
             meshes_out.append({"name": mesh.get("name", "mesh"), "primitives": primitives_out})
+
+    # Узлы ссылаются на меши по индексу: после выбрасывания пустых индексы
+    # сдвигаются, и без пересчёта получается битый файл (импортёр отвечает
+    # «Unsupported»). Узлы, чей меш исчез, остаются пустыми.
+    for node in gltf.get("nodes", []):
+        if "mesh" in node:
+            new_index = mesh_map.get(node["mesh"])
+            if new_index is None:
+                del node["mesh"]
+            else:
+                node["mesh"] = new_index
 
     gltf["meshes"] = meshes_out
     gltf["accessors"] = accessors
