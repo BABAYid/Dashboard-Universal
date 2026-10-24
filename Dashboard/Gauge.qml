@@ -73,9 +73,29 @@ Item {
     // false — компоненты шлейфа невидимы и не тратят ресурсы.
     property bool showTrail: true
 
-    // Фактический угол основной стрелки (с учётом пружины) — за ним
-    // следуют копии шлейфа.
+    // Фактический угол основной стрелки (с учётом пружины) — от него
+    // считается скорость/направление для шлейфа.
     readonly property real mainNeedleRotation: mainNeedle.rotation
+
+    // Шлейф-«след»: одна плавная текстура-клин, поворачивается вместе со
+    // стрелкой; видна только при движении — прозрачность от скорости.
+    // Направление: d>0 — по часовой (клин сзади-против часовой).
+    property real trailCwOpacity: 0.0
+    property real trailCcwOpacity: 0.0
+    property real trailLastRotation: 0.0
+
+    Timer {
+        interval: 16
+        repeat: true
+        running: gauge.showTrail && !gauge.startup
+        onTriggered: {
+            const d = gauge.mainNeedleRotation - gauge.trailLastRotation
+            gauge.trailLastRotation = gauge.mainNeedleRotation
+            const v = Math.min(1.0, Math.abs(d) / 5.0)
+            gauge.trailCwOpacity = d > 0.02 ? v * 0.55 : gauge.trailCwOpacity * 0.5
+            gauge.trailCcwOpacity = d < -0.02 ? v * 0.55 : gauge.trailCcwOpacity * 0.5
+        }
+    }
 
     // ======================= ОТРИСОВКА =======================
 
@@ -126,43 +146,34 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // ===== ШЛЕЙФ («ХВОСТ») ЗА СТРЕЛКОЙ =====
-    // Вариант А (копии стрелки) выбран осознанно: ConicalGradient/Canvas на
-    // Mali-G610 дороже — тут лишние полупрозрачные текстурированные квады,
-    // GPU их почти не замечает. Копии следуют за РЕАЛЬНЫМ углом основной
-    // стрелки (а не за целевым значением), поэтому хвост повторяет и
-    // пружинный перелёт. Две копии с разным отставанием дают плавный веер.
+    // ===== ШЛЕЙФ: плавный клин-градиент за стрелкой =====
+    // Одна текстура (needle_trail.png) — сектор с затуханием от края у
+    // стрелки к хвосту. Поворачивается вместе со стрелкой (без отставания —
+    // «догоняющих стрелок» нет), прозрачность от угловой скорости, и
+    // гаснет, когда стрелка стоит. Для движения по часовой/против —
+    // две копии (вторая зеркальная), видна та, что позади движения.
     Image {
-        source: gauge.needleSource
-        width: parent.width * gauge.needleScale
-        height: parent.height * gauge.needleScale
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        source: "images/needle_trail.png"
+        width: parent.width
+        height: parent.height
+        x: 0; y: 0
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        visible: gauge.showTrail && !gauge.startup
-        opacity: 0.30
+        visible: gauge.showTrail && !gauge.startup && gauge.trailCwOpacity > 0.01
+        opacity: gauge.trailCwOpacity
         rotation: gauge.mainNeedleRotation
-        Behavior on rotation {
-            enabled: !gauge.startup
-            NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
-        }
     }
     Image {
-        source: gauge.needleSource
-        width: parent.width * gauge.needleScale
-        height: parent.height * gauge.needleScale
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        source: "images/needle_trail.png"
+        width: parent.width
+        height: parent.height
+        x: 0; y: 0
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        visible: gauge.showTrail && !gauge.startup
-        opacity: 0.14
+        mirror: true
+        visible: gauge.showTrail && !gauge.startup && gauge.trailCcwOpacity > 0.01
+        opacity: gauge.trailCcwOpacity
         rotation: gauge.mainNeedleRotation
-        Behavior on rotation {
-            enabled: !gauge.startup
-            NumberAnimation { duration: 380; easing.type: Easing.OutCubic }
-        }
     }
 
     // Основная стрелка (поверх всего, кроме цифр и ламп)
