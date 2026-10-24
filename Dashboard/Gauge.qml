@@ -84,6 +84,10 @@ Item {
     // шлейф выходит на полную. У спидометра ход плавный, у тахометра —
     // резкий, поэтому у каждого своё значение.
     property real trailSensitivity: 0.8
+    // Поправка угла для шлейфа: арт стрелки (SVG) нарисован под углом к
+    // вертикали — кончик при rotation=0 смотрит на ≈ −79°. Клин доворачиваем
+    // на те же −79°, иначе он уезжает относительно стрелки на ~80°.
+    property real trailRotationOffset: -79.0
 
     property real trailCwOpacity: 0.0
     property real trailCcwOpacity: 0.0
@@ -101,8 +105,10 @@ Item {
             // стрелки (против часовой) — он «за стрелкой» при движении
             // ПРОТИВ часовой (d < 0), зеркальный — при движении по часовой.
             const v = Math.min(1.0, Math.abs(d) / Math.max(0.05, gauge.trailSensitivity))
-            gauge.trailCwOpacity = d < -0.02 ? v * 0.9 : gauge.trailCwOpacity * 0.5
-            gauge.trailCcwOpacity = d > 0.02 ? v * 0.9 : gauge.trailCcwOpacity * 0.5
+            // По часовой (d>0) — прямой клин (лежит против часовой от
+            // стрелки, т.е. позади движения); против часовой — зеркальный.
+            gauge.trailCwOpacity = d > 0.02 ? v * 0.9 : gauge.trailCwOpacity * 0.5
+            gauge.trailCcwOpacity = d < -0.02 ? v * 0.9 : gauge.trailCcwOpacity * 0.5
         }
     }
 
@@ -170,7 +176,7 @@ Item {
         transformOrigin: Item.Center
         visible: gauge.showTrail && !gauge.startup && gauge.trailCwOpacity > 0.01
         opacity: gauge.trailCwOpacity
-        rotation: gauge.mainNeedleRotation
+        rotation: gauge.mainNeedleRotation + gauge.trailRotationOffset
     }
     Image {
         source: "images/needle_trail.png"
@@ -182,7 +188,7 @@ Item {
         mirror: true
         visible: gauge.showTrail && !gauge.startup && gauge.trailCcwOpacity > 0.01
         opacity: gauge.trailCcwOpacity
-        rotation: gauge.mainNeedleRotation
+        rotation: gauge.mainNeedleRotation + gauge.trailRotationOffset
     }
 
     // Основная стрелка (поверх всего, кроме цифр и ламп)
