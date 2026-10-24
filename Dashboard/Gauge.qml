@@ -87,9 +87,15 @@ Item {
         y: (parent.height - height) / 2
         fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        rotation: gauge.secondaryStartAngle
-                  + (gauge.secondaryValue / gauge.secondaryMaxValue)
-                    * (gauge.secondaryEndAngle - gauge.secondaryStartAngle)
+        // Ход ограничен дугой шкалы жёстко: коэффициент из настроек (или
+        // датчик) может дать >100 % — без клампа стрелка уезжала за сектор,
+        // в шкалу спидометра.
+        rotation: {
+            const k = Math.max(0.0, Math.min(1.0,
+                gauge.secondaryValue / gauge.secondaryMaxValue))
+            return gauge.secondaryStartAngle
+                   + k * (gauge.secondaryEndAngle - gauge.secondaryStartAngle)
+        }
         Behavior on rotation {
             NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
         }
