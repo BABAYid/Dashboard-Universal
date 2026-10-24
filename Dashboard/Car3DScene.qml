@@ -98,7 +98,7 @@ Item {
                     readonly property int dashIndex: Math.floor(dash.index / 2)
                     readonly property real zStart: -36 + dashIndex * 2.0
                     source: "#Cube"
-                    x: (dash.index % 2) === 0 ? -2.2 : 2.2
+                    x: (dash.index % 2) === 0 ? -3.0 : 3.0
                     y: 0.008
                     z: dash.zStart
                     scale: Qt.vector3d(0.0009, 0.0002, 0.009)

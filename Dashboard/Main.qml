@@ -180,6 +180,10 @@ Window {
             root.gaugesOpacity = 0.0
             root.startup = false
             root.lampSelfTest = false
+            // Стартовый экран — это 5-й вид: машина на дороге, никаких данных.
+            // После того как анимация доиграет (включая разворот кормой),
+            // открывается обычный вид приборов.
+            root.centerMode = 4
             startupSequence.start()
         }
     }
@@ -221,8 +225,21 @@ Window {
                 root.startup = false
                 root.lampSelfTest = false
                 root.startupFinished()
+                // Разворот машины доигрывает уже после заставки (0.8 + 2.2 с),
+                // затем показываем данные.
+                carViewReturnTimer.start()
             }
         }
+    }
+
+    // Возврат из стартового вида «машина» в вид приборов: ждём, пока
+    // доиграет разворот кормой (Car3DScene: 800 мс паузы + 2200 мс разворот).
+    Timer {
+        id: carViewReturnTimer
+        interval: 3200
+        running: false
+        repeat: false
+        onTriggered: root.centerMode = 0
     }
 
     // Мигание предупреждения о запасе хода: 1 Гц — 500 мс горит, 500 мс нет.
