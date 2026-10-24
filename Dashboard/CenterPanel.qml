@@ -20,7 +20,14 @@ Item {
     id: root
 
     property int mode: 0
-    readonly property int modeCount: 5
+    readonly property int modeCount: 6
+
+    // ---- 6-й вид: пневмоподвеска ----
+    signal suspensionUp()
+    signal suspensionDown()
+    property int suspensionLevel: 0
+    property int suspensionDirection: 0
+    property bool suspBlinkOn: false
     property bool nightMode: false
 
     readonly property color valueColor: nightMode ? "#FF8800" : "white"
@@ -338,6 +345,67 @@ Item {
     Item {
         anchors.fill: parent
         visible: root.mode === 4
+    }
+
+    // ======================= РЕЖИМ 5: ПОДВЕСКА =======================
+    // Пневмоподвеска: машина показана боком, вверху надпись режима,
+    // стрелки вверх/вниз — кнопки; при нажатии стрелка мигает.
+    Item {
+        anchors.fill: parent
+        visible: root.mode === 5
+
+        Text {
+            text: root.suspensionLevel > 0 ? "Бездорожье"
+                : root.suspensionLevel < 0 ? "Спорт" : "Стандарт"
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 4
+            color: root.valueColor
+            font.pixelSize: 30
+            font.bold: true
+            font.family: "Kdam Thmor Pro"
+        }
+
+        // Вверх — поднять кузов
+        Rectangle {
+            id: suspUpButton
+            width: 84; height: 84; radius: 42
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenterOffset: -60
+            y: 200
+            color: "#1A1A1A"
+            border.color: root.valueColor
+            border.width: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "▲"
+                color: root.valueColor
+                font.pixelSize: 44
+                opacity: (root.suspensionDirection === 1 && !root.suspBlinkOn) ? 0.25 : 1.0
+            }
+            MouseArea { anchors.fill: parent; onClicked: root.suspensionUp() }
+        }
+
+        // Вниз — опустить кузов (стандарт → спорт)
+        Rectangle {
+            id: suspDownButton
+            width: 84; height: 84; radius: 42
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenterOffset: 60
+            y: 200
+            color: "#1A1A1A"
+            border.color: root.valueColor
+            border.width: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "▼"
+                color: root.valueColor
+                font.pixelSize: 44
+                opacity: (root.suspensionDirection === -1 && !root.suspBlinkOn) ? 0.25 : 1.0
+            }
+            MouseArea { anchors.fill: parent; onClicked: root.suspensionDown() }
+        }
     }
 
     // ======================= ТОЧКИ-ИНДИКАТОРЫ =======================

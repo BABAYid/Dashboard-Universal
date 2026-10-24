@@ -45,6 +45,12 @@ Item {
     // лампы на модели мигают синхронно.
     property bool turnBlink: false
 
+    // 6-й вид: машина развёрнута боком, и пневмоподвеска двигает кузов по Y.
+    property bool viewSide: false
+    property int suspensionLevel: 0        // -1 спорт, 0 стандарт, 1 бездорожье
+    readonly property real suspensionOffset: suspensionLevel > 0 ? 0.18
+                                             : suspensionLevel < 0 ? -0.10 : 0.0
+
     signal modelReady()
     signal modelFailed()
 
@@ -134,9 +140,16 @@ Item {
 
         Node {
             id: carPivot
-            position: Qt.vector3d(0, 0, scene.carDepth)
+            position: Qt.vector3d(0, scene.suspensionOffset, scene.carDepth)
             scale: Qt.vector3d(scene.carScale, scene.carScale, scene.carScale)
-            eulerRotation: Qt.vector3d(0, scene.carYaw, 0)
+            // В 6-м виде — боком (профиль); иначе обычный разворот заставки.
+            eulerRotation: Qt.vector3d(0, scene.viewSide ? 0 : scene.carYaw, 0)
+            Behavior on position {
+                NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
+            }
+            Behavior on eulerRotation {
+                NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
+            }
 
             // Временная cruiser300 в сантиметрах: CarModel.qml сам ставит
             // масштаб 0.001, здесь ещё 0.9 — подгонка под кадр.

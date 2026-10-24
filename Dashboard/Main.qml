@@ -140,6 +140,39 @@ Window {
     property int centerMode: 0
     readonly property int centerModeCount: centerPanelView.modeCount
 
+    // ---- Пневмоподвеска (6-й вид): -1 спорт, 0 стандарт, 1 бездорожье ----
+    property int suspensionLevel: 0
+    // Куда только что нажали: +1 вверх, -1 вниз (для мигания стрелки)
+    property int suspensionDirection: 0
+    property bool suspBlinkOn: false
+
+    Timer {
+        id: suspHoldTimer
+        interval: 1600
+        repeat: false
+        onTriggered: root.suspensionDirection = 0
+    }
+    Timer {
+        id: suspBlinkTimer
+        interval: 500
+        repeat: true
+        running: root.suspensionDirection !== 0
+        onRunningChanged: if (!running) root.suspBlinkOn = false
+        onTriggered: root.suspBlinkOn = !root.suspBlinkOn
+    }
+
+    function suspensionUp() {
+        root.suspensionLevel = Math.min(1, root.suspensionLevel + 1)
+        root.suspensionDirection = 1
+        suspHoldTimer.restart()
+    }
+
+    function suspensionDown() {
+        root.suspensionLevel = Math.max(-1, root.suspensionLevel - 1)
+        root.suspensionDirection = -1
+        suspHoldTimer.restart()
+    }
+
     function nextCenterMode() {
         centerMode = (centerMode + 1) % centerModeCount
     }
@@ -280,12 +313,16 @@ Window {
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
             turnBlink: root.turnBlink
+            // 6-й вид — профиль машины и пневмоподвеска
+            viewSide: root.centerMode === 5
+            suspensionLevel: root.suspensionLevel
             opacity: 1.0
             // Видна в 5-м режиме всегда; во время заставки — пока приборы
             // ещё погашены (gaugesOpacity < 0.01), чтобы данные не ложились
             // поверх машины.
             visible: root.car3d && !root.navigationMode
-                     && (root.centerMode === 4 || root.gaugesOpacity < 0.01)
+                     && (root.centerMode === 4 || root.centerMode === 5
+                         || root.gaugesOpacity < 0.01)
         }
 
         // ============ СЛОЙ ПРИБОРОВ ============
@@ -462,6 +499,11 @@ Window {
                 anchors.fill: parent
                 mode: root.centerMode
                 nightMode: root.nightMode
+                suspensionLevel: root.suspensionLevel
+                suspensionDirection: root.suspensionDirection
+                suspBlinkOn: root.suspBlinkOn
+                onSuspensionUp: root.suspensionUp()
+                onSuspensionDown: root.suspensionDown()
 
                 // В навигации карта занимает весь экран, и панель поверх неё
                 // только мешает: гасим её так же, как разделительные полосы.

@@ -23,6 +23,8 @@ Item {
     property bool leftTurn: false
     property bool rightTurn: false
     property bool turnBlink: false
+    property bool viewSide: false
+    property int suspensionLevel: 0
 
     // Необязательная зависимость: отсутствие модуля не ломает приборку
     readonly property bool sceneLoaded: sceneLoader.status === Loader.Ready
@@ -48,6 +50,8 @@ Item {
             scene.leftTurn = Qt.binding(function() { return root.leftTurn })
             scene.rightTurn = Qt.binding(function() { return root.rightTurn })
             scene.turnBlink = Qt.binding(function() { return root.turnBlink })
+            scene.viewSide = Qt.binding(function() { return root.viewSide })
+            scene.suspensionLevel = Qt.binding(function() { return root.suspensionLevel })
             scene.modelReady.connect(root.modelReady)
             scene.modelFailed.connect(root.modelFailed)
         }
