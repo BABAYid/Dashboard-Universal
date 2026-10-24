@@ -96,17 +96,20 @@ Item {
                     NumberAnimation { from: 6; to: -6; duration: 7000; easing.type: Easing.InOutSine }
                 }
 
-                RuntimeLoader {
-                    source: "qrc:/qt/qml/Dashboard/assets/car.glb"
+                // Готовая сцена от balsam: Car.qml ссылается на meshes/*.mesh
+                // и maps/textureData.web относительными путями из того же
+                // каталога ресурсов.
+                Loader {
+                    id: carLoader
+                    source: "qrc:/qt/qml/Dashboard/assets/balsam/Car.qml"
                     onStatusChanged: {
-                        console.log("3D: статус модели", status, "| ошибка:", errorString,
-                                    "| источник:", source)
-                        if (status === RuntimeLoader.Success)
+                        console.log("3D: сцена статус", status,
+                                    "| ошибка:", carLoader.errorString)
+                        if (status === Loader.Ready)
                             scene.modelReady()
-                        else if (status === RuntimeLoader.Error)
+                        else if (status === Loader.Error)
                             scene.modelFailed()
                     }
-                    Component.onCompleted: console.log("3D: RuntimeLoader создан, source =", source)
                 }
             }
         }
