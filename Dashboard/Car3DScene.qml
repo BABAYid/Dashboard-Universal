@@ -144,10 +144,11 @@ Item {
             scale: Qt.vector3d(scene.carScale, scene.carScale, scene.carScale)
             // В 6-м виде — боком (профиль); иначе обычный разворот заставки.
             eulerRotation: Qt.vector3d(0, scene.viewSide ? 0 : scene.carYaw, 0)
+            // Behavior на eulerRotation тут ВРЕДИТ: разворот кормой идёт
+            // анимацией carYaw, а Behavior перезапускался на каждом её кадре
+            // и замораживал поворот. Позиция — другое дело: меняется только
+            // при смене уровня подвески.
             Behavior on position {
-                NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
-            }
-            Behavior on eulerRotation {
                 NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
             }
 

@@ -496,6 +496,11 @@ Window {
 
             CenterPanel {
                 id: centerPanelView
+                // Панель — НАД областью кликов: иначе MouseArea перехватывает
+                // нажатия и кнопки подвески ▲/▼ в 6-м виде не нажимаются.
+                // Свободные от кнопок места панели клики не перехватывают —
+                // листание режимов по центру продолжает работать.
+                z: 1
                 anchors.fill: parent
                 mode: root.centerMode
                 nightMode: root.nightMode
