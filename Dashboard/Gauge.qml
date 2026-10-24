@@ -109,12 +109,12 @@ Item {
             ctx.reset();
             var cx = width / 2;
             var cy = height / 2;
-            // Радиус ограничен 0.55R: цифры и метки нарисованы на диске
-            // (радиусы ~0.6R..1.0R), а Canvas рисуется поверх диска —
-            // полный радиус заливал бы шкалу белой пеленой.
-            var radius = width * 0.55 / 2;
+            // Ровно как в сниппете заказчика: полный радиус до края шкалы.
+            var radius = width / 2 - 10;
 
-            var a0 = -115 * Math.PI / 180;   // хвост
+            // Хвост шире 25° (40°): часть сектора у стрелки прячется
+            // под её артом; 40° оставляет видимый «веер» сбоку.
+            var a0 = -130 * Math.PI / 180;   // хвост
             var a1 = -90 * Math.PI / 180;    // у стрелки
 
             ctx.beginPath();
@@ -128,7 +128,7 @@ Item {
             var gx1 = cx + r09 * Math.cos(a0);
             var gy1 = cy + r09 * Math.sin(a0);
             var grad = ctx.createLinearGradient(gx0, gy0, gx1, gy1);
-            grad.addColorStop(0.0, "rgba(255, 255, 255, 0.5)");
+            grad.addColorStop(0.0, "rgba(255, 255, 255, 0.7)");
             grad.addColorStop(1.0, "transparent");
 
             ctx.fillStyle = grad;
