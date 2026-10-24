@@ -57,8 +57,6 @@ Gauge {
 
     property string gearMode: "P"
     property bool showGear: true
-    // спидометр плавнее — шлейф проявляется раньше
-    trailSensitivity: 0.35
 
     // Состояние ламп (приходит из Main.qml, источник — CanBackend)
     property bool seatBeltWarning: false

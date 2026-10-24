@@ -4,8 +4,6 @@ import QtQuick 2.15
 // Общая часть приборов (циферблат, стрелки, цифры, самопроверка) — Gauge.qml.
 
 Gauge {
-    // тахометр резче — порог выше
-    trailSensitivity: 1.2
     id: root
 
     property real rpm: 0
