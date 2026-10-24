@@ -91,9 +91,10 @@ Item {
         onTriggered: {
             const d = gauge.mainNeedleRotation - gauge.trailLastRotation
             gauge.trailLastRotation = gauge.mainNeedleRotation
-            const v = Math.min(1.0, Math.abs(d) / 5.0)
-            gauge.trailCwOpacity = d > 0.02 ? v * 0.55 : gauge.trailCwOpacity * 0.5
-            gauge.trailCcwOpacity = d < -0.02 ? v * 0.55 : gauge.trailCcwOpacity * 0.5
+            // |d| — градусы за 16 мс; 0.8°/кадр — уже заметное движение.
+            const v = Math.min(1.0, Math.abs(d) / 0.8)
+            gauge.trailCwOpacity = d > 0.02 ? v * 0.9 : gauge.trailCwOpacity * 0.5
+            gauge.trailCcwOpacity = d < -0.02 ? v * 0.9 : gauge.trailCcwOpacity * 0.5
         }
     }
 
