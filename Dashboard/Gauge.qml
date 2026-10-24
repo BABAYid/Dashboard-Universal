@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Shapes
 
 // ============================================================================
 //  Gauge.qml — общая основа круглого прибора: спидометра и тахометра.
@@ -72,6 +73,9 @@ Item {
     // Включён ли шлейф-«хвост» за стрелкой (настройка «Внешний вид»).
     // false — компоненты шлейфа невидимы и не тратят ресурсы.
     property bool showTrail: true
+
+    // Длина шлейфа (градусы сектора за стрелкой). Требование 20–30°.
+    property real trailAngleSpan: 25
 
     // Фактический угол основной стрелки (с учётом пружины) — от него
     // считается скорость/направление для шлейфа.
@@ -169,34 +173,62 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // ===== ШЛЕЙФ: плавный клин-градиент за стрелкой =====
-    // Одна текстура (needle_trail.png) — сектор с затуханием от края у
-    // стрелки к хвосту. Поворачивается вместе со стрелкой (без отставания —
-    // «догоняющих стрелок» нет), прозрачность от угловой скорости, и
-    // гаснет, когда стрелка стоит. Для движения по часовой/против —
-    // две копии (вторая зеркальная), видна та, что позади движения.
-    Image {
-        source: "images/needle_trail.png"
+    // ===== ШЛЕЙФ: конический градиент (без наложения картинок) =====
+    // Статичная геометрия: сектор от «верха» по часовой на trailAngleSpan.
+    // Заливка — ConicalGradient: у стрелки alpha 0.8, к хвосту 0. Поворот/
+    // зеркало делаем трансформом item — без перестройки пути и без
+    // Z-fighting (один слой строго под стрелкой, над циферблатом).
+    // Зеркалим при движении по часовой: тогда сектор оказывается позади
+    // движения (против часовой стороны стрелки).
+    Shape {
+        id: trailShape
         width: parent.width
         height: parent.height
-        x: 0; y: 0
-        fillMode: Image.PreserveAspectFit
         transformOrigin: Item.Center
-        visible: gauge.showTrail && !gauge.startup && gauge.trailCwOpacity > 0.01
-        opacity: gauge.trailCwOpacity
+        visible: gauge.showTrail && !gauge.startup && gauge.trailSmoothVel > 0.02
+        opacity: Math.min(1.0, gauge.trailSmoothVel * 1.15)
         rotation: gauge.mainNeedleRotation + gauge.trailRotationOffset
-    }
-    Image {
-        source: "images/needle_trail.png"
-        width: parent.width
-        height: parent.height
-        x: 0; y: 0
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        mirror: true
-        visible: gauge.showTrail && !gauge.startup && gauge.trailCcwOpacity > 0.01
-        opacity: gauge.trailCcwOpacity
-        rotation: gauge.mainNeedleRotation + gauge.trailRotationOffset
+        // Зеркалим по горизонтали (при движении по часовой — сектор позади).
+        transform: Scale {
+            origin.x: trailShape.width / 2
+            origin.y: trailShape.height / 2
+            // По часовой (d>0): хвост позади = против часовой стороны —
+            // сектор без зеркала. Против часовой — зеркальный.
+            xScale: gauge.trailSmoothDir > 0 ? 1 : -1
+            yScale: 1
+        }
+        ShapePath {
+            fillGradient: ConicalGradient {
+                centerX: trailShape.width / 2
+                centerY: trailShape.height / 2
+                angle: 0
+                // Позиции градиента: 0 — на «3 часа»; «верх» — 0.75.
+                // Сектор [0.75 .. 0.75 + span/360]: яркий у стрелки, 0 в конце.
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.749; color: "transparent" }
+                GradientStop { position: 0.75; color: Qt.rgba(1.0, 1.0, 1.0, 0.8) }
+                GradientStop { position: 0.75 + gauge.trailAngleSpan / 360.0; color: "transparent" }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+            startX: trailShape.width / 2
+            startY: trailShape.height / 2
+            PathLine {
+                x: trailShape.width / 2
+                y: trailShape.height / 2 - trailShape.width / 2 * 0.95
+            }
+            PathAngleArc {
+                centerX: trailShape.width / 2
+                centerY: trailShape.height / 2
+                radiusX: trailShape.width / 2 * 0.95
+                radiusY: trailShape.height / 2 * 0.95
+                startAngle: -90
+                sweepAngle: gauge.trailAngleSpan
+            }
+            PathLine {
+                x: trailShape.width / 2
+                y: trailShape.height / 2
+            }
+        }
     }
 
     // Основная стрелка (поверх всего, кроме цифр и ламп)
