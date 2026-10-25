@@ -1,5 +1,4 @@
 import QtQuick 2.15
-import Qt5Compat.GraphicalEffects
 
 // ============================================================================
 //  Gauge.qml — общая основа круглого прибора: спидометра и тахометра.
@@ -73,11 +72,18 @@ Item {
     // Включён ли шлейф-«хвост» за стрелкой (настройка «Внешний вид»).
     // false — компоненты шлейфа невидимы и не тратят ресурсы.
     property bool showTrail: true
-    // Поправка угла шлейфа: арт стрелки нарисован с наклоном −79.3°
-    // (замерено по кадру: при needleAngle = −22.7° стрелка смотрит
-    // на −102°), а маска-сектор нарисована от «3 часов» (−25°..0°),
-    // поэтому сверх наклона нужно ещё −90°: −79.3 − 90 = −169.3.
-    property real trailRotationOffset: -169.3
+    // Угол шлейфа. Behavior к связанному свойству не применяется (binding
+    // перезаписывает значение сразу), поэтому копия «догоняет» стрелку
+    // вручную в таймере: каждый тик закрывает trailChase долю разрыва.
+    property real trailAngle: 0
+    // Доля разрыва, закрываемая за один тик (16 мс). Меньше — ленивее след.
+    property real trailChase: 0.4
+    // Мёртвая зона (градусы): микро-дрожь/округление датчика не должно
+    // оставлять видимую тень — след включается только при реальном ходе.
+    property real trailDeadZone: 0.5
+    // Максимальная прозрачность следа и её прирост на градус отставания.
+    property real trailMaxOpacity: 0.7
+    property real trailOpacityGain: 0.3
 
     // ======================= ОТРИСОВКА =======================
 
@@ -89,75 +95,40 @@ Item {
     }
 
     // --- НАЧАЛО ШЛЕЙФА ---
-    // Canvas больше не рисует градиент: createConicGradient в этой сборке
-    // Qt не работает (заливает сплошным цветом). Теперь Canvas — только
-    // МАСКА формы (сектор 25° позади стрелки), а плавное затухание даёт
-    // аппаратный ConicalGradient, наложенный через OpacityMask.
+    // Размытая копия стрелки (images/needle_glow.png) с отставанием по углу:
+    // в движении она «плывёт» за стрелкой и тает, в покое разрыв схлопывается
+    // в ноль — и след полностью исчезает.
     // Объявлен ДО стрелок и центрального круга — они рисуются поверх.
-    Item {
+    Image {
         id: needleTrail
-        anchors.fill: parent
-        // Весь контейнер вращается вместе со стрелкой.
-        rotation: (gauge.startup ? gauge.sweepAngle : gauge.needleAngle) + gauge.trailRotationOffset
+        source: "images/needle_glow.png"
+        width: parent.width * gauge.needleScale * (990.0 / 720.0)
+        height: width
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+        fillMode: Image.PreserveAspectFit
+        transformOrigin: Item.Center
         visible: gauge.showTrail && !gauge.startup
-
-        // 1. Маска формы: сектор 25° позади стрелки (от −25° до 0°).
-        Canvas {
-            id: trailMask
-            anchors.fill: parent
-            visible: false            // используется только как маска
-            antialiasing: true
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.reset();
-                var cx = width / 2;
-                var cy = height / 2;
-                var radius = width / 2 - 10;
-                // Маска — только радиальное затухание к краю диска.
-                // Угловую форму (веер с плавными краями) задаёт сам
-                // ConicalGradient, поэтому сектор в маске не нужен:
-                // у него были видимые жёсткие лучи от ступицы к краю.
-                ctx.beginPath();
-                ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
-                ctx.fillStyle = (function () {
-                    var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-                    rg.addColorStop(0.0, "rgba(255,255,255,1)");
-                    rg.addColorStop(0.80, "rgba(255,255,255,1)");
-                    rg.addColorStop(1.0, "rgba(255,255,255,0)");
-                    return rg;
-                })();
-                ctx.fill();
-            }
+        rotation: gauge.trailAngle
+        opacity: {
+            if (!gauge.showTrail)
+                return 0
+            // разрыв копии и стрелки, градусы (с учётом перехода 360°)
+            const lag = Math.abs(((gauge.trailAngle - gauge.needleAngle + 540) % 360) - 180)
+            const active = Math.max(0, lag - gauge.trailDeadZone)
+            return Math.min(gauge.trailMaxOpacity, active * gauge.trailOpacityGain)
         }
+        Component.onCompleted: gauge.trailAngle = gauge.needleAngle
+    }
 
-        // 2. Источник градиента: плавно затухает от стрелки к хвосту.
-        // ВАЖНО: не Rectangle, а Item — у Rectangle цвет по умолчанию
-        // белый, и он заливал маску сплошным белым (та самая «серая
-        // заливка» вместо градиента).
-        Item {
-            id: trailGradientSource
-            anchors.fill: parent
-            visible: false
-            ConicalGradient {
-                anchors.fill: parent
-                // position 0.0 у ConicalGradient — «на 12 часов» локально,
-                // а позиции растут по часовой. Маска-сектор занимает
-                // 65°…90° (от «3 часов» −25°…0°), поэтому градиент стартует
-                // с 65°: прозрачный у хвоста → 0.7 белого у стрелки.
-                angle: 65
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.0694; color: "#99FFFFFF" }
-                    GradientStop { position: 0.08; color: "transparent" }
-                }
-            }
-        }
-
-        // 3. Градиент, обрезанный по маске.
-        OpacityMask {
-            anchors.fill: parent
-            source: trailGradientSource
-            maskSource: trailMask
+    // Догоняние стрелки (см. комментарий у trailAngle). Тик 16 мс.
+    Timer {
+        interval: 16
+        repeat: true
+        running: gauge.showTrail
+        onTriggered: {
+            const delta = ((gauge.needleAngle - gauge.trailAngle + 540) % 360) - 180
+            gauge.trailAngle += delta * gauge.trailChase
         }
     }
     // --- КОНЕЦ ШЛЕЙФА ---
