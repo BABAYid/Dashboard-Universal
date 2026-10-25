@@ -77,13 +77,13 @@ Item {
     // вручную в таймере: каждый тик закрывает trailChase долю разрыва.
     property real trailAngle: 0
     // Доля разрыва, закрываемая за один тик (16 мс). Меньше — ленивее след.
-    property real trailChase: 0.4
+    property real trailChase: 0.08
     // Мёртвая зона (градусы): микро-дрожь/округление датчика не должно
     // оставлять видимую тень — след включается только при реальном ходе.
-    property real trailDeadZone: 0.5
+    property real trailDeadZone: 0.4
     // Максимальная прозрачность следа и её прирост на градус отставания.
-    property real trailMaxOpacity: 0.7
-    property real trailOpacityGain: 0.3
+    property real trailMaxOpacity: 0.95
+    property real trailOpacityGain: 0.6
 
     // ======================= ОТРИСОВКА =======================
 
@@ -119,6 +119,7 @@ Item {
             return Math.min(gauge.trailMaxOpacity, active * gauge.trailOpacityGain)
         }
         Component.onCompleted: gauge.trailAngle = gauge.needleAngle
+        Timer { interval: 2000; running: true; repeat: true; onTriggered: console.log("TL-DBG op=", needleTrail.opacity.toFixed(2), "lag=", (((gauge.trailAngle - gauge.needleAngle + 540) % 360) - 180).toFixed(1), "trail=", gauge.trailAngle.toFixed(0), "needle=", gauge.needleAngle.toFixed(0), "w=", needleTrail.width.toFixed(0), "status=", needleTrail.status) }
     }
 
     // Догоняние стрелки (см. комментарий у trailAngle). Тик 16 мс.

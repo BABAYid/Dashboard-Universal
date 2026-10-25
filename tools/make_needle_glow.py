@@ -24,6 +24,7 @@ ART_SIZE = 720
 def main():
     color = (255, 255, 255)
     blur = 14
+    dilate = 0
     args = sys.argv[1:]
     i = 0
     while i < len(args):
@@ -33,6 +34,9 @@ def main():
             i += 2
         elif args[i] == "--blur":
             blur = float(args[i + 1])
+            i += 2
+        elif args[i] == "--dilate":
+            dilate = int(args[i + 1])
             i += 2
         else:
             i += 1
@@ -47,6 +51,9 @@ def main():
         alpha = alpha.point(lambda v: min(255, round(v * 255.0 / hi)))
     glow = Image.new("RGBA", art.size, color + (0,))
     glow.putalpha(alpha)
+    # Размягчаем перед размытием: тонкая линия-art даёт слишком узкий след.
+    for _ in range(dilate):
+        glow = glow.filter(ImageFilter.MaxFilter(5))
     glow = glow.filter(ImageFilter.GaussianBlur(blur))
 
     # Тонкая линия после размытия почти гаснет — нормализуем пиковую
@@ -60,7 +67,7 @@ def main():
     off = (CANVAS - ART_SIZE) // 2
     canvas.alpha_composite(glow, (off, off))
     canvas.save(OUT)
-    print("saved", OUT, "blur", blur, "color", color)
+    print("saved", OUT, "blur", blur, "dilate", dilate, "color", color)
 
 
 if __name__ == "__main__":
