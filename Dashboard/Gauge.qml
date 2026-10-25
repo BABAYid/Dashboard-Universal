@@ -113,11 +113,19 @@ Item {
                 var cx = width / 2;
                 var cy = height / 2;
                 var radius = width / 2 - 10;
+                // Маска — только радиальное затухание к краю диска.
+                // Угловую форму (веер с плавными краями) задаёт сам
+                // ConicalGradient, поэтому сектор в маске не нужен:
+                // у него были видимые жёсткие лучи от ступицы к краю.
                 ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.arc(cx, cy, radius, -25 * Math.PI / 180, 0, false);
-                ctx.closePath();
-                ctx.fillStyle = "white";
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
+                ctx.fillStyle = (function () {
+                    var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+                    rg.addColorStop(0.0, "rgba(255,255,255,1)");
+                    rg.addColorStop(0.80, "rgba(255,255,255,1)");
+                    rg.addColorStop(1.0, "rgba(255,255,255,0)");
+                    return rg;
+                })();
                 ctx.fill();
             }
         }
@@ -139,7 +147,8 @@ Item {
                 angle: 65
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "transparent" }
-                    GradientStop { position: 0.07; color: "#B3FFFFFF" }
+                    GradientStop { position: 0.0694; color: "#99FFFFFF" }
+                    GradientStop { position: 0.08; color: "transparent" }
                 }
             }
         }
