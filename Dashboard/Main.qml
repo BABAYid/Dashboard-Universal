@@ -60,9 +60,6 @@ Window {
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
     // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
     readonly property bool funEnabled: calibration.funEnabled
-    // Шлейф стрелок: настройка «Внешний вид» + флаг --no-trail для замера.
-    readonly property bool needleTrail: calibration.needleTrailEnabled
-        && Qt.application.arguments.indexOf("--no-trail") === -1
     readonly property bool weatherEnabled: calibration.weatherEnabled
 
     // Запас хода (считает CanBackend по среднему расходу за 5 минут).
@@ -219,10 +216,6 @@ Window {
     // Коэффициенты хранит Settings.qml, пробег — CanBackend.
 
     Component.onCompleted: {
-        // Маркер сборки: по этой строке в терминале видно, что запущен
-        // бинарник со шлейфом-размытой копией (а не старый билд).
-        console.log("ШЛЕЙФ: размытая копия стрелки — виден только при движении")
-
         // Коэффициенты и настройки загружаются в Settings.qml в ЕГО
         // Component.onCompleted, а он выполняется ПОСЛЕ родительского —
         // поэтому читаем значения отложенно, иначе сохраноённые брались бы
@@ -449,7 +442,6 @@ Window {
                 // цифры на циферблате и индикатор АКПП не дублируем.
                 showDigital: root.centerMode !== 0
                 showGear: root.centerMode !== 0
-                showTrail: root.needleTrail
                 fuelLevel: root.fuelLevel * root.fuelFactor
                 startup: root.startup
                 nightMode: root.nightMode
@@ -490,7 +482,6 @@ Window {
                 anchors.fill: parent
                 // В 1-м виде обороты уже в центре — цифры на циферблате скрыты
                 showDigital: root.centerMode !== 0
-                showTrail: root.needleTrail
                 rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
                 startup: root.startup

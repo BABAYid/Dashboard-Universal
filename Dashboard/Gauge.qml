@@ -69,22 +69,6 @@ Item {
     // «застывает» (ловили это раньше, см. «Грабли» в PROJECT_STATE.md).
     property real sweepAngle: 0
 
-    // Включён ли шлейф-«хвост» за стрелкой (настройка «Внешний вид»).
-    // false — компоненты шлейфа невидимы и не тратят ресурсы.
-    property bool showTrail: true
-    // Угол шлейфа. Behavior к связанному свойству не применяется (binding
-    // перезаписывает значение сразу), поэтому копия «догоняет» стрелку
-    // вручную в таймере: каждый тик закрывает trailChase долю разрыва.
-    property real trailAngle: 0
-    // Доля разрыва, закрываемая за один тик (16 мс). Меньше — ленивее след.
-    property real trailChase: 0.08
-    // Мёртвая зона (градусы): микро-дрожь/округление датчика не должно
-    // оставлять видимую тень — след включается только при реальном ходе.
-    property real trailDeadZone: 0.4
-    // Максимальная прозрачность следа и её прирост на градус отставания.
-    property real trailMaxOpacity: 0.95
-    property real trailOpacityGain: 0.6
-
     // ======================= ОТРИСОВКА =======================
 
     // Шкала прибора
@@ -94,45 +78,6 @@ Item {
         fillMode: Image.PreserveAspectFit
     }
 
-    // --- НАЧАЛО ШЛЕЙФА ---
-    // Размытая копия стрелки (images/needle_glow.png) с отставанием по углу:
-    // в движении она «плывёт» за стрелкой и тает, в покое разрыв схлопывается
-    // в ноль — и след полностью исчезает.
-    // Объявлен ДО стрелок и центрального круга — они рисуются поверх.
-    Image {
-        id: needleTrail
-        source: "images/needle_glow.png"
-        width: parent.width * gauge.needleScale * (990.0 / 720.0)
-        height: width
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-        fillMode: Image.PreserveAspectFit
-        transformOrigin: Item.Center
-        visible: gauge.showTrail && !gauge.startup
-        rotation: gauge.trailAngle
-        opacity: {
-            if (!gauge.showTrail)
-                return 0
-            // разрыв копии и стрелки, градусы (с учётом перехода 360°)
-            const lag = Math.abs(((gauge.trailAngle - gauge.needleAngle + 540) % 360) - 180)
-            const active = Math.max(0, lag - gauge.trailDeadZone)
-            return Math.min(gauge.trailMaxOpacity, active * gauge.trailOpacityGain)
-        }
-        Component.onCompleted: gauge.trailAngle = gauge.needleAngle
-        Timer { interval: 2000; running: true; repeat: true; onTriggered: console.log("TL-DBG op=", needleTrail.opacity.toFixed(2), "lag=", (((gauge.trailAngle - gauge.needleAngle + 540) % 360) - 180).toFixed(1), "trail=", gauge.trailAngle.toFixed(0), "needle=", gauge.needleAngle.toFixed(0), "w=", needleTrail.width.toFixed(0), "status=", needleTrail.status) }
-    }
-
-    // Догоняние стрелки (см. комментарий у trailAngle). Тик 16 мс.
-    Timer {
-        interval: 16
-        repeat: true
-        running: gauge.showTrail
-        onTriggered: {
-            const delta = ((gauge.needleAngle - gauge.trailAngle + 540) % 360) - 180
-            gauge.trailAngle += delta * gauge.trailChase
-        }
-    }
-    // --- КОНЕЦ ШЛЕЙФА ---
 
     // Малая стрелка (под центральным кругом)
     Image {
