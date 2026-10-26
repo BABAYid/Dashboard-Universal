@@ -261,6 +261,17 @@ void vehicle_state_init(void)
     memset(&s_state, 0, sizeof(s_state));
     s_start_uptime_ms = (uint32_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
 
+    // Пока источников нет, климат и GPS отдают «нет данных»: приборка по этим
+    // признакам не рисует выдуманные цифры, а пишет «—».
+    s_state.climate.valid = false;
+    s_state.climate.fan_level = CLIMATE_FAN_NONE;
+    s_state.climate.cabin_temp_c = CLIMATE_TEMP_NONE;
+    s_state.climate.evaporator_temp_c = CLIMATE_TEMP_NONE;
+    s_state.gps_motion.course_x2 = GPS_VALUE_NONE;
+    s_state.gps_motion.speed_kmh = GPS_VALUE_NONE;
+    s_state.gps_motion.hdop_x10 = GPS_VALUE_NONE;
+    s_state.gps_motion.fix = false;
+
     // Предупреждаем о проводах, которые плата так не прочитает.
     const vehicle_signal_t *list = vehicle_signals();
     int assigned = 0;
