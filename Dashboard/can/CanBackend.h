@@ -101,6 +101,37 @@ class CanBackend : public QObject
     Q_PROPERTY(double gasSensorVolts READ gasSensorVolts NOTIFY gasSensorVoltsChanged)
     Q_PROPERTY(int gasLevelPercent READ gasLevelPercent NOTIFY gasLevelPercentChanged)
 
+    // --- 0x510: климат (протокол 1.3) ---
+    // Родная панель климата управляет заслонками и вентилятором сама, блок
+    // сбора только читает её состояние. Если кадры не приходят, valid = false,
+    // и интерфейс пишет «нет данных», а не выдуманную уставку. Числа, которых
+    // нет, отдаём NaN (в QML это проверяется через Number.isNaN).
+    Q_PROPERTY(bool climateValid READ climateValid NOTIFY climateValidChanged)
+    Q_PROPERTY(bool climateAc READ climateAc NOTIFY climateAcChanged)
+    Q_PROPERTY(bool climateAuto READ climateAuto NOTIFY climateAutoChanged)
+    Q_PROPERTY(bool climateRecirculation READ climateRecirculation NOTIFY climateRecirculationChanged)
+    Q_PROPERTY(bool climateDefrost READ climateDefrost NOTIFY climateDefrostChanged)
+    Q_PROPERTY(bool climateFanAuto READ climateFanAuto NOTIFY climateFanAutoChanged)
+    Q_PROPERTY(double climateSetpoint READ climateSetpoint NOTIFY climateSetpointChanged)           // °C
+    Q_PROPERTY(int climateFanLevel READ climateFanLevel NOTIFY climateFanLevelChanged)             // 0…7, -1 = нет данных
+    Q_PROPERTY(QString climateAirflow READ climateAirflow NOTIFY climateAirflowChanged)           // «лицо+ноги»
+    Q_PROPERTY(double climateCabinTemp READ climateCabinTemp NOTIFY climateCabinTempChanged)       // °C
+    Q_PROPERTY(double climateEvaporatorTemp READ climateEvaporatorTemp NOTIFY climateEvaporatorTempChanged)  // °C
+    Q_PROPERTY(double climateSetpointRight READ climateSetpointRight NOTIFY climateSetpointRightChanged)      // °C
+
+    // --- 0x520 / 0x521: GPS (протокол 1.3) ---
+    // Приёмник один на всю систему — на блоке сбора. Приборка показывает
+    // машину на карте и раздаёт координаты мультимедиа по сети.
+    Q_PROPERTY(bool gpsValid READ gpsValid NOTIFY gpsValidChanged)              // есть фикс и данные свежие
+    Q_PROPERTY(double gpsLatitude READ gpsLatitude NOTIFY gpsLatitudeChanged)   // градусы
+    Q_PROPERTY(double gpsLongitude READ gpsLongitude NOTIFY gpsLongitudeChanged)
+    Q_PROPERTY(double gpsCourse READ gpsCourse NOTIFY gpsCourseChanged)         // °, NaN = нет данных
+    Q_PROPERTY(int gpsSpeed READ gpsSpeed NOTIFY gpsSpeedChanged)               // км/ч, -1 = нет данных
+    Q_PROPERTY(int gpsSatellites READ gpsSatellites NOTIFY gpsSatellitesChanged)
+    Q_PROPERTY(double gpsHdop READ gpsHdop NOTIFY gpsHdopChanged)               // точность, NaN = нет данных
+    Q_PROPERTY(int gpsFixType READ gpsFixType NOTIFY gpsFixTypeChanged)         // 0 нет, 1 — 2D, 2 — 3D
+    Q_PROPERTY(QString gpsUtcTime READ gpsUtcTime NOTIFY gpsUtcTimeChanged)     // «14:35:20» или пусто
+
     // --- пробег (в CAN-протоколе его нет, считаем сами и храним в настройках) ---
     Q_PROPERTY(double odometer READ odometer NOTIFY odometerChanged)      // км, всего
     Q_PROPERTY(double tripA READ tripA NOTIFY tripAChanged)               // км
