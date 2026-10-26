@@ -169,7 +169,7 @@ int main(void)
         // XOR байтов 0…6: 00^12^00^00^0E^10^03 = 0x0F
         const uint8_t exp[8] = {0x00, FW_VERSION_BYTE, 0x00, 0x00, 0x0E, 0x10, 0x03, 0x0F};
         check_frame(f, exp, 8, "счётчик 0, время работы 3600 с, ошибок 3, XOR сходится");
-        check(FW_VERSION_BYTE == 0x12, "версия прошивки в кадре — 0x12 (протокол 1.2)");
+        check(FW_VERSION_BYTE == 0x13, "версия прошивки в кадре — 0x13 (протокол 1.3)");
     }
     proto_build_device_status(f, 200, 0x01020304u, 250);
     check(f[0] == 200 && f[2] == 0x01 && f[3] == 0x02 && f[4] == 0x03 && f[5] == 0x04,
