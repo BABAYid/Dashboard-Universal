@@ -20,12 +20,15 @@
 #endif
 
 namespace {
-// ID сообщений (can_protocol_v1.2.txt)
+// ID сообщений (can_protocol_v1.3.txt)
 constexpr quint32 kIdMotion  = 0x100;   // скорость и обороты
 constexpr quint32 kIdStatus  = 0x200;   // лампы и индикаторы
 constexpr quint32 kIdSensors = 0x300;   // датчики
 constexpr quint32 kIdGearbox = 0x400;   // АКПП
 constexpr quint32 kIdGas     = 0x500;   // газовое оборудование (протокол 1.2)
+constexpr quint32 kIdClimate = 0x510;   // климат (протокол 1.3)
+constexpr quint32 kIdGpsPos  = 0x520;   // GPS: положение (протокол 1.3)
+constexpr quint32 kIdGpsMove = 0x521;   // GPS: движение и качество (протокол 1.3)
 constexpr quint32 kIdDevice  = 0x7F0;   // статус блока сбора (протокол 1.1)
 
 // Данные считаются устаревшими, если кадров нет дольше этого времени
@@ -35,6 +38,12 @@ constexpr int kDeviceTimeoutMs = 3000;
 // Датчик уровня газа: 0 В — пустой баллон, 5 В — полный (протокол 1.2)
 constexpr int kGasSensorMaxMv = 5000;
 constexpr int kGasTimeoutMs = 1500;
+// Климат и GPS приходят реже движения (200 и 500 мс), им даём свой таймаут
+constexpr int kClimateTimeoutMs = 1500;
+constexpr int kGpsTimeoutMs = 2000;
+// Значения «нет данных» в кадрах 0x510 и 0x521 (см. протокол 1.3)
+constexpr quint8 kValueNone = 0xFF;
+constexpr quint8 kTempNone = 0x80;
 // Период проверки связи
 constexpr int kWatchdogMs = 250;
 // Как часто пытаться открыть CAN-интерфейс заново
