@@ -166,8 +166,8 @@ int main(void)
     printf("0x7F0 — статус блока сбора\n");
     proto_build_device_status(f, 0, 3600, 3);
     {
-        // XOR байтов 0…6: 00^12^00^00^0E^10^03 = 0x0F
-        const uint8_t exp[8] = {0x00, FW_VERSION_BYTE, 0x00, 0x00, 0x0E, 0x10, 0x03, 0x0F};
+        // XOR байтов 0…6: 00^13^00^00^0E^10^03 = 0x0E
+        const uint8_t exp[8] = {0x00, FW_VERSION_BYTE, 0x00, 0x00, 0x0E, 0x10, 0x03, 0x0E};
         check_frame(f, exp, 8, "счётчик 0, время работы 3600 с, ошибок 3, XOR сходится");
         check(FW_VERSION_BYTE == 0x13, "версия прошивки в кадре — 0x13 (протокол 1.3)");
     }
