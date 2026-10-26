@@ -297,6 +297,49 @@ int main(int argc, char *argv[])
     check(qIsNaN(can.voltageHistory().last().toDouble()),
           "нет данных — в истории NaN (на графике это разрыв)");
 
+    // ---- 0x510: климат (протокол 1.3) ----
+    qInfo() << "0x510 — климат (новое в 1.3)";
+    can.feedFrame(0x510, frame({0x21, 0x2D, 0x03, 0x04, 0x18, 0x80, 0x00, 0x00}));
+    check(can.climateValid(), "данные климата достоверны");
+    check(can.climateAc(), "кондиционер включён");
+    check(!can.climateAuto(), "AUTO выключен");
+    checkNum(can.climateSetpoint(), 22.5, "уставка 22.5 °C (байт 0x2D = 45)");
+    check(can.climateFanLevel() == 3, QStringLiteral("вентилятор 3, получено %1").arg(can.climateFanLevel()));
+    check(can.climateAirflow() == QLatin1String("лицо"),
+          QStringLiteral("поток «лицо», получено «%1»").arg(can.climateAirflow()));
+    checkNum(can.climateCabinTemp(), 24.0, "в салоне 24 °C");
+    check(qIsNaN(can.climateEvaporatorTemp()), "испаритель — нет данных (0x80 → NaN)");
+
+    can.feedFrame(0x510, frame({0x02, 0x00, 0xFF, 0x08, 0x80, 0x80, 0x00, 0x00}));
+    check(!can.climateValid(), "бит достоверности снят — климат недостоверен");
+    check(can.climateAuto(), "AUTO включён");
+    check(can.climateFanLevel() == -1, "вентилятор — нет данных (-1)");
+    check(qIsNaN(can.climateSetpoint()), "уставка — нет данных (0 → NaN)");
+    check(can.climateAirflow() == QLatin1String("авто"), "поток выбирает автоматика");
+
+    // ---- 0x520 и 0x521: GPS (протокол 1.3) ----
+    qInfo() << "0x520 — GPS: положение (новое в 1.3)";
+    can.feedFrame(0x520, frame({0x21, 0x3B, 0xA8, 0xF0, 0x16, 0x6B, 0xF1, 0xC8}));
+    checkNum(can.gpsLatitude(), 55.7558, "широта 55.7558");
+    checkNum(can.gpsLongitude(), 37.6173, "долгота 37.6173");
+
+    qInfo() << "0x521 — GPS: движение и качество";
+    can.feedFrame(0x521, frame({0x43, 0x3C, 0x0B, 0x48, 0x14, 0x23, 0x0E, 0x03}));
+    check(can.gpsValid(), "фикс есть, данные свежие");
+    checkNum(can.gpsCourse(), 134.0, "курс 134° (байт 67 × 2)");
+    check(can.gpsSpeed() == 60, QStringLiteral("скорость по GPS 60, получено %1").arg(can.gpsSpeed()));
+    checkNum(can.gpsHdop(), 1.1, "HDOP 1.1");
+    check(can.gpsSatellites() == 8, QStringLiteral("спутников 8, получено %1").arg(can.gpsSatellites()));
+    check(can.gpsFixType() == 2, "фикс 3D");
+    check(can.gpsUtcTime() == QLatin1String("14:35:20"),
+          QStringLiteral("время UTC 14:35:20, получено «%1»").arg(can.gpsUtcTime()));
+
+    can.feedFrame(0x521, frame({0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00}));
+    check(!can.gpsValid(), "фикса нет — данные недостоверны");
+    check(can.gpsSpeed() == -1, "скорость по GPS — нет данных");
+    check(qIsNaN(can.gpsCourse()), "курс — нет данных");
+    check(can.gpsFixType() == 0, "тип фикса — нет фикса");
+
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин
     checkNum(can.speed(), 200.0, "скорость 200 км/ч");
