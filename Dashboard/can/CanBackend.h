@@ -248,6 +248,29 @@ public:
     double gasSensorVolts() const { return m_gasSensorMv / 1000.0; }
     int gasLevelPercent() const { return m_gasLevelPercent; }
 
+    bool climateValid() const { return m_climateValid; }
+    bool climateAc() const { return m_climateAc; }
+    bool climateAuto() const { return m_climateAuto; }
+    bool climateRecirculation() const { return m_climateRecirculation; }
+    bool climateDefrost() const { return m_climateDefrost; }
+    bool climateFanAuto() const { return m_climateFanAuto; }
+    double climateSetpoint() const { return m_climateSetpoint; }
+    int climateFanLevel() const { return m_climateFanLevel; }
+    QString climateAirflow() const { return m_climateAirflow; }
+    double climateCabinTemp() const { return m_climateCabinTemp; }
+    double climateEvaporatorTemp() const { return m_climateEvaporatorTemp; }
+    double climateSetpointRight() const { return m_climateSetpointRight; }
+
+    bool gpsValid() const { return m_gpsValid; }
+    double gpsLatitude() const { return m_gpsLatitude; }
+    double gpsLongitude() const { return m_gpsLongitude; }
+    double gpsCourse() const { return m_gpsCourse; }
+    int gpsSpeed() const { return m_gpsSpeed; }
+    int gpsSatellites() const { return m_gpsSatellites; }
+    double gpsHdop() const { return m_gpsHdop; }
+    int gpsFixType() const { return m_gpsFixType; }
+    QString gpsUtcTime() const { return m_gpsUtcTime; }
+
 signals:
     void connectedChanged();
     void dataValidChanged();
