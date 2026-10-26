@@ -180,6 +180,97 @@ int main(void)
         check(f[7] == xor_sum, "контрольная сумма пересчитана верно");
     }
 
+    printf("0x510 — климат (протокол 1.3)\n");
+    {
+        proto_climate_t c;
+        memset(&c, 0, sizeof(c));
+        c.ac_on = true;
+        c.valid = true;
+        c.setpoint_x2 = 45;                    // 22.5 °C
+        c.fan_level = 3;
+        c.airflow = CLIMATE_AIRFLOW_FACE;
+        c.cabin_temp_c = 24;
+        c.evaporator_temp_c = CLIMATE_TEMP_NONE;
+        proto_build_climate(f, &c);
+        const uint8_t exp[8] = {0x21, 0x2D, 0x03, 0x04, 0x18, 0x80, 0x00, 0x00};
+        check_frame(f, exp, 8, "AC + данные достоверны, 22.5 °C, вентилятор 3, поток «лицо», в салоне 24");
+    }
+    {
+        proto_climate_t c;
+        memset(&c, 0, sizeof(c));
+        c.fan_level = CLIMATE_FAN_NONE;
+        c.cabin_temp_c = CLIMATE_TEMP_NONE;
+        c.evaporator_temp_c = CLIMATE_TEMP_NONE;
+        proto_build_climate(f, &c);
+        check(f[0] == 0x00 && f[2] == 0xFF && f[4] == 0x80 && f[5] == 0x80,
+              "нет данных: бит достоверности снят, вентилятор 0xFF, температуры 0x80");
+    }
+    {
+        proto_climate_t c;
+        memset(&c, 0, sizeof(c));
+        c.auto_mode = true;
+        c.recirculation = true;
+        c.defrost = true;
+        c.fan_auto = true;
+        c.valid = true;
+        proto_build_climate(f, &c);
+        check(f[0] == (0x02 | 0x04 | 0x08 | 0x10 | 0x20),
+              "AUTO + рециркуляция + обдув лобового + вентилятор в авторежиме");
+    }
+
+    printf("0x520 — GPS: положение (протокол 1.3)\n");
+    {
+        proto_gps_pos_t p = {.latitude_e7 = 557558000, .longitude_e7 = 376173000};
+        proto_build_gps_position(f, &p);
+        const uint8_t exp[8] = {0x21, 0x3B, 0xA8, 0xF0, 0x16, 0x6B, 0xF1, 0xC8};
+        check_frame(f, exp, 8, "Москва 55.7558 / 37.6173, старший байт первым");
+    }
+    {
+        proto_gps_pos_t p = {.latitude_e7 = -338688000, .longitude_e7 = 151209300};
+        proto_build_gps_position(f, &p);
+        const uint8_t exp[8] = {0xEB, 0xD0, 0x08, 0x00, 0x09, 0x03, 0x45, 0x54};
+        check_frame(f, exp, 8, "южное полушарие: отрицательная широта как int32");
+    }
+
+    printf("0x521 — GPS: движение и качество (протокол 1.3)\n");
+    {
+        proto_gps_motion_t m;
+        memset(&m, 0, sizeof(m));
+        m.course_x2 = 67;                      // 134…135°
+        m.speed_kmh = 60;
+        m.hdop_x10 = 11;
+        m.satellites = 8;
+        m.fix_type = GPS_FIX_3D;
+        m.utc_second = 20;
+        m.utc_minute = 35;
+        m.utc_hour = 14;
+        m.fix = true;
+        m.time_valid = true;
+        proto_build_gps_motion(f, &m);
+        const uint8_t exp[8] = {0x43, 0x3C, 0x0B, 0x48, 0x14, 0x23, 0x0E, 0x03};
+        check_frame(f, exp, 8, "курс, скорость 60, HDOP 1.1, 8 спутников + 3D, 14:35:20");
+    }
+    {
+        proto_gps_motion_t m;
+        memset(&m, 0, sizeof(m));
+        m.course_x2 = GPS_VALUE_NONE;
+        m.speed_kmh = GPS_VALUE_NONE;
+        m.hdop_x10 = GPS_VALUE_NONE;
+        m.fix_type = GPS_FIX_NONE;
+        proto_build_gps_motion(f, &m);
+        check(f[0] == 0xFF && f[1] == 0xFF && f[2] == 0xFF && f[7] == 0x00,
+              "нет фикса: поля «нет данных», флаг фикса снят");
+    }
+    {
+        proto_gps_motion_t m;
+        memset(&m, 0, sizeof(m));
+        m.satellites = 40;                     // больше 31 — насыщается
+        m.fix_type = 7;                        // больше 2 — считается 3D
+        proto_build_gps_motion(f, &m);
+        check((f[3] & 0x1F) == 31 && ((f[3] >> 5) & 0x07) == 2,
+              "спутники насыщаются на 31, тип фикса — не больше 3D");
+    }
+
     printf("Ограничение значений\n");
     check(proto_clamp_u8(-3, 0, 220) == 0, "отрицательная скорость → 0");
     check(proto_clamp_u8(300, 0, 220) == 220, "скорость выше шкалы → 220");
