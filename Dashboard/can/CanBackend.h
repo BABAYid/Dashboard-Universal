@@ -320,6 +320,27 @@ signals:
     void gasSensorValidChanged();
     void gasSensorVoltsChanged();
     void gasLevelPercentChanged();
+    void climateValidChanged();
+    void climateAcChanged();
+    void climateAutoChanged();
+    void climateRecirculationChanged();
+    void climateDefrostChanged();
+    void climateFanAutoChanged();
+    void climateSetpointChanged();
+    void climateFanLevelChanged();
+    void climateAirflowChanged();
+    void climateCabinTempChanged();
+    void climateEvaporatorTempChanged();
+    void climateSetpointRightChanged();
+    void gpsValidChanged();
+    void gpsLatitudeChanged();
+    void gpsLongitudeChanged();
+    void gpsCourseChanged();
+    void gpsSpeedChanged();
+    void gpsSatellitesChanged();
+    void gpsHdopChanged();
+    void gpsFixTypeChanged();
+    void gpsUtcTimeChanged();
 
 private:
     void openSocket();
@@ -331,6 +352,9 @@ private:
     void handleGearboxFrame(const quint8 *d);
     void handleDeviceStatusFrame(const quint8 *d);
     void handleGasFrame(const quint8 *d);
+    void handleClimateFrame(const quint8 *d);
+    void handleGpsPositionFrame(const quint8 *d);
+    void handleGpsMotionFrame(const quint8 *d);
     void updateDataValidity();
     void publishJourney();
     void updateConsumptionWindow(double ratePer100km);
