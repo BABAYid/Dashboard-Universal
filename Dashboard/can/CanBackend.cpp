@@ -862,12 +862,75 @@ void CanBackend::generateMockFrames()
         handleFrame(kIdGas, d, 8);
     }
 
+    // --- кадр 0x510: климат (раз в 200 мс, протокол 1.3) ---
+    // Родной панели в демо-режиме нет, поэтому «показываем» правдоподобное
+    // состояние: уставку плавно ведём синусоидой, вентилятор — по разнице
+    // между салоном и уставкой, как сделала бы автоматика.
+    {
+        static int climateDivider = 0;
+        if (++climateDivider >= 4) {
+            climateDivider = 0;
+            const double setpoint = 22.5 + 1.5 * std::sin(t / 40.0);
+            const double cabin = 23.5 + 1.0 * std::sin(t / 17.0);
+            const int fan = qBound(0, static_cast<int>(std::fabs(cabin - setpoint) * 3.0), 7);
+
+            quint8 d[8] = {};
+            d[0] = 0x01 | 0x02 | 0x08 | 0x20;     // AC + AUTO + обдув лобового + достоверно
+            if (cycle > 20.0 && cycle < 30.0) d[0] |= 0x04;   // рециркуляция
+            d[1] = static_cast<quint8>(qBound(0.0, setpoint * 2.0, 255.0));
+            d[2] = static_cast<quint8>(fan);
+            d[3] = (fan > 4) ? 0x04 : 0x06;       // лицо или лицо+ноги
+            d[4] = static_cast<quint8>(static_cast<qint8>(qBound(-40.0, cabin, 60.0)));
+            d[5] = static_cast<quint8>(8);        // испаритель ~+8 °C
+            d[6] = 0;                             // одной зоны достаточно
+            handleFrame(kIdClimate, d, 8);
+        }
+    }
+
+    // --- кадры 0x520 / 0x521: GPS (раз в 500 мс, протокол 1.3) ---
+    // Машина «едет» по Москве вокруг Кремля: координаты смещаются вместе
+    // со скоростью, курс берётся из направления смещения.
+    {
+        static int gpsDivider = 0;
+        if (++gpsDivider >= 10) {
+            gpsDivider = 0;
+            const double lat = 55.7520 + 0.004 * std::sin(t / 300.0);
+            const double lon = 37.6175 + 0.008 * std::cos(t / 300.0);
+            const double course = std::fmod(std::atan2(std::cos(t / 300.0), std::cos(t / 300.0) - 1.0) * 0.0 + 90.0 + 60.0 * std::sin(t / 50.0), 360.0);
+            const bool fix = engineRunning;       // до запуска «спутников нет»
+
+            quint8 p[8] = {};
+            const quint32 latE7 = static_cast<quint32>(static_cast<qint32>(qRound(lat * 1.0e7)));
+            const quint32 lonE7 = static_cast<quint32>(static_cast<qint32>(qRound(lon * 1.0e7)));
+            p[0] = static_cast<quint8>((latE7 >> 24) & 0xFF);
+            p[1] = static_cast<quint8>((latE7 >> 16) & 0xFF);
+            p[2] = static_cast<quint8>((latE7 >> 8) & 0xFF);
+            p[3] = static_cast<quint8>(latE7 & 0xFF);
+            p[4] = static_cast<quint8>((lonE7 >> 24) & 0xFF);
+            p[5] = static_cast<quint8>((lonE7 >> 16) & 0xFF);
+            p[6] = static_cast<quint8>((lonE7 >> 8) & 0xFF);
+            p[7] = static_cast<quint8>(lonE7 & 0xFF);
+            handleFrame(kIdGpsPos, p, 8);
+
+            quint8 m[8] = {};
+            m[0] = static_cast<quint8>(qBound(0.0, course / 2.0, 179.0));
+            m[1] = static_cast<quint8>(qBound(0.0, speed, 255.0));
+            m[2] = 11;                                        // HDOP 1.1
+            m[3] = static_cast<quint8>(9 | (fix ? (2 << 5) : 0));   // 9 спутников, 3D
+            m[4] = static_cast<quint8>(static_cast<int>(t) % 60);
+            m[5] = static_cast<quint8>((static_cast<int>(t) / 60) % 60);
+            m[6] = static_cast<quint8>((static_cast<int>(t) / 3600) % 24);
+            m[7] = fix ? 0x03 : 0x00;                         // фикс + время достоверны
+            handleFrame(kIdGpsMove, m, 8);
+        }
+    }
+
     // --- кадр 0x7F0: статус блока сбора (раз в секунду) ---
     if (static_cast<int>(t) != m_mockLastStatusSecond) {
         m_mockLastStatusSecond = static_cast<int>(t);
         quint8 d[8] = {};
         d[0] = static_cast<quint8>(m_mockStatusCounter++);
-        d[1] = 0x12;                                             // версия прошивки 1.2
+        d[1] = 0x13;                                             // версия прошивки 1.3
         const quint32 uptime = static_cast<quint32>(t);
         d[2] = static_cast<quint8>((uptime >> 24) & 0xFF);
         d[3] = static_cast<quint8>((uptime >> 16) & 0xFF);
