@@ -25,6 +25,14 @@ typedef struct {
     bool            gas_sensor_valid;
     uint16_t        gas_sensor_mv;
 
+    // --- протокол 1.3 ---
+    // Климат: пока блок сбора не читает родную панель, valid = false,
+    // и приборка показывает «климат — нет данных» вместо выдуманных цифр.
+    proto_climate_t    climate;
+    // GPS: пока NMEA не разбирается, кадры уходят с нулями и fix = false.
+    proto_gps_pos_t    gps_pos;
+    proto_gps_motion_t gps_motion;
+
     // Отладочное и диагностическое: в кадры не уходит, но видно в консоли.
     bool            ignition_on;
     uint32_t        uptime_sec;
