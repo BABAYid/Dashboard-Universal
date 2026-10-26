@@ -128,8 +128,33 @@ Window {
     // стартовом экране только машина — дорога появляется после.
     readonly property bool panelReady: gaugesOpacity >= 0.999
 
+    // Первый кадр реально отрисован (main.cpp ставит флаг после afterRendering).
+    property bool firstFrameRendered: false
+    // Заставка уже запущена (ровно один раз).
+    property bool startupStarted: false
+
     // Сигнал «запуск закончен»: по нему приборка переходит в штатный режим.
     signal startupFinished()
+
+    // Запуск стартовой заставки. Ждём первый отрисованный кадр: на слабом
+    // железе он приходит через несколько секунд, и иначе заставка успевает
+    // проиграться, пока экран ещё чёрный (казалось, что 3D повис).
+    function beginStartup() {
+        if (root.startupStarted)
+            return
+        root.startupStarted = true
+        startupSequence.start()
+    }
+
+    onFirstFrameRenderedChanged: if (root.firstFrameRendered) root.beginStartup()
+
+    // Страховка: если хук первого кадра почему-то не сработал — стартуем сами.
+    Timer {
+        interval: 12000
+        repeat: false
+        running: root.car3d && !root.startupStarted
+        onTriggered: root.beginStartup()
+    }
 
     // Применить коэффициенты из настроек (после их загрузки с диска).
     function applyCalibration() {
@@ -236,7 +261,7 @@ Window {
             // центру листает режимы).
 
             root.centerMode = 4
-            startupSequence.start()
+            // Сама заставка стартует в beginStartup() — после первого кадра.
         }
     }
 

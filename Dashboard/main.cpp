@@ -116,5 +116,26 @@ int main(int argc, char *argv[])
         });
     }
 
+    // Первый отрисованный кадр: сообщаем QML, что картинка реально появилась
+    // на экране. На слабом железе (программный OpenGL) первый кадр приходит
+    // через несколько секунд, а стартовая 3D-заставка длится 4 с — если
+    // запускать её сразу при загрузке QML, зритель видит уже готовую приборку
+    // и заставку не видит вовсе (казалось, что 3D-анимация пропала).
+    // afterRendering приходит из потока рендера — ставим свойство у корневого
+    // объекта через queer-вызов, в потоке GUI.
+    if (auto *root = engine.rootObjects().constFirst()) {
+        if (auto *win = qobject_cast<QQuickWindow *>(root)) {
+            QObject::connect(win, &QQuickWindow::afterRendering, win,
+                             [root]() {
+                                 static bool alreadyReported = false;
+                                 if (alreadyReported)
+                                     return;
+                                 alreadyReported = true;
+                                 QMetaObject::invokeMethod(root, [root]() {
+                                     root->setProperty("firstFrameRendered", true);
+                                 }, Qt::QueuedConnection);
+                             }, Qt::DirectConnection);
+        }
+    }
     return app.exec();
 }
