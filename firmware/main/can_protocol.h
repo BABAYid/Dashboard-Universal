@@ -22,18 +22,23 @@
 #define CAN_ID_SENSORS          0x300u   // 50 мс
 #define CAN_ID_GEARBOX          0x400u   // 50 мс
 #define CAN_ID_GAS              0x500u   // 200 мс
+#define CAN_ID_CLIMATE          0x510u   // 200 мс (протокол 1.3)
+#define CAN_ID_GPS_POS          0x520u   // 500 мс (протокол 1.3)
+#define CAN_ID_GPS_MOTION       0x521u   // 500 мс (протокол 1.3)
 #define CAN_ID_DEVICE_STATUS    0x7F0u   // 1000 мс
 
 #define CAN_PERIOD_FAST_MS      50
 #define CAN_PERIOD_GAS_MS       200
+#define CAN_PERIOD_CLIMATE_MS   200
+#define CAN_PERIOD_GPS_MS       500
 #define CAN_PERIOD_STATUS_MS    1000
 
 #define CAN_FRAME_BYTES         8
 
 // Версия прошивки блока сбора: старший ниббл — major, младший — minor.
-// Протокол 1.2 — значит 0x12. Приборка показывает это число в диагностике.
+// Протокол 1.3 — значит 0x13. Приборка показывает это число в диагностике.
 #define FW_VERSION_MAJOR        1
-#define FW_VERSION_MINOR        2
+#define FW_VERSION_MINOR        3
 #define FW_VERSION_BYTE         ((uint8_t)((FW_VERSION_MAJOR << 4) | FW_VERSION_MINOR))
 
 // ---------------------------------------------------------------------------
