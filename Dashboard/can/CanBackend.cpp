@@ -896,7 +896,9 @@ void CanBackend::generateMockFrames()
             gpsDivider = 0;
             const double lat = 55.7520 + 0.004 * std::sin(t / 300.0);
             const double lon = 37.6175 + 0.008 * std::cos(t / 300.0);
-            const double course = std::fmod(std::atan2(std::cos(t / 300.0), std::cos(t / 300.0) - 1.0) * 0.0 + 90.0 + 60.0 * std::sin(t / 50.0), 360.0);
+            // Курс в демо просто гуляет вокруг «на северо-восток», чтобы на
+            // карте и в виджете было видно, что он приходит и меняется.
+            const double course = std::fmod(90.0 + 60.0 * std::sin(t / 50.0), 360.0);
             const bool fix = engineRunning;       // до запуска «спутников нет»
 
             quint8 p[8] = {};
