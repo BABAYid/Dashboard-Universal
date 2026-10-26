@@ -112,7 +112,7 @@ void MediaBackend::poll()
 
     // Фигурные скобки: с обычными здесь получается «самый неприятный разбор»
     // (most vexing parse) — компилятор считает это объявлением функции.
-    const QNetworkRequest request{QUrl(m_url)};
+    QNetworkRequest request{QUrl(m_url)};
     request.setHeader(QNetworkRequest::UserAgentHeader,
                       QStringLiteral("appDashboard/1.0"));
     m_network->get(request);
