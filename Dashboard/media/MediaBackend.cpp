@@ -155,11 +155,12 @@ void MediaBackend::applyJson(const QJsonObject &object)
     const int duration = object.value(QStringLiteral("duration")).toInt();
     const QString art = object.value(QStringLiteral("art")).toString();
 
-    const bool changedFlag = !m_available
-        || m_title != title || m_artist != artist || m_station != station
-        || m_source != source || m_playing != playing
-        || m_positionSec != position || m_durationSec != duration
-        || m_artUrl != art;
+    const bool trackChanged = !m_available
+        || m_title != title || m_artist != artist
+        || m_station != station || m_source != source;
+    const bool changedFlag = trackChanged
+        || m_playing != playing || m_positionSec != position
+        || m_durationSec != duration || m_artUrl != art;
 
     m_available = true;
     m_title = title;
@@ -170,6 +171,10 @@ void MediaBackend::applyJson(const QJsonObject &object)
     m_positionSec = position;
     m_durationSec = duration;
     m_artUrl = art;
+
+    if (trackChanged)
+        qInfo() << "Медиа:" << sourceLabel() << station << "|" << title
+                << "-" << artist << (playing ? "(играет)" : "(пауза)");
 
     if (changedFlag)
         emit changed();
