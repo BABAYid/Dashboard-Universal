@@ -226,6 +226,9 @@ void CanBackend::handleFrame(quint32 id, const quint8 *d, int len)
     case kIdSensors: handleSensorFrame(d);  break;
     case kIdGearbox: handleGearboxFrame(d); break;
     case kIdGas:     handleGasFrame(d);     break;
+    case kIdClimate: handleClimateFrame(d); break;
+    case kIdGpsPos:  handleGpsPositionFrame(d); break;
+    case kIdGpsMove: handleGpsMotionFrame(d);   break;
     case kIdDevice:  handleDeviceStatusFrame(d); break;
     default: break;   // неизвестные ID игнорируем
     }
@@ -377,6 +380,88 @@ void CanBackend::handleGasFrame(const quint8 *d)
         ? qRound(static_cast<double>(mvClamped) * 100.0 / kGasSensorMaxMv)
         : 0;
     set(m_gasLevelPercent, percent, &CanBackend::gasLevelPercentChanged);
+}
+
+// 0x510: климат (протокол 1.3). Байт 0 — флаги, 1 — уставка ×2, 2 — вентилятор,
+// 3 — направление потока (маска), 4 — температура в салоне, 5 — испаритель,
+// 6 — уставка второй зоны. Значения «нет данных»: 0x80 для температур,
+// 0xFF для вентилятора и 0 для уставок.
+void CanBackend::handleClimateFrame(const quint8 *d)
+{
+    m_sinceClimateFrame.restart();
+
+    const quint8 flags = d[0];
+    set(m_climateAc,            (flags & 0x01) != 0, &CanBackend::climateAcChanged);
+    set(m_climateAuto,          (flags & 0x02) != 0, &CanBackend::climateAutoChanged);
+    set(m_climateRecirculation, (flags & 0x04) != 0, &CanBackend::climateRecirculationChanged);
+    set(m_climateDefrost,       (flags & 0x08) != 0, &CanBackend::climateDefrostChanged);
+    set(m_climateFanAuto,       (flags & 0x10) != 0, &CanBackend::climateFanAutoChanged);
+    set(m_climateValid,         (flags & 0x20) != 0, &CanBackend::climateValidChanged);
+
+    set(m_climateSetpoint, d[1] > 0 ? d[1] / 2.0 : qQNaN(), &CanBackend::climateSetpointChanged);
+    set(m_climateFanLevel, d[2] == kValueNone ? -1 : static_cast<int>(d[2]),
+        &CanBackend::climateFanLevelChanged);
+
+    // Направление потока — маска, собираем человеческую строку для QML.
+    QStringList parts;
+    if (d[3] & 0x01) parts << QStringLiteral("лобовое");
+    if (d[3] & 0x02) parts << QStringLiteral("ноги");
+    if (d[3] & 0x04) parts << QStringLiteral("лицо");
+    if (d[3] & 0x08) parts << QStringLiteral("авто");
+    set(m_climateAirflow, parts.join(QLatin1Char('+')), &CanBackend::climateAirflowChanged);
+
+    set(m_climateCabinTemp, d[4] == kTempNone ? qQNaN() : static_cast<double>(static_cast<qint8>(d[4])),
+        &CanBackend::climateCabinTempChanged);
+    set(m_climateEvaporatorTemp, d[5] == kTempNone ? qQNaN() : static_cast<double>(static_cast<qint8>(d[5])),
+        &CanBackend::climateEvaporatorTempChanged);
+    set(m_climateSetpointRight, d[6] > 0 ? d[6] / 2.0 : qQNaN(),
+        &CanBackend::climateSetpointRightChanged);
+}
+
+// 0x520: GPS, положение — широта и долгота, градусы ×10^7, int32 каждая.
+void CanBackend::handleGpsPositionFrame(const quint8 *d)
+{
+    m_sinceGpsFrame.restart();
+
+    const qint32 lat = static_cast<qint32>((static_cast<quint32>(d[0]) << 24) |
+                                           (static_cast<quint32>(d[1]) << 16) |
+                                           (static_cast<quint32>(d[2]) << 8) |
+                                            static_cast<quint32>(d[3]));
+    const qint32 lon = static_cast<qint32>((static_cast<quint32>(d[4]) << 24) |
+                                           (static_cast<quint32>(d[5]) << 16) |
+                                           (static_cast<quint32>(d[6]) << 8) |
+                                            static_cast<quint32>(d[7]));
+
+    set(m_gpsLatitude,  lat / 1.0e7, &CanBackend::gpsLatitudeChanged);
+    set(m_gpsLongitude, lon / 1.0e7, &CanBackend::gpsLongitudeChanged);
+}
+
+// 0x521: GPS, движение и качество. Курс ×0.5, скорость, HDOP ×10, спутники
+// и тип фикса в одном байте, время UTC и флаги.
+void CanBackend::handleGpsMotionFrame(const quint8 *d)
+{
+    m_sinceGpsFrame.restart();
+
+    set(m_gpsCourse, d[0] == kValueNone ? qQNaN() : d[0] * 0.5,
+        &CanBackend::gpsCourseChanged);
+    set(m_gpsSpeed, d[1] == kValueNone ? -1 : static_cast<int>(d[1]),
+        &CanBackend::gpsSpeedChanged);
+    set(m_gpsHdop, d[2] == kValueNone ? qQNaN() : d[2] / 10.0,
+        &CanBackend::gpsHdopChanged);
+    set(m_gpsSatellites, static_cast<int>(d[3] & 0x1F), &CanBackend::gpsSatellitesChanged);
+    set(m_gpsFixType, static_cast<int>((d[3] >> 5) & 0x07), &CanBackend::gpsFixTypeChanged);
+
+    const QString time = QStringLiteral("%1:%2:%3")
+                             .arg(static_cast<int>(d[6]), 2, 10, QLatin1Char('0'))
+                             .arg(static_cast<int>(d[5]), 2, 10, QLatin1Char('0'))
+                             .arg(static_cast<int>(d[4]), 2, 10, QLatin1Char('0'));
+    set(m_gpsUtcTime, time, &CanBackend::gpsUtcTimeChanged);
+
+    // Фикс есть только если блок сбора его подтвердил. Свежесть кадров
+    // проверяется отдельно в updateDataValidity — она и гасит gpsValid,
+    // если кадры перестали приходить.
+    set(m_gpsFix, (d[7] & 0x01) != 0, &CanBackend::gpsValidChanged);
+    set(m_gpsValid, (d[7] & 0x01) != 0, &CanBackend::gpsValidChanged);
 }
 
 // ------------------------------------------------------------------ контроль
