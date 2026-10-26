@@ -474,4 +474,33 @@ private:
     int m_gasSensorMv = 0;             // сырое напряжение датчика, мВ
     int m_gasLevelPercent = 0;         // 0 В — пусто, 5 В — полный
     QElapsedTimer m_sinceGasFrame;
+
+    // Климат (кадр 0x510, протокол 1.3). Значения, которых нет, отдаются как
+    // NaN (double) и -1 (int), чтобы QML мог нарисовать «—» вместо нуля.
+    bool m_climateValid = false;
+    bool m_climateAc = false;
+    bool m_climateAuto = false;
+    bool m_climateRecirculation = false;
+    bool m_climateDefrost = false;
+    bool m_climateFanAuto = false;
+    double m_climateSetpoint = 0;
+    int m_climateFanLevel = -1;
+    QString m_climateAirflow;
+    double m_climateCabinTemp = 0;
+    double m_climateEvaporatorTemp = 0;
+    double m_climateSetpointRight = 0;
+    QElapsedTimer m_sinceClimateFrame;
+
+    // GPS (кадры 0x520 и 0x521, протокол 1.3)
+    bool m_gpsValid = false;
+    bool m_gpsFix = false;
+    double m_gpsLatitude = 0;
+    double m_gpsLongitude = 0;
+    double m_gpsCourse = 0;
+    int m_gpsSpeed = -1;
+    int m_gpsSatellites = 0;
+    double m_gpsHdop = 0;
+    int m_gpsFixType = 0;
+    QString m_gpsUtcTime;
+    QElapsedTimer m_sinceGpsFrame;
 };
