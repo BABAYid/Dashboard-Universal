@@ -128,6 +128,87 @@ void proto_build_gas(uint8_t out[CAN_FRAME_BYTES], bool gas_mode, bool sensor_va
                      uint16_t sensor_mv);
 
 // ---------------------------------------------------------------------------
+//  0x510 — климат (протокол 1.3)
+// ---------------------------------------------------------------------------
+//  Родная панель климата остаётся главной, блок сбора только читает её
+//  состояние. Байты:
+//    0 — флаги: 0 кондиционер, 1 AUTO, 2 рециркуляция, 3 обдув лобового,
+//        4 вентилятор в авторежиме, 5 данные достоверны;
+//    1 — уставка ×2 (22.5 °C → 45), 0 = нет данных;
+//    2 — уровень вентилятора 0…7, 0xFF = нет данных;
+//    3 — направление потока (маска): 0 лобовое, 1 ноги, 2 лицо, 3 авто;
+//    4 — температура в салоне, int8, 0x80 = нет данных;
+//    5 — температура испарителя, int8, 0x80 = нет данных;
+//    6 — уставка второй зоны ×2, 0 = нет данных;
+//    7 — резерв.
+#define CLIMATE_AIRFLOW_WINDSHIELD  (1u << 0)
+#define CLIMATE_AIRFLOW_FEET        (1u << 1)
+#define CLIMATE_AIRFLOW_FACE        (1u << 2)
+#define CLIMATE_AIRFLOW_AUTO        (1u << 3)
+
+#define CLIMATE_TEMP_NONE       ((int8_t)-128)   // 0x80 — нет данных
+#define CLIMATE_FAN_NONE        0xFF
+
+typedef struct {
+    bool    ac_on;
+    bool    auto_mode;
+    bool    recirculation;
+    bool    defrost;
+    bool    fan_auto;
+    bool    valid;
+    uint8_t setpoint_x2;        // уставка ×2; 0 = нет данных
+    uint8_t fan_level;          // 0…7; CLIMATE_FAN_NONE = нет данных
+    uint8_t airflow;            // CLIMATE_AIRFLOW_*
+    int8_t  cabin_temp_c;       // CLIMATE_TEMP_NONE = нет данных
+    int8_t  evaporator_temp_c;  // CLIMATE_TEMP_NONE = нет данных
+    uint8_t setpoint_right_x2;  // вторая зона; 0 = нет данных
+} proto_climate_t;
+
+void proto_build_climate(uint8_t out[CAN_FRAME_BYTES], const proto_climate_t *climate);
+
+// ---------------------------------------------------------------------------
+//  0x520 — GPS: положение (протокол 1.3)
+// ---------------------------------------------------------------------------
+//  Приёмник GPS один на всю систему (на блоке сбора). Координаты уходят
+//  в градусах ×10^7: 55.7558° → 557558000. Точность 10^-7 градуса (~1 см).
+typedef struct {
+    int32_t latitude_e7;
+    int32_t longitude_e7;
+} proto_gps_pos_t;
+
+void proto_build_gps_position(uint8_t out[CAN_FRAME_BYTES], const proto_gps_pos_t *pos);
+
+// ---------------------------------------------------------------------------
+//  0x521 — GPS: движение, качество, время (протокол 1.3)
+// ---------------------------------------------------------------------------
+//    0 — курс ×0.5 (0…179 → 0…358°), 0xFF = нет данных;
+//    1 — скорость по GPS, км/ч, 0xFF = нет данных;
+//    2 — HDOP ×10, 0xFF = нет данных;
+//    3 — младшие 5 бит число спутников, биты 5–7 тип фикса (0 нет, 1 2D, 2 3D);
+//    4..6 — секунды, минуты, часы UTC;
+//    7 — флаги: 0 есть фикс, 1 время достоверно, 2 данные свежие.
+#define GPS_FIX_NONE            0
+#define GPS_FIX_2D              1
+#define GPS_FIX_3D              2
+
+#define GPS_VALUE_NONE          0xFF
+
+typedef struct {
+    uint8_t course_x2;      // 0…179; GPS_VALUE_NONE = нет данных
+    uint8_t speed_kmh;      // 0…255; GPS_VALUE_NONE = нет данных
+    uint8_t hdop_x10;       // 0…255; GPS_VALUE_NONE = нет данных
+    uint8_t satellites;     // 0…31
+    uint8_t fix_type;       // GPS_FIX_*
+    uint8_t utc_second;     // 0…59
+    uint8_t utc_minute;     // 0…59
+    uint8_t utc_hour;       // 0…23
+    bool    fix;            // есть фикс
+    bool    time_valid;     // дата и время достоверны
+} proto_gps_motion_t;
+
+void proto_build_gps_motion(uint8_t out[CAN_FRAME_BYTES], const proto_gps_motion_t *motion);
+
+// ---------------------------------------------------------------------------
 //  0x7F0 — статус блока сбора
 // ---------------------------------------------------------------------------
 //  byte 0    счётчик кадров статуса (mod 256)
