@@ -442,7 +442,7 @@ void CanBackend::handleGpsMotionFrame(const quint8 *d)
 {
     m_sinceGpsFrame.restart();
 
-    set(m_gpsCourse, d[0] == kValueNone ? qQNaN() : d[0] * 0.5,
+    set(m_gpsCourse, d[0] == kValueNone ? qQNaN() : d[0] * 2.0,
         &CanBackend::gpsCourseChanged);
     set(m_gpsSpeed, d[1] == kValueNone ? -1 : static_cast<int>(d[1]),
         &CanBackend::gpsSpeedChanged);
