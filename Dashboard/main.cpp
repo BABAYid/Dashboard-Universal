@@ -8,6 +8,7 @@
 #include <QDebug>
 
 #include "can/CanBackend.h"
+#include "media/MediaBackend.h"
 #include "WeatherProvider.h"
 
 // Путь к ресурсам QML-модуля Dashboard (см. qt_add_qml_module в CMakeLists.txt)
@@ -63,6 +64,13 @@ int main(int argc, char *argv[])
     WeatherProvider *weather = WeatherProvider::instance();
     weather->setMockMode(parser.isSet(mockOption));
     weather->start();
+
+    // Что играет в мультимедиа-центре: маленький JSON по сети, опрос раз
+    // в секунду. Без медиацентра (стол, отладка) виджет просто пишет
+    // «нет данных»; в --mock показываются выдуманные треки.
+    MediaBackend *media = MediaBackend::instance();
+    media->setMockMode(parser.isSet(mockOption));
+    media->start();
 
     // Шрифт приборки. Регистрируем в приложении целиком: раньше это делал FontLoader
     // в Main.qml и писал в несуществующее свойство Window.font (ошибка QML).

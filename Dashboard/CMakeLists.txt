@@ -12,8 +12,11 @@ qt_add_executable(appDashboard
     main.cpp
 )
 
-# Сгенерированный qmltyperegistrar код подключает <CanBackend.h> по имени файла
-target_include_directories(appDashboard PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/can)
+# Сгенерированный qmltyperegistrar код подключает <CanBackend.h> и
+# <MediaBackend.h> по имени файла
+target_include_directories(appDashboard PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/can
+    ${CMAKE_CURRENT_SOURCE_DIR}/media)
 
 # Все ресурсы (картинки, шрифт) кладутся в ресурсную систему по пути модуля:
 # qrc:/qt/qml/Dashboard/images/... — в QML на них ссылаемся относительными путями
@@ -25,6 +28,8 @@ qt_add_qml_module(appDashboard
     SOURCES
         can/CanBackend.h
         can/CanBackend.cpp
+        media/MediaBackend.h
+        media/MediaBackend.cpp
         WeatherProvider.h
         WeatherProvider.cpp
     QML_FILES
