@@ -97,6 +97,68 @@ void proto_build_gas(uint8_t out[CAN_FRAME_BYTES], bool gas_mode, bool sensor_va
     out[2] = (uint8_t)(sensor_mv & 0xFF);
 }
 
+void proto_build_climate(uint8_t out[CAN_FRAME_BYTES], const proto_climate_t *c)
+{
+    memset(out, 0, CAN_FRAME_BYTES);
+
+    uint8_t flags = 0;
+    if (c->ac_on)          flags |= (1u << 0);
+    if (c->auto_mode)      flags |= (1u << 1);
+    if (c->recirculation)  flags |= (1u << 2);
+    if (c->defrost)        flags |= (1u << 3);
+    if (c->fan_auto)       flags |= (1u << 4);
+    if (c->valid)          flags |= (1u << 5);
+
+    out[0] = flags;
+    out[1] = c->setpoint_x2;
+    out[2] = c->fan_level;
+    out[3] = c->airflow;
+    out[4] = (uint8_t)c->cabin_temp_c;
+    out[5] = (uint8_t)c->evaporator_temp_c;
+    out[6] = c->setpoint_right_x2;
+    out[7] = 0;
+}
+
+void proto_build_gps_position(uint8_t out[CAN_FRAME_BYTES], const proto_gps_pos_t *p)
+{
+    memset(out, 0, CAN_FRAME_BYTES);
+
+    const uint32_t lat = (uint32_t)p->latitude_e7;
+    const uint32_t lon = (uint32_t)p->longitude_e7;
+
+    out[0] = (uint8_t)(lat >> 24);
+    out[1] = (uint8_t)(lat >> 16);
+    out[2] = (uint8_t)(lat >> 8);
+    out[3] = (uint8_t)(lat & 0xFF);
+    out[4] = (uint8_t)(lon >> 24);
+    out[5] = (uint8_t)(lon >> 16);
+    out[6] = (uint8_t)(lon >> 8);
+    out[7] = (uint8_t)(lon & 0xFF);
+}
+
+void proto_build_gps_motion(uint8_t out[CAN_FRAME_BYTES], const proto_gps_motion_t *m)
+{
+    memset(out, 0, CAN_FRAME_BYTES);
+
+    out[0] = m->course_x2;
+    out[1] = m->speed_kmh;
+    out[2] = m->hdop_x10;
+
+    const uint8_t fix_type = (uint8_t)((m->fix_type > 2u) ? 2u : m->fix_type);
+    out[3] = (uint8_t)((m->satellites > 31u ? 31u : m->satellites) | (fix_type << 5));
+
+    out[4] = m->utc_second;
+    out[5] = m->utc_minute;
+    out[6] = m->utc_hour;
+
+    uint8_t flags = 0;
+    if (m->fix)         flags |= (1u << 0);
+    if (m->time_valid)  flags |= (1u << 1);
+    // Бит 2 «данные свежие» приборка проверяет сама по времени прихода кадра,
+    // поэтому блок сбора его не выставляет.
+    out[7] = flags;
+}
+
 void proto_build_device_status(uint8_t out[CAN_FRAME_BYTES], uint8_t counter,
                                uint32_t uptime_sec, uint8_t bus_errors)
 {
