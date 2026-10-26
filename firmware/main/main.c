@@ -160,6 +160,8 @@ static void task_can(void *arg)
     bool can_ok = true;
 
     const uint32_t gas_every = CAN_PERIOD_GAS_MS / CAN_PERIOD_FAST_MS;       // 4 тика
+    const uint32_t climate_every = CAN_PERIOD_CLIMATE_MS / CAN_PERIOD_FAST_MS; // 4 тика
+    const uint32_t gps_every = CAN_PERIOD_GPS_MS / CAN_PERIOD_FAST_MS;       // 10 тиков
     const uint32_t status_every = CAN_PERIOD_STATUS_MS / CAN_PERIOD_FAST_MS; // 20 тиков
 
     for (;;) {
