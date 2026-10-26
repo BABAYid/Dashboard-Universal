@@ -206,6 +206,20 @@ static void task_can(void *arg)
             twai_bus_send(CAN_ID_GAS, frame);
         }
 
+        // 0x510 — климат (200 мс, протокол 1.3)
+        if (tick % climate_every == 0) {
+            proto_build_climate(frame, &st.climate);
+            twai_bus_send(CAN_ID_CLIMATE, frame);
+        }
+
+        // 0x520 и 0x521 — GPS (500 мс, протокол 1.3)
+        if (tick % gps_every == 0) {
+            proto_build_gps_position(frame, &st.gps_pos);
+            twai_bus_send(CAN_ID_GPS_POS, frame);
+            proto_build_gps_motion(frame, &st.gps_motion);
+            twai_bus_send(CAN_ID_GPS_MOTION, frame);
+        }
+
         // 0x7F0 — статус блока (1000 мс)
         if (tick % status_every == 0) {
             uint8_t errors = twai_bus_error_count();
