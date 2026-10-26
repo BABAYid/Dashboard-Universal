@@ -1,5 +1,5 @@
 // ============================================================================
-//  Тест разбора CAN-протокола (can_protocol_v1.2.txt).
+//  Тест разбора CAN-протокола (can_protocol_v1.3.txt).
 //
 //  Проверяются примеры кадров прямо из документации плюс граничные случаи:
 //  определение передачи по проводам S1/S2, режимы АКПП, отрицательная
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
     check(!can.climateAuto(), "AUTO выключен");
     checkNum(can.climateSetpoint(), 22.5, "уставка 22.5 °C (байт 0x2D = 45)");
     check(can.climateFanLevel() == 3, QStringLiteral("вентилятор 3, получено %1").arg(can.climateFanLevel()));
-    check(can.climateAirflow() == QLatin1String("лицо"),
+    check(can.climateAirflow() == QStringLiteral("лицо"),
           QStringLiteral("поток «лицо», получено «%1»").arg(can.climateAirflow()));
     checkNum(can.climateCabinTemp(), 24.0, "в салоне 24 °C");
     check(qIsNaN(can.climateEvaporatorTemp()), "испаритель — нет данных (0x80 → NaN)");
@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
     check(can.climateAuto(), "AUTO включён");
     check(can.climateFanLevel() == -1, "вентилятор — нет данных (-1)");
     check(qIsNaN(can.climateSetpoint()), "уставка — нет данных (0 → NaN)");
-    check(can.climateAirflow() == QLatin1String("авто"), "поток выбирает автоматика");
+    check(can.climateAirflow() == QStringLiteral("авто"), "поток выбирает автоматика");
 
     // ---- 0x520 и 0x521: GPS (протокол 1.3) ----
     qInfo() << "0x520 — GPS: положение (новое в 1.3)";

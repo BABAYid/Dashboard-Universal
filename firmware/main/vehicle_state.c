@@ -229,7 +229,7 @@ static void read_gearbox(proto_gearbox_t *g)
         mode = 2;   // селектор не подключён: не показываем выдуманную передачу
     }
 
-    // Соответствие проверено на машине (см. can_protocol_v1.2.txt):
+    // Соответствие проверено на машине (см. can_protocol_v1.3.txt):
     //   S1=ON,  S2=OFF → D1
     //   S1=ON,  S2=ON  → D2
     //   S1=OFF, S2=ON  → D3
