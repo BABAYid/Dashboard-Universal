@@ -488,6 +488,14 @@ void CanBackend::updateDataValidity()
         set(m_gasLevelPercent, 0, &CanBackend::gasLevelPercentChanged);
     }
 
+    // Климат (0x510, 200 мс) и GPS (0x520/0x521, 500 мс) — по тому же правилу:
+    // нет кадров — нет данных, а не «последнее значение навсегда».
+    if (m_sinceClimateFrame.isValid() && m_sinceClimateFrame.elapsed() > kClimateTimeoutMs)
+        set(m_climateValid, false, &CanBackend::climateValidChanged);
+
+    if (m_sinceGpsFrame.isValid() && m_sinceGpsFrame.elapsed() > kGpsTimeoutMs)
+        set(m_gpsValid, false, &CanBackend::gpsValidChanged);
+
     if (++m_publishTick >= 4) {   // 4 * 250 мс = раз в секунду
         m_publishTick = 0;
         publishJourney();
