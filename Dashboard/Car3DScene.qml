@@ -61,8 +61,11 @@ Item {
     // 6-й вид: машина развёрнута боком, и пневмоподвеска двигает кузов по Y.
     property bool viewSide: false
     property int suspensionLevel: 0        // -1 спорт, 0 стандарт, 1 бездорожье
-    readonly property real suspensionOffset: suspensionLevel > 0 ? 0.18
-                                             : suspensionLevel < 0 ? -0.10 : 0.0
+    // Амплитуда хода кузова. Раньше было 0.18/−0.10 — на глаз почти не
+    // читалось (это ~4% длины машины); теперь заметно, но колёса не
+    // отрываются от земли настолько, чтобы это выглядело сломанным.
+    readonly property real suspensionOffset: suspensionLevel > 0 ? 0.9
+                                             : suspensionLevel < 0 ? -0.5 : 0.0
 
     signal modelReady()
     signal modelFailed()
@@ -283,12 +286,17 @@ Item {
                         ipsumCar.trunk = models[2]
                         // Кузов и двери поднимаются подвеской; колёса —
                         // нет, поэтому их позиции не трогаем.
-                        ipsumCar.bodyParts = []
-                        ipsumCar.bodyOrigY = []
+                        // Собираем локально и присваиваем разом: push в
+                        // существующий массив не меняет свойство, и binding
+                        // `running` у таймера подъёма не пересчитался бы.
+                        const parts = []
+                        const origY = []
                         for (let b = 0; b <= 6 && b < models.length; ++b) {
-                            ipsumCar.bodyParts.push(models[b])
-                            ipsumCar.bodyOrigY.push(models[b].position.y)
+                            parts.push(models[b])
+                            origY.push(models[b].position.y)
                         }
+                        ipsumCar.bodyOrigY = origY
+                        ipsumCar.bodyParts = parts
                         ipsumCar.doors = [models[3], models[4], models[5], models[6]]
                         ipsumCar.wheels = [models[7], models[8], models[9], models[10]]
                     }
@@ -324,7 +332,7 @@ Item {
                         const totalScale = scene.carScale * scene.carEnlarge * 2.6
                         const target = scene.suspensionOffset / totalScale
                         // плавное догоняние (~0.2 с)
-                        ipsumCar.bodyLift += (target - ipsumCar.bodyLift) * 0.18
+                        ipsumCar.bodyLift += (target - ipsumCar.bodyLift) * 0.25
                         for (let b = 0; b < ipsumCar.bodyParts.length; ++b) {
                             const m = ipsumCar.bodyParts[b]
                             if (!m)
