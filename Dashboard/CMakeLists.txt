@@ -52,6 +52,9 @@ qt_add_qml_module(appDashboard
         # рантайм-импорта glTF, который в этой сборке Qt работает ненадёжно.
         assets/cruiser/maps/textureData.web
         assets/cruiser/meshes/meshes_0__mesh.mesh
+        # Новая модель машины (Toyota Ipsum, метры, ~1.9 м): грузится
+        # в рантайме через RuntimeLoader — имена узлов разбираем по порядку.
+        assets/ipsum_3D.glb
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
         images/lights_glow.png
