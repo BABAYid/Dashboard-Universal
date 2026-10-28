@@ -376,7 +376,8 @@ Item {
             width: 84; height: 84; radius: 42
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.horizontalCenterOffset: -110
-            y: 250
+            // Внизу панели: по центру (y 250) кнопки ложились на машину
+            y: parent.height - height - 8
             color: "#1A1A1A"
             border.color: root.valueColor
             border.width: 2
@@ -397,7 +398,8 @@ Item {
             width: 84; height: 84; radius: 42
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.horizontalCenterOffset: 110
-            y: 250
+            // Внизу панели (см. кнопку «вверх»)
+            y: parent.height - height - 8
             color: "#1A1A1A"
             border.color: root.valueColor
             border.width: 2
