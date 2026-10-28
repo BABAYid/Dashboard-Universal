@@ -207,16 +207,28 @@ Item {
     Rectangle {
         id: panel
         width: 1000
-        height: 560
+        // Высота ограничена экраном, содержимое прокручивается: строк
+        // настроек стало больше (добавились «Двери»), и при фиксированной
+        // высоте кнопки «Сохранить/Отмена» уезжали за нижний край.
+        height: Math.min(settingsColumn.implicitHeight + 80, settingsOverlay.height - 40)
         anchors.centerIn: parent
         radius: 18
         color: "#1A1A1A"
         border.color: "#444"
         border.width: 2
 
-        Column {
-            anchors.centerIn: parent
-            spacing: 14
+        Flickable {
+            anchors.fill: parent
+            anchors.margins: 20
+            contentWidth: width
+            contentHeight: settingsColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+
+            Column {
+                id: settingsColumn
+                width: parent.width
+                spacing: 12
 
             Text {
                 text: "Настройки приборки"
@@ -468,11 +480,16 @@ Item {
                 }
             }
 
-            Item { width: 1; height: 6 }
+        }
+        }
 
-            Row {
-                spacing: 24
-                anchors.horizontalCenter: parent.horizontalCenter
+    // Кнопки «Сохранить/Отмена» всегда на виду: вынесены из прокручиваемой
+    // области — иначе при большом числе строк их уносило за нижний край.
+    Row {
+        spacing: 24
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 16
 
                 Button {
                     id: saveButton
@@ -515,8 +532,7 @@ Item {
                     }
                     onClicked: settingsOverlay.revert()
                 }
-            }
-        }
+    }
     }
 
     // Клавиши: Esc — отмена, Enter — сохранить. На столе разработчика удобно,
