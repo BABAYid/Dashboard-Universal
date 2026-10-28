@@ -206,7 +206,10 @@ Item {
 
         Node {
             id: carPivot
-            position: Qt.vector3d(0, scene.suspensionOffset, scene.carDepth)
+            // Подъём подвески теперь не здесь: кузов поднимается
+            // относительно колёс (см. ipsumCar.bodyLift), колёса стоят
+            // на земле — как на настоящей пневмоподвеске.
+            position: Qt.vector3d(0, 0, scene.carDepth)
             scale: Qt.vector3d(scene.carScale * scene.carEnlarge, scene.carScale * scene.carEnlarge, scene.carScale * scene.carEnlarge)
             // В 6-м виде — боком (профиль); иначе обычный разворот заставки.
             eulerRotation: Qt.vector3d(0, scene.viewSide ? 0 : scene.carYaw, 0)
@@ -233,6 +236,11 @@ Item {
                 property var doors: []      // двери салона (ось — y)
                 property var capot: null    // капот (петля — задняя верхняя кромка)
                 property var trunk: null    // багажник (петля — верх, 5-я дверь)
+                // Части, которые поднимаются вместе с кузовом (всё, кроме
+                // колёс): 0 Capot, 1 Car_body, 2 Door_5, 3..6 двери.
+                property var bodyParts: []
+                property var bodyOrigY: []
+                property real bodyLift: 0
                 property real capotAngle: scene.capotOpen ? scene.capotOpenAngle : 0
                 property real trunkAngle: scene.trunkOpen ? scene.trunkOpenAngle : 0
                 Behavior on capotAngle { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
@@ -273,6 +281,14 @@ Item {
 
                         ipsumCar.capot = models[0]
                         ipsumCar.trunk = models[2]
+                        // Кузов и двери поднимаются подвеской; колёса —
+                        // нет, поэтому их позиции не трогаем.
+                        ipsumCar.bodyParts = []
+                        ipsumCar.bodyOrigY = []
+                        for (let b = 0; b <= 6 && b < models.length; ++b) {
+                            ipsumCar.bodyParts.push(models[b])
+                            ipsumCar.bodyOrigY.push(models[b].position.y)
+                        }
                         ipsumCar.doors = [models[3], models[4], models[5], models[6]]
                         ipsumCar.wheels = [models[7], models[8], models[9], models[10]]
                     }
@@ -292,6 +308,29 @@ Item {
                             const w = ipsumCar.wheels[i]
                             if (w)
                                 w.eulerRotation = Qt.vector3d(0, 0, ipsumCar.wheelAngle)
+                        }
+                    }
+                }
+
+                // Подвеска: кузов плавно поднимается/опускается относительно
+                // колёс. suspensionOffset задан в единицах сцены, а части
+                // кузова — внутри масштабированного контейнера, поэтому
+                // делим на полный масштаб цепочки.
+                Timer {
+                    interval: 16
+                    repeat: true
+                    running: ipsumCar.bodyParts.length > 0
+                    onTriggered: {
+                        const totalScale = scene.carScale * scene.carEnlarge * 2.6
+                        const target = scene.suspensionOffset / totalScale
+                        // плавное догоняние (~0.2 с)
+                        ipsumCar.bodyLift += (target - ipsumCar.bodyLift) * 0.18
+                        for (let b = 0; b < ipsumCar.bodyParts.length; ++b) {
+                            const m = ipsumCar.bodyParts[b]
+                            if (!m)
+                                continue
+                            const p = m.position
+                            m.position = Qt.vector3d(p.x, ipsumCar.bodyOrigY[b] + ipsumCar.bodyLift, p.z)
                         }
                     }
                 }
