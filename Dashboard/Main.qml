@@ -175,6 +175,8 @@ Window {
 
     // ---- Пневмоподвеска (6-й вид): -1 спорт, 0 стандарт, 1 бездорожье ----
     property int suspensionLevel: 0
+    // Тест дверей: кнопка в настройках открывает/закрывает двери на модели
+    property bool doorsOpen: calibration.doorsOpen
     // Куда только что нажали: +1 вверх, -1 вниз (для мигания стрелки)
     property int suspensionDirection: 0
     property bool suspBlinkOn: false
@@ -351,6 +353,7 @@ Window {
             // 6-й вид — профиль машины и пневмоподвеска
             viewSide: root.centerMode === 5
             suspensionLevel: root.suspensionLevel
+            doorsOpen: root.doorsOpen
             opacity: 1.0
             // Видна в 5-м режиме всегда; во время заставки — пока приборы
             // ещё погашены (gaugesOpacity < 0.01), чтобы данные не ложились

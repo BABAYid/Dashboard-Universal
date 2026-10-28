@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick3D
+import QtQuick3D.AssetUtils
 
 // ============================================================================
 //  3D-сцена с моделью машины: View3D, камера, свет, стартовая анимация.
@@ -31,6 +32,10 @@ Item {
     property real progress: 1.0
     property bool idleMotion: true
 
+    // Тестовый режим дверей: кнопка в настройках открывает/закрывает их.
+    property bool doorsOpen: false
+    property real doorOpenAngle: 45
+
     // Дорога появляется только когда панель полностью прогрузилась
     property bool roadVisible: true
     // Скорость автомобиля (км/ч): дорога стоит на 0 и ускоряется с набором
@@ -53,6 +58,18 @@ Item {
 
     signal modelReady()
     signal modelFailed()
+
+    // Рекурсивно собираем все QQuick3DModel в порядке обхода дерева:
+    // у RuntimeLoader порядок совпадает с порядком узлов glTF.
+    function collectModels(node, out) {
+        const kids = node.children || []
+        for (let i = 0; i < kids.length; ++i) {
+            const k = kids[i]
+            if (k.toString().indexOf("QQuick3DModel") === 0)
+                out.push(k)
+            collectModels(k, out)
+        }
+    }
 
     readonly property real carTravel: Math.min(1.0, Math.max(0.0, (progress - 0.375) / 0.375))
     readonly property real carDepth: -7.0 * (1.0 - carTravel)
@@ -193,17 +210,96 @@ Item {
                 NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
             }
 
-            // Временная cruiser300 в сантиметрах: CarModel.qml сам ставит
-            // масштаб 0.001, здесь ещё 0.9 — подгонка под кадр.
+            // ===== НОВАЯ МОДЕЛЬ: ipsum_3D.glb (единицы — метры, ~1.9 м) =====
+            // Грузим в рантайме через RuntimeLoader. В нашем GLB узлы идут
+            // в порядке: 0 Capot, 1 Car_body, 2 Door_5 (багажник), 3 Door_FL,
+            // 4 Door_FR, 5 Door_RL, 6 Door_RR, 7 Wheel_FL, 8 Wheel_FR,
+            // 9 Wheel_RL, 10 Wheel_RR. Имена в QML не сохраняются
+            // (objectName пустые) — порядок и позиции проверены разбором
+            // GLB, поэтому роли назначаем по индексу после загрузки.
             Node {
-                scale: Qt.vector3d(1.25, 1.25, 1.25)
+                id: ipsumCar
+                scale: Qt.vector3d(2.6, 2.6, 2.6)   // подгонка под кадр
 
-                // Готовая сцена от balsam, объявленная как компонент модуля.
-                // Важно: через Loader 3D-узел не привязывается к сцене и не
-                // рисуется — поэтому это обычное объявление типа, как Model.
-                CarModel {
-                    id: carModel
+                property var wheels: []     // модели колёс (ось вращения — z)
+                property var doors: []      // двери салона (ось — y)
+                property real wheelAngle: 0
+                property real doorAngle: scene.doorsOpen ? scene.doorOpenAngle : 0
+
+                Behavior on doorAngle {
+                    NumberAnimation { duration: 700; easing.type: Easing.OutCubic }
                 }
+
+                RuntimeLoader {
+                    id: ipsumLoader
+                    source: "assets/ipsum_3D.glb"
+
+                    onStatusChanged: {
+                        if (status !== RuntimeLoader.Success)
+                            return
+
+                        // Модели в порядке узлов glTF (проверено позициями).
+                        const models = []
+                        scene.collectModels(ipsumLoader, models)
+                        const names = ["Capot", "Car_body", "Door_5", "Door_FL",
+                                       "Door_FR", "Door_RL", "Door_RR",
+                                       "Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"]
+                        console.log("3D: ipsum_3D.glb загружена, узлов:", models.length)
+                        for (let i = 0; i < models.length; ++i) {
+                            const m = models[i]
+                            m.objectName = names[i] || ("node" + i)
+                            const p = m.position
+                            console.log("3D: узел", i, m.objectName,
+                                        "pos=", p.x.toFixed(3), p.y.toFixed(3), p.z.toFixed(3))
+                        }
+                        // На Door_FL в файле лежит случайный поворот — сбрасываем,
+                        // позу дверей задаём сами.
+                        for (let d = 3; d <= 6 && d < models.length; ++d)
+                            models[d].eulerRotation = Qt.vector3d(0, 0, 0)
+
+                        ipsumCar.doors = [models[3], models[4], models[5], models[6]]
+                        ipsumCar.wheels = [models[7], models[8], models[9], models[10]]
+                    }
+                }
+
+                // Крутим колёса: угол растёт со скоростью, в покое — стоит.
+                // Ось колеса в модели — локальная z (диск лежит в x-y).
+                Timer {
+                    interval: 16
+                    repeat: true
+                    running: ipsumCar.wheels.length > 0
+                    onTriggered: {
+                        const spd = scene.roadSpeed
+                        if (spd > 0.5)
+                            ipsumCar.wheelAngle += spd * 0.015
+                        for (let i = 0; i < ipsumCar.wheels.length; ++i) {
+                            const w = ipsumCar.wheels[i]
+                            if (w)
+                                w.eulerRotation = Qt.vector3d(0, 0, ipsumCar.wheelAngle)
+                        }
+                    }
+                }
+
+                // Двери: открываются наружу поворотом вокруг вертикали.
+                // Левая сторона (z+) и правая (z−) — знак разный.
+                Timer {
+                    interval: 16
+                    repeat: true
+                    running: ipsumCar.doors.length > 0
+                    onTriggered: {
+                        for (let i = 0; i < ipsumCar.doors.length; ++i) {
+                            const d = ipsumCar.doors[i]
+                            if (!d)
+                                continue
+                            // 0=FL, 1=FR, 2=RL, 3=RR; слева (z+) — плюс,
+                            // справа (z−) — минус.
+                            const left = (i === 0 || i === 2)
+                            const sign = left ? -1 : 1
+                            d.eulerRotation = Qt.vector3d(0, sign * ipsumCar.doorAngle, 0)
+                        }
+                    }
+                }
+            }
 
                 // ===== СВЕТ ФАР И СТОПОВ (по CAN, объёмный) =====
                 // Только новый эффект: мягкий bloom (сферы с радиальной
@@ -343,4 +439,3 @@ Item {
             }
         }
     }
-}
