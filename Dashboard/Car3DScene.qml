@@ -32,9 +32,13 @@ Item {
     property real progress: 1.0
     property bool idleMotion: true
 
-    // Тестовый режим дверей: кнопка в настройках открывает/закрывает их.
+    // Тестовый режим дверей/капота/багажника: кнопки в настройках.
     property bool doorsOpen: false
     property real doorOpenAngle: 45
+    property bool capotOpen: false
+    property real capotOpenAngle: 35
+    property bool trunkOpen: false
+    property real trunkOpenAngle: 55
 
     // Дорога появляется только когда панель полностью прогрузилась
     property bool roadVisible: true
@@ -223,6 +227,12 @@ Item {
 
                 property var wheels: []     // модели колёс (ось вращения — z)
                 property var doors: []      // двери салона (ось — y)
+                property var capot: null    // капот (петля — задняя верхняя кромка)
+                property var trunk: null    // багажник (петля — верх, 5-я дверь)
+                property real capotAngle: scene.capotOpen ? scene.capotOpenAngle : 0
+                property real trunkAngle: scene.trunkOpen ? scene.trunkOpenAngle : 0
+                Behavior on capotAngle { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
+                Behavior on trunkAngle { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
                 property real wheelAngle: 0
                 property real doorAngle: scene.doorsOpen ? scene.doorOpenAngle : 0
 
@@ -257,6 +267,8 @@ Item {
                         for (let d = 3; d <= 6 && d < models.length; ++d)
                             models[d].eulerRotation = Qt.vector3d(0, 0, 0)
 
+                        ipsumCar.capot = models[0]
+                        ipsumCar.trunk = models[2]
                         ipsumCar.doors = [models[3], models[4], models[5], models[6]]
                         ipsumCar.wheels = [models[7], models[8], models[9], models[10]]
                     }
@@ -277,6 +289,21 @@ Item {
                             if (w)
                                 w.eulerRotation = Qt.vector3d(0, 0, ipsumCar.wheelAngle)
                         }
+                    }
+                }
+
+                // Капот и багажник: поворот вокруг горизонтальной оси z.
+                // Капот — петля сзади сверху (передняя кромка идёт вверх);
+                // багажник — 5-я дверь, нижняя кромка уходит вверх.
+                Timer {
+                    interval: 16
+                    repeat: true
+                    running: ipsumCar.capot !== null
+                    onTriggered: {
+                        if (ipsumCar.capot)
+                            ipsumCar.capot.eulerRotation = Qt.vector3d(0, 0, -ipsumCar.capotAngle)
+                        if (ipsumCar.trunk)
+                            ipsumCar.trunk.eulerRotation = Qt.vector3d(0, 0, ipsumCar.trunkAngle)
                     }
                 }
 
