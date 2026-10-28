@@ -54,6 +54,10 @@ Item {
     // лампы на модели мигают синхронно.
     property bool turnBlink: false
 
+    // Увеличение машины под окно между приборами (окно 492 px из 800):
+    // масштаб контейнера множится на этот коэффициент, свет фар едет вместе.
+    property real carEnlarge: 2.1
+
     // 6-й вид: машина развёрнута боком, и пневмоподвеска двигает кузов по Y.
     property bool viewSide: false
     property int suspensionLevel: 0        // -1 спорт, 0 стандарт, 1 бездорожье
@@ -203,7 +207,7 @@ Item {
         Node {
             id: carPivot
             position: Qt.vector3d(0, scene.suspensionOffset, scene.carDepth)
-            scale: Qt.vector3d(scene.carScale, scene.carScale, scene.carScale)
+            scale: Qt.vector3d(scene.carScale * scene.carEnlarge, scene.carScale * scene.carEnlarge, scene.carScale * scene.carEnlarge)
             // В 6-м виде — боком (профиль); иначе обычный разворот заставки.
             eulerRotation: Qt.vector3d(0, scene.viewSide ? 0 : scene.carYaw, 0)
             // Behavior на eulerRotation тут ВРЕДИТ: разворот кормой идёт
