@@ -478,7 +478,11 @@ Window {
                 // цифры на циферблате и индикатор АКПП не дублируем.
                 showDigital: root.centerMode !== 0
                 showGear: root.centerMode !== 0
-                fuelLevel: root.fuelLevel * root.fuelFactorEffective
+                // На газу стрелка показывает уровень газа (проценты баллона),
+                // на бензине — бензин: как на двухтопливной машине.
+                fuelLevel: root.gasDisplay
+                           ? root.gasLevelPercent
+                           : root.fuelLevel * root.fuelFactorEffective
                 startup: root.startup
                 nightMode: root.nightMode
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
