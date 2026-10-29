@@ -169,7 +169,7 @@ Gauge {
         x: gearIndicator.x
         // Ближе к значку: картинка gear_*.png имеет прозрачные поля,
         // поэтому по низу картинки надпись висела далеко.
-        y: gearIndicator.y + gearIndicator.height * 0.65
+        y: gearIndicator.y + gearIndicator.height * 0.65 + 10
         width: gearIndicator.width
         horizontalAlignment: Text.AlignHCenter
         // Цвет как у стрелок поворотника (left_turn/right_turn.png — #00CB00)
