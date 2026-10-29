@@ -55,7 +55,6 @@ qt_add_qml_module(appDashboard
         # Новая модель машины (Toyota Ipsum, метры, ~1.9 м): грузится
         # в рантайме через RuntimeLoader — имена узлов разбираем по порядку.
         assets/ipsum_3D.glb
-        assets/nozzle.glb
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
         images/lights_glow.png
