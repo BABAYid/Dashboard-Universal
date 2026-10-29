@@ -739,8 +739,11 @@ void CanBackend::loadDistance()
     m_tripA    = s.value(prefix + "tripA", 0.0).toDouble();
     m_tripB    = s.value(prefix + "tripB", 0.0).toDouble();
     // Объём бака храним здесь же: это тоже пользовательская настройка,
-    // и отдельный файл настроек заводить незачем.
+    // и отдельный файл настроек заводить незачем. В demo-режиме бак
+    // ограничиваем 60 литрами — запас хода в mock считается от него.
     m_tankCapacity = s.value(prefix + "tankCapacity", 60.0).toDouble();
+    if (m_mockMode)
+        m_tankCapacity = qMin(60.0, m_tankCapacity);
 }
 
 void CanBackend::saveDistance()

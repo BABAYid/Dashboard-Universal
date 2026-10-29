@@ -216,47 +216,6 @@ Item {
             }
         }
 
-        // ===== ПИСТОЛЕТ ЗАПРАВКИ =====
-        // Модель nozzle.glb: пистолет «смотрит» на воображаемый бак —
-        // наклон к машине. Снизу выезжает при заправке.
-        Node {
-            id: nozzlePivot
-            // Базовое положение у правого борта, чуть впереди камеры
-            // Справа от машины и ближе к камере: после разворота корпус
-            // занимает z ±4.7, x ±2.2 — иначе пистолет оказывался внутри.
-            property real baseY: 0.55
-            position: Qt.vector3d(3.2 + scene.nozzleJitterX,
-                                  -1.6 + (scene.nozzleSlide * (baseY + 1.6)) + scene.nozzleJitterY,
-                                  1.5)
-            eulerRotation: Qt.vector3d(-55, 35, 0)
-            visible: scene.nozzleSlide > 0.001
-
-            RuntimeLoader {
-                source: "assets/nozzle.glb"
-                scale: Qt.vector3d(2.2, 2.2, 2.2)
-            }
-
-            // Теплый свет, чтобы пистолет не был чёрным
-            PointLight {
-                position: Qt.vector3d(0, 0.4, 1.2)
-                color: "#FFE8BF"
-                brightness: 1.4
-                quadraticFade: 4.0
-                visible: nozzlePivot.visible
-            }
-        }
-
-        // Вибрация пистолета во время заправки
-        Timer {
-            interval: 40
-            repeat: true
-            running: scene.fueling
-            onTriggered: {
-                scene.nozzleJitterX = (Math.random() - 0.5) * 0.04
-                scene.nozzleJitterY = (Math.random() - 0.5) * 0.03
-            }
-        }
-
         Node {
             id: carPivot
             // Подъём подвески теперь не здесь: кузов поднимается
@@ -429,92 +388,45 @@ Item {
                 }
             }
 
-                // ===== СВЕТ ФАР И СТОПОВ (по CAN, объёмный) =====
-                // Только новый эффект: мягкий bloom (сферы с радиальной
-                // текстурой) и лучи-конусы вперёд; жёсткие «шарики» старого
-                // варианта убраны. Локальные координаты в метрах: нос -2.5,
-                // корма +2.5.
+                // ===== ПИСТОЛЕТ ЗАПРАВКИ =====
+                // Маленький пистолет у заднего левого крыла (там бак):
+                // масштаб 0.3 от модели — деталь размером с реальную.
+                // Выезжает снизу, в покое не виден, при заправке мелко дрожит.
+                // Локальные оси carPivot: нос −x, корма +x, левый борт +z.
                 Node {
-                    visible: scene.headlightsOn && !scene.viewSide
-                    // ===== Фейковый bloom вокруг фар: сферы с радиальной
-                    // текстурой, полупрозрачные (замена HDR-глоу без
-                    // пост-обработки — на RK3588 дешевле).
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.62, -0.72)
-                        scale: Qt.vector3d(0.009, 0.009, 0.009)
-                        materials: PrincipledMaterial {
-                            baseColorMap: lightsGlowTexture
-                            baseColor: Qt.rgba(1.0, 0.94, 0.78, 0.50)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.62, 0.72)
-                        scale: Qt.vector3d(0.009, 0.009, 0.009)
-                        materials: PrincipledMaterial {
-                            baseColorMap: lightsGlowTexture
-                            baseColor: Qt.rgba(1.0, 0.94, 0.78, 0.50)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
+                    id: nozzlePivot
+                    property real baseX: 2.55
+                    property real baseY: 0.35
+                    property real baseZ: 1.30
+                    position: Qt.vector3d(baseX + scene.nozzleJitterX,
+                                          -0.5 + scene.nozzleSlide * (baseY + 0.5) + scene.nozzleJitterY,
+                                          baseZ)
+                    // Носик смотрит в кузов (внутрь по −z), рукоятка — наружу
+                    eulerRotation: Qt.vector3d(-75, -20, 0)
+                    scale: Qt.vector3d(0.3, 0.3, 0.3)
+                    visible: scene.nozzleSlide > 0.001
+
+                    RuntimeLoader {
+                        source: "assets/nozzle.glb"
                     }
 
-                    // ===== Лучи фар: два конуса вперёд (вдаль от машины),
-                    // полупрозрачные, туман даёт им объём.
-                    Model {
-                        source: "#Cone"
-                        position: Qt.vector3d(-6.0, 0.62, -0.72)
-                        scale: Qt.vector3d(0.03, 0.07, 0.03)
-                        eulerRotation: Qt.vector3d(0, 0, -90)
-                        materials: PrincipledMaterial {
-                            baseColor: Qt.rgba(1.0, 0.95, 0.80, 0.10)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
+                    // Тёплый свет, чтобы пистолет не был чёрным
+                    PointLight {
+                        position: Qt.vector3d(0, 0.8, 0)
+                        color: "#FFE8BF"
+                        brightness: 0.7
+                        quadraticFade: 3.0
                     }
-                    Model {
-                        source: "#Cone"
-                        position: Qt.vector3d(-6.0, 0.62, 0.72)
-                        scale: Qt.vector3d(0.03, 0.07, 0.03)
-                        eulerRotation: Qt.vector3d(0, 0, -90)
-                        materials: PrincipledMaterial {
-                            baseColor: Qt.rgba(1.0, 0.95, 0.80, 0.10)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
-                    }
+                }
 
-                    // Красный bloom вокруг задних фонарей/стопов
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(2.92, 0.68, -0.72)
-                        scale: Qt.vector3d(0.012, 0.012, 0.012)
-                        materials: PrincipledMaterial {
-                            baseColorMap: lightsGlowTexture
-                            baseColor: Qt.rgba(1.0, 0.12, 0.06, 0.55)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(2.92, 0.68, 0.72)
-                        scale: Qt.vector3d(0.012, 0.012, 0.012)
-                        materials: PrincipledMaterial {
-                            baseColorMap: lightsGlowTexture
-                            baseColor: Qt.rgba(1.0, 0.12, 0.06, 0.55)
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                        }
+                // Вибрация пистолета во время заправки (очень мелкая)
+                Timer {
+                    interval: 40
+                    repeat: true
+                    running: scene.fueling
+                    onTriggered: {
+                        scene.nozzleJitterX = (Math.random() - 0.5) * 0.01
+                        scene.nozzleJitterY = (Math.random() - 0.5) * 0.008
                     }
                 }
 
