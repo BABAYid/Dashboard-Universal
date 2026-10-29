@@ -166,7 +166,7 @@ Gauge {
     // значком передачи и той же ширины, что и он.
     Text {
         text: "LOCK"
-        x: gearIndicator.x
+        x: gearIndicator.x - 2
         // Ближе к значку: картинка gear_*.png имеет прозрачные поля,
         // поэтому по низу картинки надпись висела далеко.
         y: gearIndicator.y + gearIndicator.height * 0.65 + 10
