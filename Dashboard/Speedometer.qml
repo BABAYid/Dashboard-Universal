@@ -56,6 +56,8 @@ Gauge {
     centerCircleRatio: 0.623
 
     property string gearMode: "P"
+    // LOCK (SL) — блокировка гидротрансформатора, приходит из Main.qml
+    property bool gearLock: false
     property bool showGear: true
 
     // Состояние ламп (приходит из Main.qml, источник — CanBackend)
@@ -150,6 +152,7 @@ Gauge {
 
     // === ИНДИКАТОР АКПП (P/R/N/D1..D4/L) ===
     Image {
+        id: gearIndicator
         source: "images/gear_" + root.gearMode + ".png"
         width: parent.width * 0.12
         height: parent.width * 0.12
@@ -157,5 +160,21 @@ Gauge {
         y: parent.height * 0.43
         fillMode: Image.PreserveAspectFit
         opacity: root.showGear ? 1.0 : 0.0
+    }
+
+    // LOCK (SL) — блокировка гидротрансформатора. Надпись ровно под
+    // значком передачи и той же ширины, что и он.
+    Text {
+        text: "LOCK"
+        x: gearIndicator.x
+        y: gearIndicator.y + gearIndicator.height + 2
+        width: gearIndicator.width
+        horizontalAlignment: Text.AlignHCenter
+        color: "#FFB000"
+        font.pixelSize: gearIndicator.width * 0.32
+        font.family: "Kdam Thmor Pro"
+        font.bold: true
+        opacity: (root.showGear && root.gearLock) ? 1.0 : 0.0
+        visible: opacity > 0
     }
 }

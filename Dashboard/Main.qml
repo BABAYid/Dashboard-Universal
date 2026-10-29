@@ -474,6 +474,7 @@ Window {
                 anchors.fill: parent
                 speed: root.speed * root.speedFactor
                 gearMode: root.gearMode
+                gearLock: root.gearLock
                 // В 1-м виде (стандарт) скорость и передача уже в центре:
                 // цифры на циферблате и индикатор АКПП не дублируем.
                 showDigital: root.centerMode !== 0

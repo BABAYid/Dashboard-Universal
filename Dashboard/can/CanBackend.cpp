@@ -907,11 +907,14 @@ void CanBackend::generateMockFrames()
         const bool moving = speed > 1.0;
         d[0] = moving ? 3 : 0;                       // D или P
         d[1] = moving ? static_cast<quint8>(gear) : 0;
-        d[2] = 0;                                    // LOCK выключен
+        // Демо LOCK (SL): с 26 по 44 секунду цикла — видно надпись под D4.
+        const bool lockOn = cycle >= 26.0 && cycle < 44.0 && moving;
+        d[2] = lockOn ? 1 : 0;                       // LOCK (SL)
         if (moving) {                                // провода по таблице протокола
             d[3] = (gear == 1 || gear == 2) ? 1 : 0; // S1
             d[4] = (gear == 2 || gear == 3) ? 1 : 0; // S2
         }
+        d[5] = lockOn ? 1 : 0;                       // дубль SL по протоколу
         handleFrame(kIdGearbox, d, 8);
     }
 
