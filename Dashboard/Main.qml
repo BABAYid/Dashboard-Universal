@@ -108,6 +108,10 @@ Window {
     property real speedFactor: 1.0
     property real rpmFactor: 1.0
     property real fuelFactor: 1.0
+    // Множитель топлива из настроек ограничен разумным диапазоном:
+    // в конфиге осталось 3.0 от тестов, и бак в 60 л показывал «138.6 л»,
+    // а стрелка упиралась в шкалу. Реальная калибровка — это ±20 %.
+    readonly property real fuelFactorEffective: Math.max(0.8, Math.min(1.2, fuelFactor))
     property real tempFactor: 1.0
     property bool startup: true
     // Самопроверка ламп при включении зажигания (гаснет через 2,5 с)
@@ -474,7 +478,7 @@ Window {
                 // цифры на циферблате и индикатор АКПП не дублируем.
                 showDigital: root.centerMode !== 0
                 showGear: root.centerMode !== 0
-                fuelLevel: root.fuelLevel * root.fuelFactor
+                fuelLevel: root.fuelLevel * root.fuelFactorEffective
                 startup: root.startup
                 nightMode: root.nightMode
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
@@ -680,7 +684,8 @@ Window {
                 // показывать «0 %» было бы враньём (протокол 1.2).
                 Text {
                     text: !root.gasDisplay
-                          ? (root.fuelLevel * root.fuelFactor / 100 * root.tankCapacity).toFixed(1) + " л"
+                          ? (Math.min(root.fuelLevel * root.fuelFactorEffective / 100, 1)
+                             * root.tankCapacity).toFixed(1) + " л"
                           : (root.gasSensorValid
                              ? "газ " + root.gasLevelPercent + " %"
                              : "газ —")
