@@ -167,10 +167,13 @@ Gauge {
     Text {
         text: "LOCK"
         x: gearIndicator.x
-        y: gearIndicator.y + gearIndicator.height + 2
+        // Ближе к значку: картинка gear_*.png имеет прозрачные поля,
+        // поэтому по низу картинки надпись висела далеко.
+        y: gearIndicator.y + gearIndicator.height * 0.65
         width: gearIndicator.width
         horizontalAlignment: Text.AlignHCenter
-        color: "#FFB000"
+        // Цвет как у стрелок поворотника (left_turn/right_turn.png — #00CB00)
+        color: "#00CB00"
         font.pixelSize: gearIndicator.width * 0.32
         font.family: "Kdam Thmor Pro"
         font.bold: true
