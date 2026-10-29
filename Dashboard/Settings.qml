@@ -534,6 +534,35 @@ Item {
             }
             Item { width: 1; height: 8 }
 
+            // «Симулировать заправку»: тест — mock поднимает уровень топлива
+            // 3 %/с на 8 секунд; приборка ловит заправку и показывает пистолет.
+            Row {
+                spacing: 18
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                Button {
+                    id: fuelingButton
+                    width: 320
+                    height: 56
+                    text: "Симулировать заправку"
+                    background: Rectangle {
+                        color: fuelingButton.pressed ? "#3FBF57" : "#2A7A3A"
+                        radius: 8
+                    }
+                    contentItem: Text {
+                        text: fuelingButton.text
+                        color: "white"
+                        font.pixelSize: 20
+                        font.bold: true
+                        font.family: settingsOverlay.uiFont
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: CanBackend.simulateFueling()
+                }
+            }
+            Item { width: 1; height: 8 }
+
             // «Погода»: дождь/снег на панели, когда за окном непогода
             // (WeatherProvider, Open-Meteo). Выключатель отдельной строкой.
             Row {

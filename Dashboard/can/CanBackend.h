@@ -51,6 +51,9 @@ class CanBackend : public QObject
     Q_PROPERTY(double outsideTemp READ outsideTemp NOTIFY outsideTempChanged)  // °C
     Q_PROPERTY(double fuelRate READ fuelRate NOTIFY fuelRateChanged)           // л/100 км
     Q_PROPERTY(bool oilPressureAlarm READ oilPressureAlarm NOTIFY oilPressureAlarmChanged)
+    // Идёт ли заправка: машина стоит, уровень топлива растёт ~3 с; снимается
+    // через 5 с без роста или при начале движения (см. updateFuelingState).
+    Q_PROPERTY(bool isFueling READ isFueling NOTIFY isFuelingChanged)
 
     // --- 0x200, байт 0: свет ---
     Q_PROPERTY(bool leftTurn READ leftTurn NOTIFY leftTurnChanged)
@@ -158,6 +161,7 @@ public:
     Q_INVOKABLE void start();
     Q_INVOKABLE void stop();
     Q_INVOKABLE void resetJourney();   // обнулить маршрутный компьютер
+    Q_INVOKABLE void simulateFueling();   // тест: поднять уровень топлива
     Q_INVOKABLE void resetTripA();
     Q_INVOKABLE void resetTripB();
 
@@ -194,6 +198,7 @@ public:
     QVariantList voltageHistory() const { return m_voltageHistoryList; }
     double outsideTemp() const { return m_outsideTemp; }
     double fuelRate() const { return m_fuelRate; }
+    bool isFueling() const { return m_isFueling; }
     bool oilPressureAlarm() const { return m_oilPressureAlarm; }
 
     bool leftTurn() const { return m_leftTurn; }
@@ -284,6 +289,7 @@ signals:
     void voltageHistoryChanged();
     void outsideTempChanged();
     void fuelRateChanged();
+    void isFuelingChanged();
     void oilPressureAlarmChanged();
     void leftTurnChanged();
     void rightTurnChanged();
@@ -356,6 +362,8 @@ private:
     void handleGpsPositionFrame(const quint8 *d);
     void handleGpsMotionFrame(const quint8 *d);
     void updateDataValidity();
+    // Пересчёт состояния «идёт заправка» по времени (3 с роста / 5 с тишины)
+    void updateFuelingState();
     void publishJourney();
     void updateConsumptionWindow(double ratePer100km);
     void accountDistance();
@@ -397,6 +405,15 @@ private:
     double m_outsideTemp = 0;
     double m_fuelRate = 0;
     bool m_oilPressureAlarm = false;
+
+    // --- Детектор заправки ---
+    QElapsedTimer m_fuelClock;        // монотонное время для детектора
+    bool m_isFueling = false;
+    double m_lastFuelForRise = -1.0;  // предыдущий уровень топлива
+    qint64 m_fuelRiseStartMs = -1;    // с какого момента топливо растёт
+    qint64 m_lastFuelRiseMs = -1;     // когда последний раз подросло
+    qint64 m_mockFuelingStartMs = -1; // тестовая заправка (mock) с какого момента
+    qint64 m_mockFuelingEndMs = -1;   // и до какого
 
     bool m_leftTurn = false;
     bool m_rightTurn = false;

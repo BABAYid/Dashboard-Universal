@@ -32,6 +32,15 @@ Item {
     property real progress: 1.0
     property bool idleMotion: true
 
+    // Заправка: пистолет выезжает, пока CanBackend.isFueling true.
+    property bool fueling: CanBackend.isFueling
+    property real nozzleSlide: fueling ? 1.0 : 0.0
+    Behavior on nozzleSlide {
+        NumberAnimation { duration: 700; easing.type: Easing.OutCubic }
+    }
+    property real nozzleJitterX: 0
+    property real nozzleJitterY: 0
+
     // Тестовый режим дверей/капота/багажника: кнопки в настройках.
     property bool doorsOpen: false
     property real doorOpenAngle: 45
@@ -204,6 +213,47 @@ Item {
                 lighting: PrincipledMaterial.NoLighting
                 alphaMode: PrincipledMaterial.Blend
                 cullMode: PrincipledMaterial.NoCulling
+            }
+        }
+
+        // ===== ПИСТОЛЕТ ЗАПРАВКИ =====
+        // Модель nozzle.glb: пистолет «смотрит» на воображаемый бак —
+        // наклон к машине. Снизу выезжает при заправке.
+        Node {
+            id: nozzlePivot
+            // Базовое положение у правого борта, чуть впереди камеры
+            // Справа от машины и ближе к камере: после разворота корпус
+            // занимает z ±4.7, x ±2.2 — иначе пистолет оказывался внутри.
+            property real baseY: 0.55
+            position: Qt.vector3d(3.2 + scene.nozzleJitterX,
+                                  -1.6 + (scene.nozzleSlide * (baseY + 1.6)) + scene.nozzleJitterY,
+                                  1.5)
+            eulerRotation: Qt.vector3d(-55, 35, 0)
+            visible: scene.nozzleSlide > 0.001
+
+            RuntimeLoader {
+                source: "assets/nozzle.glb"
+                scale: Qt.vector3d(2.2, 2.2, 2.2)
+            }
+
+            // Теплый свет, чтобы пистолет не был чёрным
+            PointLight {
+                position: Qt.vector3d(0, 0.4, 1.2)
+                color: "#FFE8BF"
+                brightness: 1.4
+                quadraticFade: 4.0
+                visible: nozzlePivot.visible
+            }
+        }
+
+        // Вибрация пистолета во время заправки
+        Timer {
+            interval: 40
+            repeat: true
+            running: scene.fueling
+            onTriggered: {
+                scene.nozzleJitterX = (Math.random() - 0.5) * 0.04
+                scene.nozzleJitterY = (Math.random() - 0.5) * 0.03
             }
         }
 

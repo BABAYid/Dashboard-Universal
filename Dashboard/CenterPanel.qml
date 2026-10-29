@@ -348,8 +348,36 @@ Item {
     // 3D-машина (Car3DView лежит прямо под этим слоем, прозрачная панель её
     // не закрывает). Сюда переключаемся обычным щелчком по центру: 0→1→2→3→4→0.
     Item {
+        id: carPage
         anchors.fill: parent
         visible: root.mode === 4
+
+        // Уровень топлива в момент начала заправки: показываем, сколько
+        // залито с этого момента («Заправлено: X.X л»).
+        property real fuelAtStart: 0
+
+        Connections {
+            target: CanBackend
+            function onIsFuelingChanged() {
+                if (CanBackend.isFueling)
+                    carPage.fuelAtStart = CanBackend.fuelLevel
+            }
+        }
+
+        readonly property real litresAdded:
+            Math.max(0, (CanBackend.fuelLevel - carPage.fuelAtStart) / 100.0
+                     * CanBackend.tankCapacity)
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 6
+            visible: CanBackend.isFueling
+            text: "Заправлено: " + carPage.litresAdded.toFixed(1) + " л"
+            color: root.valueColor
+            font.pixelSize: 26
+            font.bold: true
+            font.family: "Kdam Thmor Pro"
+        }
     }
 
     // ======================= РЕЖИМ 5: ПОДВЕСКА =======================

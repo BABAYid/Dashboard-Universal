@@ -271,7 +271,24 @@ void CanBackend::handleStatusFrame(const quint8 *d)
 void CanBackend::handleSensorFrame(const quint8 *d)
 {
     set(m_engineTemp,  static_cast<double>(d[0]),           &CanBackend::engineTempChanged);
-    set(m_fuelLevel,   static_cast<double>(d[1]),           &CanBackend::fuelLevelChanged);
+
+    // --- Детектор заправки: уровень растёт при стоящей машине ---
+    const double newFuel = static_cast<double>(d[1]);
+    if (!m_fuelClock.isValid())
+        m_fuelClock.start();
+    const qint64 nowMs = m_fuelClock.elapsed();
+    if (m_lastFuelForRise >= 0.0 && newFuel > m_lastFuelForRise + 0.001) {
+        // Уровень приходит целыми процентами: между шагами бывают паузы,
+        // поэтому отсчёт начала роста сбрасываем только после долгой паузы
+        // (>1.5 с), а не на каждом кадре без прироста.
+        if (m_fuelRiseStartMs < 0
+                || (m_lastFuelRiseMs >= 0 && nowMs - m_lastFuelRiseMs > 1500))
+            m_fuelRiseStartMs = nowMs;
+        m_lastFuelRiseMs = nowMs;
+    }
+    m_lastFuelForRise = newFuel;
+    set(m_fuelLevel,   newFuel,                            &CanBackend::fuelLevelChanged);
+    updateFuelingState();
     set(m_voltage,     static_cast<double>(d[2]) / 10.0,    &CanBackend::voltageChanged);
     set(m_outsideTemp, static_cast<double>(static_cast<qint8>(d[3])), &CanBackend::outsideTempChanged);
     set(m_oilPressureAlarm, d[4] != 0,                      &CanBackend::oilPressureAlarmChanged);
@@ -466,8 +483,45 @@ void CanBackend::handleGpsMotionFrame(const quint8 *d)
 
 // ------------------------------------------------------------------ контроль
 
+// Пересчёт «идёт заправка». Условия из задачи:
+//   старт — машина стоит (speed < 1) и топливо растёт уже 3 секунды;
+//   стоп  — поехали (speed > 5) или 5 секунд без роста уровня.
+void CanBackend::updateFuelingState()
+{
+    if (!m_fuelClock.isValid())
+        m_fuelClock.start();
+    const qint64 nowMs = m_fuelClock.elapsed();
+
+    bool next = m_isFueling;
+    if (!next) {
+        if (m_speed < 1.0 && m_fuelRiseStartMs >= 0
+                && nowMs - m_fuelRiseStartMs >= 3000)
+            next = true;
+    } else {
+        const bool moving = m_speed > 5.0;
+        const bool quiet = m_lastFuelRiseMs >= 0
+                           && nowMs - m_lastFuelRiseMs >= 5000;
+        if (moving || quiet || !m_connected)
+            next = false;
+    }
+    set(m_isFueling, next, &CanBackend::isFuelingChanged);
+}
+
+// Тестовая заправка для демо: в mock-режиме уровень топлива растёт 3 %/с
+// восемь секунд — детектор успевает сработать, а затем гаснет.
+void CanBackend::simulateFueling()
+{
+    if (!m_mockMode)
+        return;
+    if (!m_fuelClock.isValid())
+        m_fuelClock.start();
+    m_mockFuelingStartMs = m_fuelClock.elapsed();
+    m_mockFuelingEndMs = m_mockFuelingStartMs + 8000;
+}
+
 void CanBackend::updateDataValidity()
 {
+    updateFuelingState();
     static int tick = 0;
     ++tick;
 
@@ -749,6 +803,13 @@ void CanBackend::generateMockFrames()
     }
     speed = qBound(0.0, speed, 220.0);
 
+    // Тест заправки: пока идёт «заливка», машина стоит у колонки —
+    // иначе демо-сценарий уже разгоняет её и детектор (speed < 1) не сработает.
+    const bool mockFueling = m_fuelClock.isValid() && m_mockFuelingStartMs >= 0
+                             && m_fuelClock.elapsed() < m_mockFuelingEndMs;
+    if (mockFueling)
+        speed = 0.0;
+
     // --- передача и обороты ---
     int gear = 4;
     if (speed < 20.0)      gear = 1;
@@ -795,7 +856,13 @@ void CanBackend::generateMockFrames()
 
     // --- датчики ---
     const double temp = qMin(90.0, 20.0 + t * 0.6);                 // прогрев
-    const double fuel = 78.0 - std::fmod(t, 3600.0) / 3600.0 * 8.0; // медленно убывает
+    double fuel = 78.0 - std::fmod(t, 3600.0) / 3600.0 * 8.0; // медленно убывает
+    // Тестовая заправка (кнопка в настройках): 3 %/с в течение 8 секунд.
+    if (m_fuelClock.isValid() && m_mockFuelingStartMs >= 0
+            && m_fuelClock.elapsed() < m_mockFuelingEndMs) {
+        const double add = 3.0 * (m_fuelClock.elapsed() - m_mockFuelingStartMs) / 1000.0;
+        fuel = qMin(100.0, fuel + add);
+    }
     const double volts = engineRunning ? 14.2 + 0.2 * std::sin(t) : 12.3;
     const double outside = 2.0 + 6.0 * std::sin(t / 120.0);         // иногда ниже нуля
     const double rate = speed > 1.0 ? 8.5 + 2.0 * std::sin(t / 5.0) : 0.0;
