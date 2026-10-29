@@ -46,6 +46,10 @@ Gauge {
     needleSource: "images/needls_tho.svg"
     secondaryNeedleSource: "images/needls_temp.svg"
     centerCircleRatio: 0.623
+    // Центральный круг на тахометре чуть уезжал вправо-вверх относительно
+    // круга, вшитого в taho.png — подправляем на пару пикселей.
+    centerCircleOffsetX: -2
+    centerCircleOffsetY: 2
 
     // Состояние ламп (приходит из Main.qml, источник — CanBackend)
     property bool absWarning: false

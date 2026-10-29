@@ -37,6 +37,9 @@ Item {
     // Диаметр центрального круга относительно прибора — у спидометра и
     // тахометра он разный, потому что различаются сами картинки шкал.
     property real centerCircleRatio: 0.63
+    // Поправка положения центрального круга, px (см. комментарий у Image)
+    property real centerCircleOffsetX: 0
+    property real centerCircleOffsetY: 0
 
     // Все четыре стрелки — один рисунок, и он длиннее циферблата ровно на
     // столько: так стрелка достаёт до меток, нарисованных по краю картинки.
@@ -109,13 +112,15 @@ Item {
         }
     }
 
-    // Центральный круг (поверх малой стрелки)
+    // Центральный круг (поверх малой стрелки). В картинке taho.png
+    // «вшитый» круг чуть не соосен диску — прибор может подправить
+    // положение накладки пикселями (см. Tachometer.qml).
     Image {
         source: "images/around_in.png"
         width: parent.width * gauge.centerCircleRatio
         height: parent.height * gauge.centerCircleRatio
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        x: (parent.width - width) / 2 + gauge.centerCircleOffsetX
+        y: (parent.height - height) / 2 + gauge.centerCircleOffsetY
         fillMode: Image.PreserveAspectFit
     }
 
