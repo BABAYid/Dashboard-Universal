@@ -57,6 +57,20 @@ Window {
     property bool debugFullThrottle: false
     readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
 
+    // ===== ОТЛАДКА СТРЕЛОК (потом убрать) =====
+    // Клавиши: E — пустой бак (0 %), F — полный (100 %),
+    //          C — 40 °C, H — 120 °C, R — вернуть реальные данные.
+    // Нужны, чтобы увидеть стрелки в крайних точках и подогнать углы
+    // в настройках («Калибровка стрелок»).
+    property bool debugFuelOverride: false
+    property real debugFuelValue: 0
+    property bool debugTempOverride: false
+    property real debugTempValue: 0
+
+    // Показания, которые видит приборка (с учётом отладочной подмены)
+    readonly property real fuelLevelShown: debugFuelOverride ? debugFuelValue : fuelLevel
+    readonly property real tempShown: debugTempOverride ? debugTempValue : temp
+
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
     // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
     readonly property bool funEnabled: calibration.funEnabled
@@ -249,6 +263,36 @@ Window {
     // кликом по центральной области. Сам оверлей объявлен внутри canvas —
     // там он масштабируется вместе с макетом (см. Settings.qml).
     // Коэффициенты хранит Settings.qml, пробег — CanBackend.
+
+    // ОТЛАДКА: невидимый слой с фокусом — принимает клавиши E/F/C/H/R
+    Item {
+        anchors.fill: parent
+        focus: true
+        z: -100
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_E) {
+            debugFuelOverride = true
+            debugFuelValue = 0
+            console.log("DEBUG: бак пустой (E), угол стрелки при E =", calibration.fuelAngleE)
+        } else if (event.key === Qt.Key_F) {
+            debugFuelOverride = true
+            debugFuelValue = 100
+            console.log("DEBUG: бак полный (F), угол стрелки при F =", calibration.fuelAngleF)
+        } else if (event.key === Qt.Key_C) {
+            debugTempOverride = true
+            debugTempValue = 40
+            console.log("DEBUG: 40 °C, угол =", calibration.tempAngleStart)
+        } else if (event.key === Qt.Key_H) {
+            debugTempOverride = true
+            debugTempValue = 120
+            console.log("DEBUG: 120 °C, угол =", calibration.tempAngleEnd)
+        } else if (event.key === Qt.Key_R) {
+            debugFuelOverride = false
+            debugTempOverride = false
+            console.log("DEBUG: реальные показания")
+        }
+    }
+    }
 
     Component.onCompleted: {
         // Коэффициенты и настройки загружаются в Settings.qml в ЕГО
@@ -483,9 +527,11 @@ Window {
                 showGear: root.centerMode !== 0
                 // На газу стрелка показывает уровень газа (проценты баллона),
                 // на бензине — бензин: как на двухтопливной машине.
-                fuelLevel: root.gasDisplay
-                           ? root.gasLevelPercent
-                           : root.fuelLevel * root.fuelFactorEffective
+                fuelLevel: root.debugFuelOverride
+                           ? root.debugFuelValue
+                           : (root.gasDisplay
+                              ? root.gasLevelPercent
+                              : root.fuelLevel * root.fuelFactorEffective)
                 fuelAngleE: calibration.fuelAngleE
                 fuelAngleF: calibration.fuelAngleF
                 startup: root.startup
@@ -528,7 +574,9 @@ Window {
                 // В 1-м виде обороты уже в центре — цифры на циферблате скрыты
                 showDigital: root.centerMode !== 0
                 rpm: root.rpmShown * root.rpmFactor
-                temp: root.temp * root.tempFactor
+                temp: root.debugTempOverride
+                      ? root.debugTempValue
+                      : root.temp * root.tempFactor
                 tempAngleStart: calibration.tempAngleStart
                 tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup
@@ -886,7 +934,6 @@ Window {
             z: 100
             enabled: false
         }
-
 
 
         // ====================================================================
