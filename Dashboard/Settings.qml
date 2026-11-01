@@ -187,6 +187,8 @@ Item {
 
         Text {
             text: parent.hint
+            width: 160
+            elide: Text.ElideRight
             anchors.verticalCenter: parent.verticalCenter
             color: "#8A8A8A"
             font.pixelSize: 18
@@ -209,19 +211,47 @@ Item {
     Rectangle {
         id: panel
         width: 1000
-        // Высота ограничена экраном, содержимое прокручивается: строк
-        // настроек стало больше (добавились «Двери»), и при фиксированной
-        // высоте кнопки «Сохранить/Отмена» уезжали за нижний край.
-        height: Math.min(settingsColumn.implicitHeight + 80, settingsOverlay.height - 40)
+        // Фиксированная высота: шапка сверху, строки прокручиваются в
+        // середине, кнопки прижаты к низу и не перекрывают строки.
+        height: 664
         anchors.centerIn: parent
         radius: 18
         color: "#1A1A1A"
         border.color: "#444"
         border.width: 2
 
+        Text {
+            id: panelTitle
+            anchors.top: parent.top
+            anchors.topMargin: 22
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Настройки приборки"
+            color: settingsOverlay.valueColor
+            font.pixelSize: 34
+            font.bold: true
+            font.family: settingsOverlay.uiFont
+        }
+
+        Text {
+            id: panelSubtitle
+            anchors.top: panelTitle.bottom
+            anchors.topMargin: 6
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Коэффициенты подгоняют показания под конкретную машину"
+            color: "#8A8A8A"
+            font.pixelSize: 18
+        }
+
         Flickable {
-            anchors.fill: parent
-            anchors.margins: 20
+            id: settingsFlick
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: panelSubtitle.bottom
+            anchors.bottom: settingsButtons.top
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            anchors.topMargin: 12
+            anchors.bottomMargin: 12
             contentWidth: width
             contentHeight: settingsColumn.implicitHeight
             clip: true
@@ -232,21 +262,7 @@ Item {
                 width: parent.width
                 spacing: 12
 
-            Text {
-                text: "Настройки приборки"
-                x: (parent.width - width) / 2
-                color: settingsOverlay.valueColor
-                font.pixelSize: 34
-                font.bold: true
-                font.family: settingsOverlay.uiFont
-            }
 
-            Text {
-                text: "Коэффициенты подгоняют показания под конкретную машину"
-                x: (parent.width - width) / 2
-                color: "#8A8A8A"
-                font.pixelSize: 18
-            }
 
             Item { width: 1; height: 8 }
 
@@ -254,7 +270,7 @@ Item {
                 id: speedRow
                 label: "Скорость"
                 hint: "множитель, 1.00 — как есть"
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
             }
 
@@ -262,7 +278,7 @@ Item {
                 id: rpmRow
                 label: "Обороты"
                 hint: "множитель, 1.00 — как есть"
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
             }
 
@@ -270,7 +286,7 @@ Item {
                 id: fuelRow
                 label: "Топливо"
                 hint: "множитель, 1.00 — как есть"
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
             }
 
@@ -278,16 +294,16 @@ Item {
                 id: tempRow
                 label: "Температура"
                 hint: "множитель, 1.00 — как есть"
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
             }
 
             Item { width: 1; height: 6 }
 
             Rectangle {
-                width: panel.width - 120
+                width: 736
                 height: 2
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 color: "#333"
             }
 
@@ -297,7 +313,7 @@ Item {
                 id: odometerRow
                 label: "Пробег, км"
                 hint: "показание старой приборки при замене"
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 0.0; top: 9999999.0 }
             }
 
@@ -308,16 +324,16 @@ Item {
                 id: tankRow
                 label: "Объём бака, л"
                 hint: "для расчёта запаса хода"
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 1.0; top: 500.0 }
             }
 
             Item { width: 1; height: 8 }
 
             Rectangle {
-                width: panel.width - 120
+                width: 736
                 height: 2
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
                 color: "#333"
             }
 
@@ -328,7 +344,7 @@ Item {
             // отдельной строкой, состояние хранится в настройках.
             Row {
                 spacing: 18
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
 
                 Text {
                     text: "Приколы"
@@ -381,7 +397,7 @@ Item {
             // «Двери (тест)»: проверка анимации дверей на 3D-модели.
             Row {
                 spacing: 18
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
 
                 Text {
                     text: "Двери (тест)"
@@ -433,7 +449,7 @@ Item {
             // «Капот (тест)»: проверка анимации на 3D-модели.
             Row {
                 spacing: 18
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
 
                 Text {
                     text: "Капот (тест)"
@@ -485,7 +501,7 @@ Item {
             // «Багажник (тест)»: проверка анимации на 3D-модели.
             Row {
                 spacing: 18
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
 
                 Text {
                     text: "Багажник (тест)"
@@ -538,7 +554,7 @@ Item {
             // 3 %/с на 8 секунд; приборка ловит заправку и показывает пистолет.
             Row {
                 spacing: 18
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
 
                 Button {
                     id: fuelingButton
@@ -567,7 +583,7 @@ Item {
             // (WeatherProvider, Open-Meteo). Выключатель отдельной строкой.
             Row {
                 spacing: 18
-                x: (parent.width - width) / 2
+                x: (parent.width - 736) / 2
 
                 Text {
                     text: "Погода"
@@ -621,6 +637,7 @@ Item {
     // Кнопки «Сохранить/Отмена» всегда на виду: вынесены из прокручиваемой
     // области — иначе при большом числе строк их уносило за нижний край.
     Row {
+        id: settingsButtons
         spacing: 24
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
