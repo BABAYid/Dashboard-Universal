@@ -32,8 +32,18 @@ Gauge {
     // 90–95 °C — примерно середина. Ниже 40 стрелка стоит в начале.
     property real minTemp: 40
     property real maxTemp: 120
-    secondaryValue: Math.max(0, Math.min(maxTemp - minTemp, temp - minTemp))
-    secondaryMaxValue: maxTemp - minTemp
+    // Половина шкалы — ровно на 90 °C: 40→90 идёт первая половина хода,
+    // 90→120 — вторая. Ниже 40 стрелка стоит в начале, выше 120 — в конце.
+    secondaryValue: {
+        if (temp <= minTemp)
+            return 0
+        if (temp >= maxTemp)
+            return 100
+        return temp <= 90
+               ? (temp - minTemp) / (90 - minTemp) * 50
+               : 50 + (temp - 90) / (maxTemp - 90) * 50
+    }
+    secondaryMaxValue: 100
     secondaryStartAngle: -80
     secondaryEndAngle: -103
 
