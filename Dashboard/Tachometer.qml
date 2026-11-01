@@ -28,9 +28,12 @@ Gauge {
     // Малая стрелка — температура двигателя. Её сектор внизу циферблата:
     // стрелка температуры нарисована тем же длинным рисунком, что и тахометр.
     property real temp: 0
+    // Стрелка температуры идёт от 40 °C (начало шкалы) до 120 °C (максимум):
+    // 90–95 °C — примерно середина. Ниже 40 стрелка стоит в начале.
+    property real minTemp: 40
     property real maxTemp: 120
-    secondaryValue: temp
-    secondaryMaxValue: maxTemp
+    secondaryValue: Math.max(0, Math.min(maxTemp - minTemp, temp - minTemp))
+    secondaryMaxValue: maxTemp - minTemp
     secondaryStartAngle: -80
     secondaryEndAngle: -103
 
