@@ -41,8 +41,9 @@ Item {
 
         PerspectiveCamera {
             id: camera
-            position: Qt.vector3d(0, 55, 135)
-            eulerRotation: Qt.vector3d(-16, 0, 0)
+            // Камера чуть сверху (~30° вниз) и ближе — двигатель крупнее
+            position: Qt.vector3d(0, 78, 120)
+            eulerRotation: Qt.vector3d(-30, 0, 0)
             fieldOfView: 42
         }
 
@@ -61,7 +62,7 @@ Item {
         RuntimeLoader {
             id: loader
             source: "assets/3.glb"
-            scale: Qt.vector3d(0.7, 0.7, 0.7)
+            scale: Qt.vector3d(1.0, 1.0, 1.0)
             onStatusChanged: if (status === RuntimeLoader.Success) root.bindNodes()
         }
     }

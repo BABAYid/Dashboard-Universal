@@ -108,10 +108,12 @@ Window {
     property real speedFactor: 1.0
     property real rpmFactor: 1.0
     property real fuelFactor: 1.0
-    // Множитель топлива из настроек ограничен разумным диапазоном:
-    // в конфиге осталось 3.0 от тестов, и бак в 60 л показывал «138.6 л»,
-    // а стрелка упиралась в шкалу. Реальная калибровка — это ±20 %.
-    readonly property real fuelFactorEffective: Math.max(0.8, Math.min(1.2, fuelFactor))
+    // Множитель топлива из настроек. В конфиге осталось 3.0 от тестов:
+    // с ним бак 60 л показывал «138.6 л», а стрелка показывала «полный бак»
+    // при 77 %. Такую величину считаем битой и берём 1.0; разумная
+    // калибровка — 0.5…1.5.
+    readonly property real fuelFactorEffective:
+        (fuelFactor >= 0.5 && fuelFactor <= 1.5) ? fuelFactor : 1.0
     property real tempFactor: 1.0
     property bool startup: true
     // Самопроверка ламп при включении зажигания (гаснет через 2,5 с)
