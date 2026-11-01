@@ -147,5 +147,4 @@ Item {
         }
     }
 
-    Component.onCompleted: console.log("ENGINE: AnimSpeed при rpm =", root.rpm)
 }

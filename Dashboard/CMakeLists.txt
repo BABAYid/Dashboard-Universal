@@ -40,6 +40,7 @@ qt_add_qml_module(appDashboard
         Car3DView.qml
         Car3DScene.qml
         CarModel.qml
+        EngineView.qml
         WeatherFx.qml
         Speedometer.qml
         Tachometer.qml
@@ -91,6 +92,8 @@ qt_add_qml_module(appDashboard
         images/Speedometr.png
         images/taho.png
         images/temp_dvs.png
+        images/temp_dvs_blue.png
+        images/temp_dvs_red.png
         images/tuman.png
 )
 

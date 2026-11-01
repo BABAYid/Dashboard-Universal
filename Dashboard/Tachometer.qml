@@ -74,13 +74,31 @@ Gauge {
     }
 
     Image {
-        source: "images/temp_dvs.png"
+        // Цвет значка по температуре: < 40 — синий (холодный),
+        // 40..100 — белый (рабочий), > 100 — красный (перегрев).
+        source: root.temp < 40 ? "images/temp_dvs_blue.png"
+                : root.temp > 100 ? "images/temp_dvs_red.png"
+                : "images/temp_dvs.png"
         width: parent.width * 0.08
         height: parent.width * 0.08
         x: parent.width * 0.65
         y: parent.height * 0.77
         fillMode: Image.PreserveAspectFit
         opacity: (root.tempWarning && root.tempWarnBlink) ? 0.3 : 1.0
+    }
+
+    // Предупреждение о перегреве: крупная красная надпись под значком.
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: parent.height * 0.62
+        width: parent.width * 0.9
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.WordWrap
+        visible: root.temp > 100
+        text: "Температура двигателя " + Math.round(root.temp) + " градусов!!!"
+        color: "#FF3B30"
+        font.pixelSize: parent.width * 0.045
+        font.bold: true
     }
 
     // ABS
