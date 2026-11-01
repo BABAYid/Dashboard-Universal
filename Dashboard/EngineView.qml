@@ -62,7 +62,9 @@ Item {
         RuntimeLoader {
             id: loader
             source: "assets/3.glb"
-            scale: Qt.vector3d(1.0, 1.0, 1.0)
+            scale: Qt.vector3d(0.92, 0.92, 0.92)
+            // Опускаем двигатель: иначе макушка заходит на верхнюю полосу
+            position: Qt.vector3d(0, -18, 0)
             onStatusChanged: if (status === RuntimeLoader.Success) root.bindNodes()
         }
     }
