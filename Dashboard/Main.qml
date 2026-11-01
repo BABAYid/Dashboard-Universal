@@ -486,6 +486,8 @@ Window {
                 fuelLevel: root.gasDisplay
                            ? root.gasLevelPercent
                            : root.fuelLevel * root.fuelFactorEffective
+                fuelAngleE: calibration.fuelAngleE
+                fuelAngleF: calibration.fuelAngleF
                 startup: root.startup
                 nightMode: root.nightMode
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
@@ -527,6 +529,8 @@ Window {
                 showDigital: root.centerMode !== 0
                 rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
+                tempAngleStart: calibration.tempAngleStart
+                tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup
                 nightMode: root.nightMode
                 absWarning: root.lampSelfTest || root.abs

@@ -44,8 +44,11 @@ Gauge {
                : 50 + (temp - 90) / (maxTemp - 90) * 50
     }
     secondaryMaxValue: 100
-    secondaryStartAngle: -80
-    secondaryEndAngle: -103
+    // Углы стрелки температуры при 40 °C (начало) и 120 °C (максимум).
+    property real tempAngleStart: -80
+    property real tempAngleEnd: -103
+    secondaryStartAngle: tempAngleStart
+    secondaryEndAngle: tempAngleEnd
 
     // Картинки: у тахометра свои. Центральный круг — ровно как в исходниках
     // дизайнера: файл «Внутрний круг» 445x445 при циферблате 714, то есть

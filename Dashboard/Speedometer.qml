@@ -42,10 +42,12 @@ Gauge {
     property real maxFuel: 100
     secondaryValue: fuelLevel
     secondaryMaxValue: maxFuel
-    // 0 % топлива → метка E у значка бензоколонки, 100 % → метка F (нижний
-    // конец дуги). Углы с учётом наклона арта стрелки (−79.3°, как у основной).
-    secondaryStartAngle: -70.7
-    secondaryEndAngle: -88.2
+    // Углы стрелки топлива настраиваются в калибровке (настройки):
+    // при пустом баке (E) и при полном (F). Значения — поворот item.
+    property real fuelAngleE: -70.7
+    property real fuelAngleF: -88.2
+    secondaryStartAngle: fuelAngleE
+    secondaryEndAngle: fuelAngleF
 
     // Картинки: у спидометра свои. Центральный круг — тот же, что у тахометра:
     // в исходниках дизайнера это один и тот же файл 445x445 при циферблате 714,

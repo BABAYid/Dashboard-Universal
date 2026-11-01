@@ -53,6 +53,13 @@ Item {
     // «Погода» — дождь/снег на панели, когда за окном непогода (Open-Meteo).
     property bool weatherEnabled: true
 
+    // Калибровка шкал малых стрелок (поворот item, градусы):
+    // топливо — при пустом (E) и полном (F) баке, температура — при 40 и 120 °C.
+    property real fuelAngleE: -70.7
+    property real fuelAngleF: -88.2
+    property real tempAngleStart: -80
+    property real tempAngleEnd: -103
+
     // Тесты 3D-модели: двери, капот, багажник (когда модель загружена).
     property bool doorsOpen: false
     property bool capotOpen: false
@@ -84,6 +91,10 @@ Item {
         tempFactor = appSettings.savedTempFactor
         funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
+        fuelAngleE = appSettings.savedFuelAngleE
+        fuelAngleF = appSettings.savedFuelAngleF
+        tempAngleStart = appSettings.savedTempAngleStart
+        tempAngleEnd = appSettings.savedTempAngleEnd
     }
 
     function open() {
@@ -98,6 +109,10 @@ Item {
         tempRow.field.text = tempFactor.toFixed(2)
         odometerRow.field.text = CanBackend.odometer.toFixed(1)
         tankRow.field.text = CanBackend.tankCapacity.toFixed(0)
+        fuelAngleERow.field.text = fuelAngleE.toFixed(1)
+        fuelAngleFRow.field.text = fuelAngleF.toFixed(1)
+        tempAngleStartRow.field.text = tempAngleStart.toFixed(1)
+        tempAngleEndRow.field.text = tempAngleEnd.toFixed(1)
     }
 
     // Применить и закрыть: коэффициенты уходят сигналом в Main.qml,
@@ -114,6 +129,20 @@ Item {
         if (isFinite(rf)) rpmFactor = rf
         if (isFinite(ff)) fuelFactor = ff
         if (isFinite(tf)) tempFactor = tf
+
+        // Калибровка углов стрелок топлива/температуры
+        const fuelE = parseFloat(fuelAngleERow.field.text)
+        const fuelF = parseFloat(fuelAngleFRow.field.text)
+        const tempS = parseFloat(tempAngleStartRow.field.text)
+        const tempE = parseFloat(tempAngleEndRow.field.text)
+        if (isFinite(fuelE)) fuelAngleE = fuelE
+        if (isFinite(fuelF)) fuelAngleF = fuelF
+        if (isFinite(tempS)) tempAngleStart = tempS
+        if (isFinite(tempE)) tempAngleEnd = tempE
+        appSettings.savedFuelAngleE = fuelAngleE
+        appSettings.savedFuelAngleF = fuelAngleF
+        appSettings.savedTempAngleStart = tempAngleStart
+        appSettings.savedTempAngleEnd = tempAngleEnd
 
         appSettings.savedSpeedFactor = speedFactor
         appSettings.savedRpmFactor = rpmFactor
@@ -296,6 +325,58 @@ Item {
                 hint: "множитель, 1.00 — как есть"
                 x: (parent.width - 736) / 2
                 field.validator: DoubleValidator { bottom: 0.1; top: 10.0 }
+            }
+
+            Item { width: 1; height: 6 }
+
+            Rectangle {
+                width: 736
+                height: 2
+                x: (parent.width - 736) / 2
+                color: "#333"
+            }
+
+            Item { width: 1; height: 6 }
+
+            Text {
+                text: "Калибровка стрелок: топливо и температура (° поворота)"
+                x: (parent.width - 736) / 2
+                color: "#8A8A8A"
+                font.pixelSize: 18
+            }
+
+            Item { width: 1; height: 4 }
+
+            SettingsRow {
+                id: fuelAngleERow
+                label: "Топливо: при E"
+                hint: "пустой бак"
+                x: (parent.width - 736) / 2
+                field.validator: DoubleValidator { bottom: -360.0; top: 360.0 }
+            }
+
+            SettingsRow {
+                id: fuelAngleFRow
+                label: "Топливо: при F"
+                hint: "полный бак"
+                x: (parent.width - 736) / 2
+                field.validator: DoubleValidator { bottom: -360.0; top: 360.0 }
+            }
+
+            SettingsRow {
+                id: tempAngleStartRow
+                label: "Темп.: при 40 °C"
+                hint: "начало шкалы"
+                x: (parent.width - 736) / 2
+                field.validator: DoubleValidator { bottom: -360.0; top: 360.0 }
+            }
+
+            SettingsRow {
+                id: tempAngleEndRow
+                label: "Темп.: при 120 °C"
+                hint: "максимум"
+                x: (parent.width - 736) / 2
+                field.validator: DoubleValidator { bottom: -360.0; top: 360.0 }
             }
 
             Item { width: 1; height: 6 }
