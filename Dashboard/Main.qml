@@ -500,6 +500,8 @@ Window {
                 fuelAngleF: calibration.fuelAngleF
                 startup: root.startup
                 nightMode: root.nightMode
+                cameraVisible: root.leftTurn
+                cameraLabel: "L"
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
                 handBrakeWarning: root.lampSelfTest || root.handBrake
                 fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)

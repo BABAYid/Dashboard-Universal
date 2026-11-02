@@ -40,6 +40,10 @@ Item {
     // Поправка положения центрального круга, px (см. комментарий у Image)
     property real centerCircleOffsetX: 0
     property real centerCircleOffsetY: 0
+    // Камера заднего вида в колодце (пока заглушка — вместо неё будет видео
+    // с USB-захвата CVBS; показывается, пока горит поворотник).
+    property bool cameraVisible: false
+    property string cameraLabel: ""
 
     // Все четыре стрелки — один рисунок, и он длиннее циферблата ровно на
     // столько: так стрелка достаёт до меток, нарисованных по краю картинки.
@@ -194,6 +198,38 @@ Item {
     }
 
     default property alias gaugeContent: contentLayer.data
+
+    // Заглушка камеры в колодце: появится по поворотнику.
+    // Когда придут камеры — сюда встанет VideoOutput с CaptureSession.
+    Rectangle {
+        id: cameraWell
+        anchors.centerIn: parent
+        width: parent.width * 0.42
+        height: width
+        radius: width / 2
+        visible: gauge.cameraVisible
+        color: "#0E1218"
+        border.color: "#4A505A"
+        border.width: 3
+        z: 5
+
+        Text {
+            anchors.centerIn: parent
+            text: "КАМЕРА " + gauge.cameraLabel
+            color: "#9AA4B2"
+            font.pixelSize: parent.width * 0.11
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+        }
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: parent.height * 0.16
+            text: "(здесь будет видео)"
+            color: "#5A626E"
+            font.pixelSize: parent.width * 0.06
+        }
+    }
 
     // ======================= САМОПРОВЕРКА =======================
     // Стрелка проходит всю шкалу и возвращается на текущее значение.
