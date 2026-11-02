@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtMultimedia
 
 // ============================================================================
 //  Gauge.qml — общая основа круглого прибора: спидометра и тахометра.
@@ -44,6 +45,9 @@ Item {
     // с USB-захвата CVBS; показывается, пока горит поворотник).
     property bool cameraVisible: false
     property string cameraLabel: ""
+    // Источник видео для колодца (промо-ролик или живая камера UVC).
+    // Пока пусто — показывается заглушка.
+    property string cameraVideoSource: ""
 
     // Все четыре стрелки — один рисунок, и он длиннее циферблата ровно на
     // столько: так стрелка достаёт до меток, нарисованных по краю картинки.
@@ -229,8 +233,22 @@ Item {
             antialiasing: true
         }
 
+        // Видео (промо-ролик / камера). Крутится по кругу, зеркально.
+        Video {
+            id: cameraVideo
+            anchors.fill: parent
+            visible: gauge.cameraVideoSource.length > 0
+            source: gauge.cameraVideoSource
+            fillMode: VideoOutput.PreserveAspectCrop
+            loops: MediaPlayer.Infinite
+            autoPlay: true
+            muted: true
+            transform: Scale { xScale: -1 }   // как в зеркалах
+        }
+
         Text {
             anchors.centerIn: parent
+            visible: gauge.cameraVideoSource.length === 0
             text: "КАМЕРА " + gauge.cameraLabel
             color: "#9AA4B2"
             font.pixelSize: parent.width * 0.11
@@ -240,6 +258,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
             anchors.bottomMargin: parent.height * 0.18
+            visible: gauge.cameraVideoSource.length === 0
             text: "(здесь будет видео с USB-камеры, зеркально)"
             color: "#5A626E"
             font.pixelSize: parent.width * 0.045

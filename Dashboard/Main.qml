@@ -50,6 +50,10 @@ Window {
     // Что показываем на самом деле: данные CAN, если отладка не вмешалась
     readonly property bool gasDisplay: gasOverrideActive ? gasOverride : gasMode
 
+    // Промо-ролик в колодцах вместо заглушки камер (пусто — заглушка).
+    // Пример: "file:///home/oleg/Документы/новая приборка/assets/promo.mp4"
+    property string promoVideo: ""
+
     // Отладка «Газ в пол»: принудительно показать 5400 об/мин, чтобы увидеть
     // анимацию «деньги в топку» не дожидаясь всплеска в демо-сценарии.
     // Перекрываем именно обороты, которые видит приборка: стрелка, цифры и
@@ -502,6 +506,7 @@ Window {
                 nightMode: root.nightMode
                 cameraVisible: root.leftTurn
                 cameraLabel: "L"
+                cameraVideoSource: root.promoVideo
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
                 handBrakeWarning: root.lampSelfTest || root.handBrake
                 fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
@@ -543,6 +548,7 @@ Window {
                 temp: root.temp * root.tempFactor
                 cameraVisible: root.rightTurn
                 cameraLabel: "R"
+                cameraVideoSource: root.promoVideo
                 tempAngleStart: calibration.tempAngleStart
                 tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup
