@@ -50,9 +50,14 @@ Window {
     // Что показываем на самом деле: данные CAN, если отладка не вмешалась
     readonly property bool gasDisplay: gasOverrideActive ? gasOverride : gasMode
 
-    // Промо-ролик в колодцах вместо заглушки камер (пусто — заглушка).
-    // Пример: "file:///home/oleg/Документы/новая приборка/assets/promo.mp4"
-    property string promoVideo: ""
+    // Промо-ролики камер (пока вместо живого видео с USB-захвата).
+    // Пустая строка — показывается заглушка «КАМЕРА L/R».
+    property string promoVideoLeft: "file:///home/oleg/Документы/новая приборка/левая.mp4"
+    property string promoVideoRight: "file:///home/oleg/Документы/новая приборка/правая.mp4"
+
+    // Демо: клавиши ←/→ включают/выключают поворотник (для показа камер).
+    property bool demoLeftTurn: false
+    property bool demoRightTurn: false
 
     // Отладка «Газ в пол»: принудительно показать 5400 об/мин, чтобы увидеть
     // анимацию «деньги в топку» не дожидаясь всплеска в демо-сценарии.
@@ -74,7 +79,7 @@ Window {
     readonly property bool rangeCritical: rangeKmValid && rangeKm < 20
     property bool rangeBlinkOn: true   // фаза мигания предупреждения о запасе
 
-    readonly property bool leftTurn: CanBackend.leftTurn
+    readonly property bool leftTurn: demoLeftTurn || CanBackend.leftTurn
     // Общая фаза мигания поворотников: одна на панель и на 3D-модель
     property bool turnBlink: false
     Timer {
@@ -84,7 +89,7 @@ Window {
         onRunningChanged: if (!running) root.turnBlink = false
         onTriggered: root.turnBlink = !root.turnBlink
     }
-    readonly property bool rightTurn: CanBackend.rightTurn
+    readonly property bool rightTurn: demoRightTurn || CanBackend.rightTurn
     readonly property bool highBeam: CanBackend.highBeam
     readonly property bool lowBeam: CanBackend.lowBeam
     readonly property bool fogLights: CanBackend.fogLights
@@ -506,7 +511,7 @@ Window {
                 nightMode: root.nightMode
                 cameraVisible: root.leftTurn
                 cameraLabel: "L"
-                cameraVideoSource: root.promoVideo
+                cameraVideoSource: root.promoVideoLeft
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
                 handBrakeWarning: root.lampSelfTest || root.handBrake
                 fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
@@ -548,7 +553,7 @@ Window {
                 temp: root.temp * root.tempFactor
                 cameraVisible: root.rightTurn
                 cameraLabel: "R"
-                cameraVideoSource: root.promoVideo
+                cameraVideoSource: root.promoVideoRight
                 tempAngleStart: calibration.tempAngleStart
                 tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup
@@ -633,8 +638,11 @@ Window {
                                                  console.log("DEMO: багажник", calibration.trunkOpen ? "открыт" : "закрыт") } }
 
         Shortcut { sequence: "Space"; onActivated: root.nextCenterMode() }
-        Shortcut { sequence: "Right"; onActivated: root.nextCenterMode() }
-        Shortcut { sequence: "Left"; onActivated: root.prevCenterMode() }
+        // ←/→ — демо-поворотники: нажал — включил, ещё раз — отключил
+        Shortcut { sequence: "Left"; onActivated: { root.demoLeftTurn = !root.demoLeftTurn
+                                                    console.log("DEMO: левый поворотник", root.demoLeftTurn ? "ВКЛ" : "выкл") } }
+        Shortcut { sequence: "Right"; onActivated: { root.demoRightTurn = !root.demoRightTurn
+                                                     console.log("DEMO: правый поворотник", root.demoRightTurn ? "ВКЛ" : "выкл") } }
 
         // ========== ВЕРХНЯЯ ЗОНА ЦЕНТРА: предупреждения ==========
         // Держим их вне области карты, чтобы были видны и в навигации.
