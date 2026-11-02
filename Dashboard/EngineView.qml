@@ -29,7 +29,10 @@ Item {
 
     // Сколько «секунд анимации» за секунду реального времени: 1000 об/мин
     // → 1× (анимация 0.6 с на цикл), 6000 об/мин → 6×.
-    readonly property real animSpeed: Math.max(0, rpm) / 1000.0
+    // Меньше 300 об/мин — двигатель считаем заглушённым: анимация стоит.
+    // (На реальном CAN при заглушенном моторе обороты могут «дрожать» у нуля.)
+    readonly property bool engineRunning: rpm >= 300
+    readonly property real animSpeed: engineRunning ? rpm / 1000.0 : 0
 
     View3D {
         anchors.fill: parent
