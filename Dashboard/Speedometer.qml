@@ -44,8 +44,8 @@ Gauge {
     secondaryMaxValue: maxFuel
     // Углы стрелки топлива настраиваются в калибровке (настройки):
     // при пустом баке (E) и при полном (F). Значения — поворот item.
-    property real fuelAngleE: -70.7
-    property real fuelAngleF: -88.2
+    property real fuelAngleE: -82
+    property real fuelAngleF: -121
     secondaryStartAngle: fuelAngleE
     secondaryEndAngle: fuelAngleF
 

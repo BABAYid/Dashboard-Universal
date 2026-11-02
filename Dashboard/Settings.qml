@@ -55,10 +55,10 @@ Item {
 
     // Калибровка шкал малых стрелок (поворот item, градусы):
     // топливо — при пустом (E) и полном (F) баке, температура — при 40 и 120 °C.
-    property real fuelAngleE: -70.7
-    property real fuelAngleF: -88.2
-    property real tempAngleStart: -80
-    property real tempAngleEnd: -103
+    property real fuelAngleE: -82
+    property real fuelAngleF: -121
+    property real tempAngleStart: -82
+    property real tempAngleEnd: -119
 
     // Тесты 3D-модели: двери, капот, багажник (когда модель загружена).
     property bool doorsOpen: false
@@ -82,10 +82,10 @@ Item {
         property bool savedWeatherEnabled: true
         property bool savedNeedleTrailEnabled: true
         // Калибровка стрелок топлива/температуры (углы поворота)
-        property real savedFuelAngleE: -70.7
-        property real savedFuelAngleF: -88.2
-        property real savedTempAngleStart: -80.0
-        property real savedTempAngleEnd: -103.0
+        property real savedFuelAngleE: -82
+        property real savedFuelAngleF: -121
+        property real savedTempAngleStart: -82.0
+        property real savedTempAngleEnd: -119.0
     }
 
     // Загружаем сохранённые значения при старте приложения

@@ -57,20 +57,6 @@ Window {
     property bool debugFullThrottle: false
     readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
 
-    // ===== ОТЛАДКА СТРЕЛОК (потом убрать) =====
-    // Клавиши: E — пустой бак (0 %), F — полный (100 %),
-    //          C — 40 °C, H — 120 °C, R — вернуть реальные данные.
-    // Нужны, чтобы увидеть стрелки в крайних точках и подогнать углы
-    // в настройках («Калибровка стрелок»).
-    property bool debugFuelOverride: false
-    property real debugFuelValue: 0
-    property bool debugTempOverride: false
-    property real debugTempValue: 0
-
-    // Показания, которые видит приборка (с учётом отладочной подмены)
-    readonly property real fuelLevelShown: debugFuelOverride ? debugFuelValue : fuelLevel
-    readonly property real tempShown: debugTempOverride ? debugTempValue : temp
-
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
     // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
     readonly property bool funEnabled: calibration.funEnabled
@@ -263,19 +249,6 @@ Window {
     // кликом по центральной области. Сам оверлей объявлен внутри canvas —
     // там он масштабируется вместе с макетом (см. Settings.qml).
     // Коэффициенты хранит Settings.qml, пробег — CanBackend.
-
-    // ОТЛАДКА: клавиши для подгонки стрелок (потом убрать).
-    // Через Shortcut — работают независимо от фокуса окна.
-    Shortcut { sequence: "E"; onActivated: { root.debugFuelOverride = true; root.debugFuelValue = 0
-                                             console.log("DEBUG: бак пустой (E), угол при E =", calibration.fuelAngleE) } }
-    Shortcut { sequence: "F"; onActivated: { root.debugFuelOverride = true; root.debugFuelValue = 100
-                                             console.log("DEBUG: бак полный (F), угол при F =", calibration.fuelAngleF) } }
-    Shortcut { sequence: "C"; onActivated: { root.debugTempOverride = true; root.debugTempValue = 40
-                                             console.log("DEBUG: 40 °C, угол =", calibration.tempAngleStart) } }
-    Shortcut { sequence: "H"; onActivated: { root.debugTempOverride = true; root.debugTempValue = 120
-                                             console.log("DEBUG: 120 °C, угол =", calibration.tempAngleEnd) } }
-    Shortcut { sequence: "R"; onActivated: { root.debugFuelOverride = false; root.debugTempOverride = false
-                                             console.log("DEBUG: реальные показания") } }
 
     Component.onCompleted: {
         // Коэффициенты и настройки загружаются в Settings.qml в ЕГО
@@ -510,11 +483,9 @@ Window {
                 showGear: root.centerMode !== 0
                 // На газу стрелка показывает уровень газа (проценты баллона),
                 // на бензине — бензин: как на двухтопливной машине.
-                fuelLevel: root.debugFuelOverride
-                           ? root.debugFuelValue
-                           : (root.gasDisplay
-                              ? root.gasLevelPercent
-                              : root.fuelLevel * root.fuelFactorEffective)
+                fuelLevel: root.gasDisplay
+                           ? root.gasLevelPercent
+                           : root.fuelLevel * root.fuelFactorEffective
                 fuelAngleE: calibration.fuelAngleE
                 fuelAngleF: calibration.fuelAngleF
                 startup: root.startup
@@ -557,9 +528,7 @@ Window {
                 // В 1-м виде обороты уже в центре — цифры на циферблате скрыты
                 showDigital: root.centerMode !== 0
                 rpm: root.rpmShown * root.rpmFactor
-                temp: root.debugTempOverride
-                      ? root.debugTempValue
-                      : root.temp * root.tempFactor
+                temp: root.temp * root.tempFactor
                 tempAngleStart: calibration.tempAngleStart
                 tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup

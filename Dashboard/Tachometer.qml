@@ -45,8 +45,8 @@ Gauge {
     }
     secondaryMaxValue: 100
     // Углы стрелки температуры при 40 °C (начало) и 120 °C (максимум).
-    property real tempAngleStart: -80
-    property real tempAngleEnd: -103
+    property real tempAngleStart: -82
+    property real tempAngleEnd: -119
     secondaryStartAngle: tempAngleStart
     secondaryEndAngle: tempAngleEnd
 
