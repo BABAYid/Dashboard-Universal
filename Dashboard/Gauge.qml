@@ -199,19 +199,35 @@ Item {
 
     default property alias gaugeContent: contentLayer.data
 
-    // Заглушка камеры в колодце: появится по поворотнику.
-    // Когда придут камеры — сюда встанет VideoOutput с CaptureSession.
-    Rectangle {
+    // Заглушка камеры: занимает ВЕСЬ колодец (круг прибора целиком),
+    // показывается по поворотнику в любом режиме. Когда придут камеры —
+    // вместо заглушки встанет VideoOutput (UVC), обрезанный по кругу,
+    // с зеркалированием как в зеркалах.
+    Item {
         id: cameraWell
         anchors.centerIn: parent
-        width: parent.width * 0.42
+        width: parent.width
         height: width
-        radius: width / 2
         visible: gauge.cameraVisible
-        color: "#0E1218"
-        border.color: "#4A505A"
-        border.width: 3
         z: 5
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: "#0E1218"
+            border.color: "#4A505A"
+            border.width: 3
+        }
+
+        // Тёмная рамка-колодец поверх, чтобы круг читался на циферблате
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: "transparent"
+            border.color: "#2A2F36"
+            border.width: 6
+            antialiasing: true
+        }
 
         Text {
             anchors.centerIn: parent
@@ -219,15 +235,14 @@ Item {
             color: "#9AA4B2"
             font.pixelSize: parent.width * 0.11
             font.bold: true
-            horizontalAlignment: Text.AlignHCenter
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: parent.height * 0.16
-            text: "(здесь будет видео)"
+            anchors.bottomMargin: parent.height * 0.18
+            text: "(здесь будет видео с USB-камеры, зеркально)"
             color: "#5A626E"
-            font.pixelSize: parent.width * 0.06
+            font.pixelSize: parent.width * 0.045
         }
     }
 
