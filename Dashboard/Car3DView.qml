@@ -26,6 +26,10 @@ Item {
     property bool viewSide: false
     property int suspensionLevel: 0
     property bool doorsOpen: false
+    property bool doorFL: false
+    property bool doorFR: false
+    property bool doorRL: false
+    property bool doorRR: false
     property bool capotOpen: false
     property bool trunkOpen: false
 
@@ -56,6 +60,10 @@ Item {
             scene.viewSide = Qt.binding(function() { return root.viewSide })
             scene.suspensionLevel = Qt.binding(function() { return root.suspensionLevel })
             scene.doorsOpen = Qt.binding(function() { return root.doorsOpen })
+            scene.doorFL = Qt.binding(function() { return root.doorFL })
+            scene.doorFR = Qt.binding(function() { return root.doorFR })
+            scene.doorRL = Qt.binding(function() { return root.doorRL })
+            scene.doorRR = Qt.binding(function() { return root.doorRR })
             scene.capotOpen = Qt.binding(function() { return root.capotOpen })
             scene.trunkOpen = Qt.binding(function() { return root.trunkOpen })
             scene.modelReady.connect(root.modelReady)

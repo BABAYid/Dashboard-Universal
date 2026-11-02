@@ -183,6 +183,12 @@ Window {
     property int suspensionLevel: 0
     // Тесты: кнопки в настройках открывают двери/капот/багажник на модели
     property bool doorsOpen: calibration.doorsOpen
+    // Демонстрация с клавиатуры: 1 — FL, 2 — FR, 3 — RL, 4 — RR,
+    // 5 — капот, 6 — багажник (каждое нажатие открывает/закрывает)
+    property bool demoDoorFL: false
+    property bool demoDoorFR: false
+    property bool demoDoorRL: false
+    property bool demoDoorRR: false
     property bool capotOpen: calibration.capotOpen
     property bool trunkOpen: calibration.trunkOpen
     // Куда только что нажали: +1 вверх, -1 вниз (для мигания стрелки)
@@ -362,6 +368,10 @@ Window {
             viewSide: root.centerMode === 5
             suspensionLevel: root.suspensionLevel
             doorsOpen: root.doorsOpen
+            doorFL: root.demoDoorFL
+            doorFR: root.demoDoorFR
+            doorRL: root.demoDoorRL
+            doorRR: root.demoDoorRR
             capotOpen: root.capotOpen
             trunkOpen: root.trunkOpen
             opacity: 1.0
@@ -597,6 +607,20 @@ Window {
         }
 
         // Клавиши — удобно на столе и пригодится для кнопок на руле
+        // ---- ДЕМО: двери/капот/багажник по клавишам 1..6 ----
+        Shortcut { sequence: "1"; onActivated: { root.demoDoorFL = !root.demoDoorFL
+                                                 console.log("DEMO: дверь FL", root.demoDoorFL ? "открыта" : "закрыта") } }
+        Shortcut { sequence: "2"; onActivated: { root.demoDoorFR = !root.demoDoorFR
+                                                 console.log("DEMO: дверь FR", root.demoDoorFR ? "открыта" : "закрыта") } }
+        Shortcut { sequence: "3"; onActivated: { root.demoDoorRL = !root.demoDoorRL
+                                                 console.log("DEMO: дверь RL", root.demoDoorRL ? "открыта" : "закрыта") } }
+        Shortcut { sequence: "4"; onActivated: { root.demoDoorRR = !root.demoDoorRR
+                                                 console.log("DEMO: дверь RR", root.demoDoorRR ? "открыта" : "закрыта") } }
+        Shortcut { sequence: "5"; onActivated: { calibration.capotOpen = !calibration.capotOpen
+                                                 console.log("DEMO: капот", calibration.capotOpen ? "открыт" : "закрыт") } }
+        Shortcut { sequence: "6"; onActivated: { calibration.trunkOpen = !calibration.trunkOpen
+                                                 console.log("DEMO: багажник", calibration.trunkOpen ? "открыт" : "закрыт") } }
+
         Shortcut { sequence: "Space"; onActivated: root.nextCenterMode() }
         Shortcut { sequence: "Right"; onActivated: root.nextCenterMode() }
         Shortcut { sequence: "Left"; onActivated: root.prevCenterMode() }

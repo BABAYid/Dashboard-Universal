@@ -34,6 +34,11 @@ Item {
 
     // Тестовый режим дверей/капота/багажника: кнопки в настройках.
     property bool doorsOpen: false
+    // Двери по отдельности (демо с клавиатуры: 1 — FL, 2 — FR, 3 — RL, 4 — RR)
+    property bool doorFL: false
+    property bool doorFR: false
+    property bool doorRL: false
+    property bool doorRR: false
     property real doorOpenAngle: 45
     property bool capotOpen: false
     property real capotOpenAngle: 35
@@ -250,6 +255,14 @@ Item {
                 Behavior on trunkAngle { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
                 property real wheelAngle: 0
                 property real doorAngle: scene.doorsOpen ? scene.doorOpenAngle : 0
+                property real doorAngleFL: (scene.doorFL || scene.doorsOpen) ? scene.doorOpenAngle : 0
+                property real doorAngleFR: (scene.doorFR || scene.doorsOpen) ? scene.doorOpenAngle : 0
+                property real doorAngleRL: (scene.doorRL || scene.doorsOpen) ? scene.doorOpenAngle : 0
+                property real doorAngleRR: (scene.doorRR || scene.doorsOpen) ? scene.doorOpenAngle : 0
+                Behavior on doorAngleFL { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
+                Behavior on doorAngleFR { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
+                Behavior on doorAngleRL { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
+                Behavior on doorAngleRR { NumberAnimation { duration: 700; easing.type: Easing.OutCubic } }
 
                 Behavior on doorAngle {
                     NumberAnimation { duration: 700; easing.type: Easing.OutCubic }
@@ -373,7 +386,9 @@ Item {
                             // справа (z−) — минус.
                             const left = (i === 0 || i === 2)
                             const sign = left ? -1 : 1
-                            d.eulerRotation = Qt.vector3d(0, sign * ipsumCar.doorAngle, 0)
+                            const angles = [ipsumCar.doorAngleFL, ipsumCar.doorAngleFR,
+                                            ipsumCar.doorAngleRL, ipsumCar.doorAngleRR]
+                            d.eulerRotation = Qt.vector3d(0, sign * angles[i], 0)
                         }
                     }
                 }
