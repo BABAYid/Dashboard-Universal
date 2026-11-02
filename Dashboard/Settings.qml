@@ -81,6 +81,11 @@ Item {
         property bool savedFunEnabled: true
         property bool savedWeatherEnabled: true
         property bool savedNeedleTrailEnabled: true
+        // Калибровка стрелок топлива/температуры (углы поворота)
+        property real savedFuelAngleE: -70.7
+        property real savedFuelAngleF: -88.2
+        property real savedTempAngleStart: -80.0
+        property real savedTempAngleEnd: -103.0
     }
 
     // Загружаем сохранённые значения при старте приложения

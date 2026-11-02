@@ -264,35 +264,18 @@ Window {
     // там он масштабируется вместе с макетом (см. Settings.qml).
     // Коэффициенты хранит Settings.qml, пробег — CanBackend.
 
-    // ОТЛАДКА: невидимый слой с фокусом — принимает клавиши E/F/C/H/R
-    Item {
-        anchors.fill: parent
-        focus: true
-        z: -100
-    Keys.onPressed: function(event) {
-        if (event.key === Qt.Key_E) {
-            debugFuelOverride = true
-            debugFuelValue = 0
-            console.log("DEBUG: бак пустой (E), угол стрелки при E =", calibration.fuelAngleE)
-        } else if (event.key === Qt.Key_F) {
-            debugFuelOverride = true
-            debugFuelValue = 100
-            console.log("DEBUG: бак полный (F), угол стрелки при F =", calibration.fuelAngleF)
-        } else if (event.key === Qt.Key_C) {
-            debugTempOverride = true
-            debugTempValue = 40
-            console.log("DEBUG: 40 °C, угол =", calibration.tempAngleStart)
-        } else if (event.key === Qt.Key_H) {
-            debugTempOverride = true
-            debugTempValue = 120
-            console.log("DEBUG: 120 °C, угол =", calibration.tempAngleEnd)
-        } else if (event.key === Qt.Key_R) {
-            debugFuelOverride = false
-            debugTempOverride = false
-            console.log("DEBUG: реальные показания")
-        }
-    }
-    }
+    // ОТЛАДКА: клавиши для подгонки стрелок (потом убрать).
+    // Через Shortcut — работают независимо от фокуса окна.
+    Shortcut { sequence: "E"; onActivated: { root.debugFuelOverride = true; root.debugFuelValue = 0
+                                             console.log("DEBUG: бак пустой (E), угол при E =", calibration.fuelAngleE) } }
+    Shortcut { sequence: "F"; onActivated: { root.debugFuelOverride = true; root.debugFuelValue = 100
+                                             console.log("DEBUG: бак полный (F), угол при F =", calibration.fuelAngleF) } }
+    Shortcut { sequence: "C"; onActivated: { root.debugTempOverride = true; root.debugTempValue = 40
+                                             console.log("DEBUG: 40 °C, угол =", calibration.tempAngleStart) } }
+    Shortcut { sequence: "H"; onActivated: { root.debugTempOverride = true; root.debugTempValue = 120
+                                             console.log("DEBUG: 120 °C, угол =", calibration.tempAngleEnd) } }
+    Shortcut { sequence: "R"; onActivated: { root.debugFuelOverride = false; root.debugTempOverride = false
+                                             console.log("DEBUG: реальные показания") } }
 
     Component.onCompleted: {
         // Коэффициенты и настройки загружаются в Settings.qml в ЕГО
