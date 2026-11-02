@@ -541,6 +541,8 @@ Window {
                 showDigital: root.centerMode !== 0
                 rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
+                cameraVisible: root.rightTurn
+                cameraLabel: "R"
                 tempAngleStart: calibration.tempAngleStart
                 tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup
