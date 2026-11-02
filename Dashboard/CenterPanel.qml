@@ -26,6 +26,11 @@ Item {
     id: root
 
     property int mode: 0
+
+    // Обороты для 3D-модели двигателя — те же, что видит тахометр
+    // (с коэффициентом из настроек). Иначе модель крутилась бы при
+    // «0» на приборе, если множитель обнулён.
+    property real engineRpm: 0
     readonly property int modeCount: 9
 
     // ---- 6-й вид: пневмоподвеска ----
@@ -453,7 +458,7 @@ Item {
 
         EngineView {
             anchors.fill: parent
-            rpm: CanBackend.rpm
+            rpm: root.engineRpm
         }
     }
 

@@ -570,6 +570,7 @@ Window {
                 z: 1
                 anchors.fill: parent
                 mode: root.centerMode
+                engineRpm: root.rpmShown * root.rpmFactor
                 nightMode: root.nightMode
                 suspensionLevel: root.suspensionLevel
                 suspensionDirection: root.suspensionDirection
