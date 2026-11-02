@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Effects
 import QtMultimedia
 
 // ============================================================================
@@ -233,17 +234,54 @@ Item {
             antialiasing: true
         }
 
+        // Круглая маска колодца: видео обрезаем по кругу, иначе кадр
+        // закрывает квадратом весь циферблат (углы вылезают за обод).
+        Item {
+            id: cameraMask
+            anchors.fill: parent
+            layer.enabled: true
+            visible: false
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: "white"
+                antialiasing: true
+            }
+        }
+
         // Видео (промо-ролик / камера). Крутится по кругу, зеркально.
         Video {
             id: cameraVideo
             anchors.fill: parent
-            visible: gauge.cameraVideoSource.length > 0
+            visible: false
             source: gauge.cameraVideoSource
             fillMode: VideoOutput.PreserveAspectCrop
             loops: MediaPlayer.Infinite
             autoPlay: true
             muted: true
-            transform: Scale { xScale: -1 }   // как в зеркалах
+            scale: -1   // зеркально, как в зеркалах
+        }
+
+        // Ролик крутится только пока колодец на экране: камера (или промо)
+        // не должна жрать декодер и батарею, когда поворотник выключен.
+        Connections {
+            target: gauge
+            function onCameraVisibleChanged() {
+                if (gauge.cameraVisible && gauge.cameraVideoSource.length > 0)
+                    cameraVideo.play()
+                else
+                    cameraVideo.pause()
+            }
+        }
+
+        MultiEffect {
+            anchors.fill: parent
+            visible: gauge.cameraVideoSource.length > 0
+            source: cameraVideo
+            maskEnabled: true
+            maskSource: cameraMask
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 0.15
         }
 
         Text {
