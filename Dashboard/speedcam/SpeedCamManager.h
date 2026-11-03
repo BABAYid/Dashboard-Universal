@@ -156,6 +156,13 @@ private:
     mutable QReadWriteLock m_lock;   // mutable: чтение из const-методов
     Database m_db;
     QVector<Point> m_simulated;      // инжектированные камеры (демо/тесты)
+    // Демо-камера «едет» вместе с машиной: пока её не убрали, она держится
+    // в m_simFollowDistance впереди по курсу. Иначе в --mock машина уезжает
+    // от неё за полминуты и предупреждение пропадает само — на стенде это
+    // выглядит как «кнопка не работает».
+    bool m_simFollow = false;
+    double m_simFollowDistance = 420.0;
+    int m_simFollowSpeed = 60;
 
     std::atomic<bool> m_loaded{false};
     std::atomic<bool> m_loading{false};
@@ -183,6 +190,7 @@ private:
 
     // Чтобы не сыпать сигналами на каждое обновление координат (2 Гц).
     double m_lastEmittedDistance = -1.0;
+    double m_lastWarningSpeed = -1.0e9;   // скорость, при которой считалось превышение
     quint64 m_lastEmittedKey = 0;
 
     QFutureWatcherBase *m_watcher = nullptr;

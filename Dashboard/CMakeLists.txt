@@ -142,5 +142,5 @@ if(DASHBOARD_BUILD_TESTS)
         speedcam/SpeedCamManager.cpp
     )
     target_include_directories(test_speedcam PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/speedcam)
-    target_link_libraries(test_speedcam PRIVATE Qt6::Core Qt6::Concurrent)
+    target_link_libraries(test_speedcam PRIVATE Qt6::Core Qt6::Qml Qt6::Concurrent)
 endif()

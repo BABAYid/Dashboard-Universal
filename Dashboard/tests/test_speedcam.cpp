@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
             QStringLiteral("# комментарий"),
             QStringLiteral(""),
             QStringLiteral("37.6200,55.7550,1,60,1,90"),     // полная строка
-            QStringLiteral("37,6210;55,7560;2;40"),          // точка с запятой, 4 поля
+            QStringLiteral("37.6210;55.7560;2;40"),          // разделитель — точка с запятой
             QStringLiteral("мусор,строка,без,чисел"),
             QStringLiteral("37.6300,55.7600,5,0"),           // без ограничения
         });

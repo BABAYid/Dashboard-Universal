@@ -262,7 +262,10 @@ void SpeedCamManager::loadSync(const QString &path)
         qint16 speed = 0, direction = -1;
         quint8 type = 0, dirType = 0;
         if (!parseLine(line, &lat, &lon, &speed, &direction, &type, &dirType)) {
-            if (!line.trimmed().isEmpty())
+            // Комментарии и пустые строки — это норма, а не мусор.
+            const QString trimmed = line.trimmed();
+            if (!trimmed.isEmpty() && !trimmed.startsWith(QLatin1Char('#'))
+                && !trimmed.startsWith(QLatin1Char(';')))
                 ++db.skippedLines;
             continue;
         }
@@ -305,6 +308,23 @@ void SpeedCamManager::checkPosition(double lat, double lon, double course, doubl
         return;
     }
 
+    // Демо-камера держится впереди по курсу, пока её не убрали.
+    if (m_simFollow) {
+        const double courseForSim = std::isfinite(course) ? course : 0.0;
+        const double rad = deg2rad(courseForSim);
+        Point p;
+        p.type = 1;
+        p.speed = static_cast<qint16>(qBound(0, m_simFollowSpeed, 400));
+        p.dirType = 0;
+        p.direction = -1;
+        p.lat = lat + (m_simFollowDistance * std::cos(rad)) / 111320.0;
+        p.lon = lon + (m_simFollowDistance * std::sin(rad)) /
+                          (111320.0 * std::max(0.05, std::cos(deg2rad(lat))));
+        QWriteLocker locker(&m_lock);
+        m_simulated.clear();
+        m_simulated.append(p);
+    }
+
     Point found;
     double foundDistance = 0.0;
     bool foundAhead = false;
@@ -341,21 +361,18 @@ bool SpeedCamManager::findNearest(double lat, double lon, double course,
             return;
         }
 
-        // Камера впереди по нашему курсу (если курс известен).
+        // Камера должна быть впереди по нашему курсу. Если курс неизвестен
+        // (нет данных GPS), направление не проверяем — лучше предупредить.
         bool ahead = true;
         if (std::isfinite(course)) {
             const double toCamera = bearing(lat, lon, p.lat, p.lon);
             ahead = angleDiff(course, toCamera) <= kAheadToleranceDeg;
+            if (!ahead)
+                return;   // проехали — предупреждение снимается
         }
 
-        // Небольшой приоритет камере впереди: если рядом есть камера позади,
-        // она не должна перебивать камеру, к которой мы едем.
-        const double score = ahead ? dist : dist + limit;
-        if (haveBest && score >= bestDistance)
-            return;
-
         best = p;
-        bestDistance = score;
+        bestDistance = dist;
         bestAhead = ahead;
         *outDistance = dist;
         haveBest = true;
@@ -409,6 +426,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
         m_cameraAhead = false;
         m_lastEmittedKey = 0;
         m_lastEmittedDistance = -1.0;
+        m_lastWarningSpeed = -1.0e9;
         emit cameraChanged();
         emit cameraGone();
         return;
@@ -416,7 +434,8 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
 
     const bool newCamera = (key != m_lastEmittedKey);
     const bool distanceChanged = std::fabs(distance - m_lastEmittedDistance) >= kDistanceEpsilon;
-    if (!newCamera && !distanceChanged && active == wasActive)
+    const bool speedChanged = std::fabs(m_lastSpeed - m_lastWarningSpeed) > 0.5;
+    if (!newCamera && !distanceChanged && !speedChanged && active == wasActive)
         return;
 
     m_cameraActive = true;
@@ -432,6 +451,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
 
     m_lastEmittedKey = key;
     m_lastEmittedDistance = distance;
+    m_lastWarningSpeed = m_lastSpeed;
 
     emit cameraChanged();
     if (newCamera || !wasActive)
@@ -459,6 +479,10 @@ void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters)
     p.lon = lon + (distanceMeters * std::sin(courseRad)) /
                       (111320.0 * std::max(0.05, std::cos(deg2rad(lat))));
 
+    m_simFollow = true;
+    m_simFollowDistance = distanceMeters;
+    m_simFollowSpeed = p.speed;
+
     {
         QWriteLocker locker(&m_lock);
         m_simulated.clear();
@@ -477,6 +501,7 @@ void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters)
 
 void SpeedCamManager::clearSimulated()
 {
+    m_simFollow = false;
     {
         QWriteLocker locker(&m_lock);
         m_simulated.clear();

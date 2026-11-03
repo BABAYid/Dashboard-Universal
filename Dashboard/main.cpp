@@ -83,9 +83,12 @@ int main(int argc, char *argv[])
     // демо-камеру впереди машины — то же, что кнопка «Симулировать камеру»
     // в настройках и клавиша C. Нужно для проверки предупреждения без
     // реальной базы и без клавиатуры (например, со снимком экрана).
+    // Значение переменной — ограничение демо-камеры (по умолчанию 60 км/ч);
+    // DASHBOARD_DEMO_CAMERA=200 даёт «без превышения», чтобы баннер не мигал.
     if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_CAMERA")) {
-        QTimer::singleShot(5000, speedcam, []() {
-            SpeedCamManager::instance()->simulateCameraAhead(60, 420);
+        const int limit = qEnvironmentVariableIntValue("DASHBOARD_DEMO_CAMERA");
+        QTimer::singleShot(5000, speedcam, [limit]() {
+            SpeedCamManager::instance()->simulateCameraAhead(limit > 0 ? limit : 60, 420);
         });
     }
 

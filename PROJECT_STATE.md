@@ -351,6 +351,11 @@ cmake -S Dashboard -B build -DDASHBOARD_BUILD_TESTS=ON
 cmake --build build --target test_canprotocol
 ./build/test_canprotocol                # проверки разбора
 ./build/test_canprotocol --mock-watch   # наблюдение за демо-генератором
+
+cmake --build build --target test_speedcam
+./build/test_speedcam                   # база камер: разбор, гаверсинус,
+                                        # фильтры «впереди/по направлению»,
+                                        # порог 500 м, демо-камера
 ```
 
 ### Прошивка блока сбора (`firmware/`)
