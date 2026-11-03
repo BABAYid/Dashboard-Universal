@@ -1,0 +1,20 @@
+# Пример конфига для update_speedcam.sh.
+# Скопируйте в speedcam.conf рядом со скриптом (или в /etc/dashboard-speedcam.conf)
+# и раскомментируйте нужное. Формат: KEY=VALUE, без пробелов вокруг «=».
+
+# --- Источник ---------------------------------------------------------------
+# Прямая ссылка на speedcam.txt / .gz / .zip, которую отдаёт сервис экспорта
+# OpenSpeedcam после входа в аккаунт («Экспорт» → формат iGO → ссылка на файл),
+# либо любое доверенное публичное зеркало с базой в формате iGO.
+# SPEEDCAM_URL="https://openspeedcam.net/api/export/...."
+
+# Если ссылка требует авторизации — cookie из браузера (F12 → Network → Cookie).
+# SPEEDCAM_COOKIE="PHPSESSID=...."
+
+# --- Куда класть базу -------------------------------------------------------
+# В репозитории (по умолчанию) — Dashboard/assets/speedcam/speedcam.txt.
+# На устройстве, где приборка установлена отдельно, удобнее домашняя папка:
+# SPEEDCAM_DEST="/home/pi/.local/share/AudiDashboard/speedcam.txt"
+
+# --- Лог --------------------------------------------------------------------
+# SPEEDCAM_LOG="/home/pi/.local/state/audi-dashboard/speedcam-update.log"

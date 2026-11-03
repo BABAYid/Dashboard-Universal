@@ -1,0 +1,20 @@
+[Unit]
+Description=Обновление базы камер (Smart Driver) для приборной панели
+Documentation=file:///home/oleg/Документы/новая приборка/docs/speedcam.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# ПОДПРАВЬТЕ под устройство: пользователь и путь к репозиторию приборки.
+User=oleg
+Group=oleg
+WorkingDirectory=/home/oleg/Документы/новая приборка
+# Источник (URL/Cookie/путь базы) задаётся в speedcam.conf рядом со скриптом
+# или в /etc/dashboard-speedcam.conf. Без источника скрипт вернёт код 2
+# и ничего не испортит.
+ExecStart=/home/oleg/Документы/новая приборка/update_speedcam.sh --quiet
+Nice=10
+IOSchedulingClass=idle
+# Обновление базы — фоновая задача, приборке она не мешает.
+TimeoutStartSec=15min
