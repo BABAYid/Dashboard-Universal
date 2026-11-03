@@ -1,0 +1,15 @@
+[Unit]
+Description=Ежедневное обновление базы камер (Smart Driver) в 03:00
+
+[Timer]
+# Каждый день в 03:00 по местному времени.
+OnCalendar=*-*-* 03:00:00
+# Если устройство было выключено в 03:00 — догнать при включении.
+Persistent=true
+# Разброс, чтобы не бить в сервер ровно в одну секунду вместе со всеми.
+RandomizedDelaySec=10min
+AccuracySec=1min
+Unit=dashboard-speedcam.service
+
+[Install]
+WantedBy=timers.target
