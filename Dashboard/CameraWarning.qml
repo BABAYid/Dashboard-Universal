@@ -164,9 +164,12 @@ Item {
             }
 
             Text {
-                // Тип комплекса — мелким шрифтом: «КАМЕРА КОНТРОЛЯ СКОРОСТИ»,
-                // «КАМЕРА НА КРАСНЫЙ СВЕТ» и т.д.
-                text: SpeedCamManager.cameraTypeName
+                // Тип и модель комплекса мелким шрифтом: «Статическая камера ·
+                // Кордон». В PocketGIS-выгрузке это есть у каждой точки, в
+                // компактном iGO-файле — только тип из встроенной таблицы.
+                text: SpeedCamManager.cameraModel.length > 0
+                      ? SpeedCamManager.cameraTypeName + " · " + SpeedCamManager.cameraModel
+                      : SpeedCamManager.cameraTypeName
                 color: "#9AA4B2"
                 font.pixelSize: card.height * 0.155
                 elide: Text.ElideRight

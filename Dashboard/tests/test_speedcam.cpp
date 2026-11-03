@@ -187,6 +187,44 @@ int main(int argc, char *argv[])
         delete m;
     }
 
+    // -------------------------------------------------- формат PocketGIS
+    qInfo().noquote() << "Формат PocketGIS (выгрузка OpenSpeedcam как есть)";
+    {
+        // X — долгота, Y — широта. Вторая точка нарочно с долготой 140°
+        // (Дальний Восток): если колонки перепутать, она отсеется как
+        // «широта больше 90» и в базу не попадёт.
+        double camLat, camLon;
+        offset(lat0, lon0, 334.0, 0.0, &camLat, &camLon);
+        const QString path = writeBase(dir, QStringLiteral("pocketgis.txt"), {
+            QStringLiteral("IDX,X,Y,TYPE,SPEED,DIRTYPE,DIRECTION,DISTANCE,ANGLE "
+                           "// OpenSpeedcam 03-11-2026 19:41"),
+            QStringLiteral("1,%1,%2,1,60,1,0,500,20 "
+                           "// 5a1ec7ef | Статическая камера | Кордон")
+                .arg(camLon, 0, 'f', 6).arg(camLat, 0, 'f', 6),
+            QStringLiteral("2,140.264380,48.951250,21,20,1,229,300,20 "
+                           "// 5a223892 | Железнодорожный переезд | Знак СТОП"),
+        });
+        SpeedCamManager *m = loadManager(path);
+        check(m->count() == 2, QStringLiteral("PocketGIS: разобраны обе строки (точек 2)"));
+        check(m->sourceFormat() == QStringLiteral("PocketGIS"),
+              QStringLiteral("формат определён: %1").arg(m->sourceFormat()));
+        check(m->statusText().contains(QStringLiteral("03.11.2026")),
+              QStringLiteral("дата базы из заголовка: %1").arg(m->statusText()));
+
+        // Едем на север к камере №1: 334 м, ограничение 60, «Кордон».
+        m->checkPosition(lat0, lon0, 0.0, 70.0);
+        check(m->cameraActive(), QStringLiteral("PocketGIS: камера впереди найдена"));
+        checkNear(m->cameraDistance(), 334.0, 8.0,
+                  QStringLiteral("PocketGIS: расстояние по координатам X/Y"));
+        check(m->cameraSpeedLimit() == 60, QStringLiteral("PocketGIS: ограничение 60"));
+        check(m->cameraTypeName().contains(QStringLiteral("Статическая")),
+              QStringLiteral("PocketGIS: тип из комментария — %1").arg(m->cameraTypeName()));
+        check(m->cameraModel().contains(QStringLiteral("Кордон")),
+              QStringLiteral("PocketGIS: модель из комментария — %1").arg(m->cameraModel()));
+        check(m->cameraSpeeding(), QStringLiteral("PocketGIS: 70 > 60 — превышение"));
+        delete m;
+    }
+
     // --------------------------------------------------------- демо-камера
     qInfo().noquote() << "Демо-камера (симуляция)";
     {

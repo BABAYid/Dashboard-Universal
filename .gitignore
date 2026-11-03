@@ -28,3 +28,9 @@ Thumbs.db
 
 # Отладочная папка (бэкапы и скриншоты для сравнения)
 .dashcheck/
+
+# --- База камер (Smart Driver) ---
+# Выгрузка OpenSpeedcam (PocketGIS, ~22 МБ) — это данные, а не исходники:
+# обновляется раз в сутки скриптом update_speedcam.sh, в git не нужна.
+/PocketGis.txt
+/PocketGis*.txt

@@ -132,9 +132,24 @@ die() {
 }
 
 # --- проверка формата --------------------------------------------------------
-# Строка базы: X,Y,TYPE,SPEED[,DIRTYPE,DIRECTION]; X и Y — координаты с точкой.
+# Понимаем две выгрузки OpenSpeedcam:
+#   iGO:      X,Y,TYPE,SPEED[,DIRTYPE,DIRECTION]
+#   PocketGIS: IDX,X,Y,TYPE,SPEED,DIRTYPE,DIRECTION,DISTANCE,ANGLE // ...
+# Поэтому первые два числа ищем как «координаты с точкой», допуская колонку ID
+# впереди. Файлы PocketGIS в Windows-1251 — grep считает их двоичными, отсюда -a.
 count_points() {
-    grep -cE '^[[:space:]]*-?[0-9]{1,3}(\.[0-9]+)?[[:space:]]*[,;][[:space:]]*-?[0-9]{1,2}(\.[0-9]+)?[[:space:]]*[,;]' "$1" 2>/dev/null || true
+    grep -acE '^[[:space:]]*([0-9]+[[:space:]]*[,;][[:space:]]*)?-?[0-9]{1,3}\.[0-9]+[[:space:]]*[,;][[:space:]]*-?[0-9]{1,2}\.[0-9]+[[:space:]]*[,;]' "$1" 2>/dev/null || true
+}
+
+# Формат определяем по первой значимой строке: в PocketGIS впереди идёт ID.
+detect_format() {
+    local f="$1" first
+    first=$(grep -am1 -E '^[[:space:]]*[0-9]' "$f" 2>/dev/null || true)
+    if printf '%s' "$first" | grep -qE '^[[:space:]]*[0-9]+[[:space:]]*,[[:space:]]*-?[0-9]{1,3}\.[0-9]+[[:space:]]*,[[:space:]]*-?[0-9]{1,2}\.[0-9]+'; then
+        printf 'PocketGIS'
+    else
+        printf 'iGO speedcam.txt'
+    fi
 }
 
 check_file() {
@@ -144,7 +159,7 @@ check_file() {
     lines=$(wc -l <"$f" | tr -d ' ')
     points=$(count_points "$f")
     size=$(wc -c <"$f" | tr -d ' ')
-    run_log "Проверка базы: строк $lines, с координатами $points, размер $size Б"
+    run_log "Проверка базы: строк $lines, с координатами $points, размер $size Б, формат $(detect_format "$f")"
     if head -c 400 "$f" | grep -qiE '<!doctype|<html|\{"message"|Unauthorized'; then
         run_log "Это не база камер, а страница/ответ сервера (HTML или JSON)."
         return 3
@@ -159,7 +174,8 @@ check_file() {
 describe_file() {
     local f="$1"
     local first
-    first=$(grep -m1 -E '^[[:space:]]*-?[0-9]' "$f" || true)
+    # Комментарий PocketGIS в Windows-1251 — в лог его не тащим, только числа.
+    first=$(grep -am1 -E '^[[:space:]]*[0-9]' "$f" | cut -d/ -f1 | head -c 120 || true)
     run_log "Первая точка: ${first:-нет}"
     local mtime
     mtime=$(date -r "$f" '+%Y-%m-%d %H:%M' 2>/dev/null || echo '?')
