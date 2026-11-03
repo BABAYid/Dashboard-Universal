@@ -71,6 +71,10 @@ Window {
     readonly property bool funEnabled: calibration.funEnabled
     readonly property bool weatherEnabled: calibration.weatherEnabled
 
+    // Предупреждения о камерах (см. CameraWarning.qml и SpeedCamManager).
+    // Выключить можно в настройках: строка «Камеры» в разделе предупреждений.
+    readonly property bool cameraWarningEnabled: calibration.cameraWarningEnabled
+
     // Запас хода (считает CanBackend по среднему расходу за 5 минут).
     // Пока расчёт недостоверен — в QML это «—», и предупреждение не горит:
     // ноль в rangeKm означает «неизвестно», а не «ноль километров».
@@ -637,6 +641,19 @@ Window {
         Shortcut { sequence: "6"; onActivated: { calibration.trunkOpen = !calibration.trunkOpen
                                                  console.log("DEMO: багажник", calibration.trunkOpen ? "открыт" : "закрыт") } }
 
+        // C — демо-камера (Smart Driver): поставить в 420 м впереди машины,
+        // повторное нажатие — убрать. Нужна для проверки предупреждения дома
+        // и в --mock, где реальных камер рядом с трассой демо-маршрута нет.
+        Shortcut { sequence: "C"; onActivated: {
+                      if (SpeedCamManager.count > 0 && SpeedCamManager.cameraActive) {
+                          SpeedCamManager.clearSimulated()
+                          console.log("DEMO: камера убрана")
+                      } else {
+                          SpeedCamManager.simulateCameraAhead(60, 420)
+                          console.log("DEMO: камера в 420 м впереди, ограничение 60")
+                      }
+                  } }
+
         Shortcut { sequence: "Space"; onActivated: root.nextCenterMode() }
         // ←/→ — демо-поворотники: нажал — включил, ещё раз — отключил
         Shortcut { sequence: "Left"; onActivated: { root.demoLeftTurn = !root.demoLeftTurn
@@ -800,6 +817,21 @@ Window {
             tripA: root.tripA
             tripB: root.tripB
             selfTest: root.lampSelfTest
+        }
+
+        // ========== ПРЕДУПРЕЖДЕНИЕ О КАМЕРЕ (Smart Driver) ==========
+        // Верхняя полоса между приборами: циферблаты — это круги радиусом 357
+        // с центрами на осях приборов, поэтому в центре сверху места хватает.
+        // Пока камера дальше 500 м (или база пуста) — блока нет вообще,
+        // и он не перекрывает центральную панель.
+        CameraWarning {
+            x: root.centerX + (root.centerWidth - width) / 2
+            y: root.navigationMode ? 8 : 15
+            width: root.centerWidth * 0.96
+            height: root.navigationMode ? 60 : 118
+            z: 6
+            compact: root.navigationMode
+            enabled: root.cameraWarningEnabled
         }
 
         // ========== ВЕРХНИЙ ПРАВЫЙ УГОЛ: индикация газа ==========

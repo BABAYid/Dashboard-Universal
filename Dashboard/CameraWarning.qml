@@ -1,5 +1,4 @@
 import QtQuick 2.15
-import QtQuick.Effects
 import QtMultimedia
 import Dashboard
 
@@ -58,6 +57,19 @@ Item {
     }
     onActiveChanged: if (!active) rootWarning.pulse = 1.0
 
+    // Мягкое свечение в цвет предупреждения: два полупрозрачных «ореола»
+    // вместо шейдерной тени — дешевле на слабом GPU и не ломает рендер.
+    Rectangle {
+        anchors.fill: parent
+        anchors.margins: -height * 0.06
+        radius: height * 0.22
+        color: "transparent"
+        border.width: height * 0.10
+        border.color: rootWarning.accentSoft
+        opacity: rootWarning.active ? rootWarning.pulse : 0
+        Behavior on border.color { ColorAnimation { duration: 200 } }
+    }
+
     Rectangle {
         id: card
         anchors.fill: parent
@@ -67,16 +79,6 @@ Item {
         border.color: rootWarning.accent
         opacity: rootWarning.active ? rootWarning.pulse : 0
         Behavior on border.color { ColorAnimation { duration: 200 } }
-
-        // Мягкое свечение в цвет предупреждения — читается на любом фоне.
-        MultiEffect {
-            anchors.fill: parent
-            source: card
-            shadowEnabled: true
-            shadowColor: rootWarning.accent
-            shadowBlur: 0.9
-            shadowOpacity: 0.45 * rootWarning.pulse
-        }
 
         // ---------------- значок камеры (нарисован примитивами) ----------------
         Item {

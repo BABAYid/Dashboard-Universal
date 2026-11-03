@@ -62,6 +62,8 @@ qt_add_qml_module(appDashboard
         assets/ipsum_3D.glb
         assets/3.glb
         assets/engine_anim.js
+        # Бип предупреждения о камере (Smart Driver)
+        assets/sounds/camera_beep.wav
         fonts/KdamThmorPro-Regular.ttf
         images/ABS.png
         images/lights_glow.png
@@ -133,4 +135,12 @@ if(DASHBOARD_BUILD_TESTS)
     )
     target_include_directories(test_canprotocol PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/can)
     target_link_libraries(test_canprotocol PRIVATE Qt6::Quick)
+
+    # Тест базы камер: разбор speedcam.txt, гаверсинус, фильтры, демо-камера.
+    add_executable(test_speedcam
+        tests/test_speedcam.cpp
+        speedcam/SpeedCamManager.cpp
+    )
+    target_include_directories(test_speedcam PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/speedcam)
+    target_link_libraries(test_speedcam PRIVATE Qt6::Core Qt6::Concurrent)
 endif()

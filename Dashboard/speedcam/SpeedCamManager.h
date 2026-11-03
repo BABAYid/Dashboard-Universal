@@ -153,7 +153,7 @@ private:
     static QString typeName(quint8 type);
     static QString formatDistance(double meters);
 
-    QReadWriteLock m_lock;
+    mutable QReadWriteLock m_lock;   // mutable: чтение из const-методов
     Database m_db;
     QVector<Point> m_simulated;      // инжектированные камеры (демо/тесты)
 

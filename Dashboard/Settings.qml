@@ -53,6 +53,10 @@ Item {
     // «Погода» — дождь/снег на панели, когда за окном непогода (Open-Meteo).
     property bool weatherEnabled: true
 
+    // «Камеры» — предупреждения Smart Driver: «КАМЕРА: 60 км/ч» и «ДО КАМЕРЫ».
+    // Выключатель на случай, когда база сомнительная или не нужна.
+    property bool cameraWarningEnabled: true
+
     // Калибровка шкал малых стрелок (поворот item, градусы):
     // топливо — при пустом (E) и полном (F) баке, температура — при 40 и 120 °C.
     property real fuelAngleE: -82
@@ -80,6 +84,7 @@ Item {
         property real savedTempFactor: 1.0
         property bool savedFunEnabled: true
         property bool savedWeatherEnabled: true
+        property bool savedCameraWarningEnabled: true
         property bool savedNeedleTrailEnabled: true
         // Калибровка стрелок топлива/температуры (углы поворота)
         property real savedFuelAngleE: -82
@@ -96,6 +101,7 @@ Item {
         tempFactor = appSettings.savedTempFactor
         funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
+        cameraWarningEnabled = appSettings.savedCameraWarningEnabled
         fuelAngleE = appSettings.savedFuelAngleE
         fuelAngleF = appSettings.savedFuelAngleF
         tempAngleStart = appSettings.savedTempAngleStart
@@ -155,6 +161,7 @@ Item {
         appSettings.savedTempFactor = tempFactor
         appSettings.savedFunEnabled = funEnabled
         appSettings.savedWeatherEnabled = weatherEnabled
+        appSettings.savedCameraWarningEnabled = cameraWarningEnabled
 
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
 
@@ -181,6 +188,8 @@ Item {
         fuelFactor = appSettings.savedFuelFactor
         tempFactor = appSettings.savedTempFactor
         funEnabled = appSettings.savedFunEnabled
+        weatherEnabled = appSettings.savedWeatherEnabled
+        cameraWarningEnabled = appSettings.savedCameraWarningEnabled
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
         updateInputs()
         visible = false
@@ -661,6 +670,108 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: CanBackend.simulateFueling()
+                }
+            }
+            Item { width: 1; height: 8 }
+
+            // «Камеры»: предупреждения Smart Driver (SpeedCamManager).
+            // Ниже — состояние базы (сколько точек и когда обновлена) и кнопка
+            // демо-камеры: без реальной базы предупреждение иначе не увидеть.
+            Row {
+                spacing: 18
+                x: (parent.width - 736) / 2
+
+                Text {
+                    text: "Камеры"
+                    width: 320
+                    horizontalAlignment: Text.AlignRight
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.labelColor
+                    font.pixelSize: 24
+                }
+
+                Switch {
+                    id: cameraSwitch
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: settingsOverlay.cameraWarningEnabled
+                    onToggled: settingsOverlay.cameraWarningEnabled = checked
+
+                    indicator: Rectangle {
+                        implicitWidth: 78
+                        implicitHeight: 36
+                        radius: 18
+                        color: cameraSwitch.checked ? "#2A7A3A" : "#3A3A3A"
+                        border.color: cameraSwitch.checked ? "#3FBF57" : "#5A5A5A"
+                        border.width: 2
+
+                        Rectangle {
+                            y: 4
+                            x: cameraSwitch.checked ? parent.width - width - 4 : 4
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: cameraSwitch.checked ? "#E8FFE8" : "#9A9A9A"
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+                    }
+
+                    contentItem: Item {}
+                }
+
+                Text {
+                    text: settingsOverlay.cameraWarningEnabled ? "включены" : "выключены"
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.cameraWarningEnabled ? "#3FBF57" : "#8A8A8A"
+                    font.pixelSize: 20
+                    font.family: settingsOverlay.uiFont
+                }
+            }
+            Item { width: 1; height: 8 }
+
+            // Состояние базы камер: точек и дата обновления (обновляет
+            // update_speedcam.sh по systemd-таймеру, см. docs/speedcam.md).
+            Text {
+                x: (parent.width - 736) / 2
+                width: 736
+                text: SpeedCamManager.statusText
+                color: "#7A828E"
+                font.pixelSize: 18
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignHCenter
+            }
+            Item { width: 1; height: 8 }
+
+            // «Симулировать камеру»: тест — ставит камеру в 420 м впереди
+            // машины по её курсу (или на север, если курса нет) и сразу
+            // показывает предупреждение. Повторное нажатие убирает камеру.
+            Row {
+                spacing: 18
+                x: (parent.width - 736) / 2
+
+                Button {
+                    id: cameraButton
+                    width: 320
+                    height: 56
+                    text: SpeedCamManager.cameraActive ? "Убрать камеру" : "Симулировать камеру"
+                    background: Rectangle {
+                        color: cameraButton.pressed ? "#C08A18" : "#8A6410"
+                        radius: 8
+                    }
+                    contentItem: Text {
+                        text: cameraButton.text
+                        color: "white"
+                        font.pixelSize: 20
+                        font.bold: true
+                        font.family: settingsOverlay.uiFont
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: {
+                        if (SpeedCamManager.cameraActive)
+                            SpeedCamManager.clearSimulated()
+                        else
+                            SpeedCamManager.simulateCameraAhead(60, 420)
+                    }
                 }
             }
             Item { width: 1; height: 8 }

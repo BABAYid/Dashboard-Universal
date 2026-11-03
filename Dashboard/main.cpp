@@ -79,6 +79,16 @@ int main(int argc, char *argv[])
     // передаётся в checkPosition() — там считается расстояние до камеры.
     SpeedCamManager *speedcam = SpeedCamManager::instance();
     speedcam->start();
+    // Отладка на стенде: DASHBOARD_DEMO_CAMERA=1 через 5 секунд ставит
+    // демо-камеру впереди машины — то же, что кнопка «Симулировать камеру»
+    // в настройках и клавиша C. Нужно для проверки предупреждения без
+    // реальной базы и без клавиатуры (например, со снимком экрана).
+    if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_CAMERA")) {
+        QTimer::singleShot(5000, speedcam, []() {
+            SpeedCamManager::instance()->simulateCameraAhead(60, 420);
+        });
+    }
+
     QObject::connect(can, &CanBackend::gpsPositionUpdated, speedcam,
                      [speedcam](double lat, double lon, double course, double speedKmh) {
                          speedcam->checkPosition(lat, lon, course, speedKmh);
