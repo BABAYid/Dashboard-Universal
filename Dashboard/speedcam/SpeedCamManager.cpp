@@ -295,7 +295,12 @@ void SpeedCamManager::checkPosition(double lat, double lon, double course, doubl
     m_lastCourse = course;
     m_lastSpeed = speedKmh;
 
-    if (!m_warningDistance || (m_db.points.isEmpty() && m_simulated.isEmpty())) {
+    bool empty = false;
+    {
+        QReadLocker locker(&m_lock);
+        empty = m_db.points.isEmpty() && m_simulated.isEmpty();
+    }
+    if (!m_warningDistance || empty) {
         updateWarning(false, Point{}, 0.0, false);
         return;
     }

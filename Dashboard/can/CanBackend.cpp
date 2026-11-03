@@ -451,6 +451,12 @@ void CanBackend::handleGpsPositionFrame(const quint8 *d)
 
     set(m_gpsLatitude,  lat / 1.0e7, &CanBackend::gpsLatitudeChanged);
     set(m_gpsLongitude, lon / 1.0e7, &CanBackend::gpsLongitudeChanged);
+
+    // Кадр положения пришёл — извещаем подписчиков (база камер, карта).
+    // Курс и скорость берём из последнего кадра 0x521: они приходят отдельным
+    // кадром, но в 2 Гц разница в 0.5 с на дороге несущественна.
+    if (m_gpsLatitude != 0.0 || m_gpsLongitude != 0.0)
+        emit gpsPositionUpdated(m_gpsLatitude, m_gpsLongitude, m_gpsCourse, m_speed);
 }
 
 // 0x521: GPS, движение и качество. Курс ×0.5, скорость, HDOP ×10, спутники

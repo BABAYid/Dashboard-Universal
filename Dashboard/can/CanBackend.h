@@ -348,6 +348,12 @@ signals:
     void gpsFixTypeChanged();
     void gpsUtcTimeChanged();
 
+    // Позиция обновилась (кадр 0x520). Отдельный сигнал нужен, чтобы не
+    // дёргать подписчиков на каждое изменение широты и долготы по отдельности:
+    // проверка камер (SpeedCamManager) должна видеть точку целиком — с курсом
+    // и скоростью из 0x521, иначе «камера впереди/позади» не посчитать.
+    void gpsPositionUpdated(double lat, double lon, double course, double speedKmh);
+
 private:
     void openSocket();
     void readFrames();

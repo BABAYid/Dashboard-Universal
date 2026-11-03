@@ -9,6 +9,7 @@
 
 #include "can/CanBackend.h"
 #include "media/MediaBackend.h"
+#include "speedcam/SpeedCamManager.h"
 #include "WeatherProvider.h"
 
 // Путь к ресурсам QML-модуля Dashboard (см. qt_add_qml_module в CMakeLists.txt)
@@ -71,6 +72,17 @@ int main(int argc, char *argv[])
     MediaBackend *media = MediaBackend::instance();
     media->setMockMode(parser.isSet(mockOption));
     media->start();
+
+    // База камер (Smart Driver). Файл читается в фоновом потоке, поэтому
+    // запуск приборки не задерживается даже на большой базе.
+    // Связка с GPS: каждое обновление позиции по CAN (кадры 0x520/0x521)
+    // передаётся в checkPosition() — там считается расстояние до камеры.
+    SpeedCamManager *speedcam = SpeedCamManager::instance();
+    speedcam->start();
+    QObject::connect(can, &CanBackend::gpsPositionUpdated, speedcam,
+                     [speedcam](double lat, double lon, double course, double speedKmh) {
+                         speedcam->checkPosition(lat, lon, course, speedKmh);
+                     });
 
     // Шрифт приборки. Регистрируем в приложении целиком: раньше это делал FontLoader
     // в Main.qml и писал в несуществующее свойство Window.font (ошибка QML).

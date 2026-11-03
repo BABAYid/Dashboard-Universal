@@ -4,7 +4,7 @@ project(Dashboard VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick WebView Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick WebView Network Concurrent)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -16,7 +16,8 @@ qt_add_executable(appDashboard
 # <MediaBackend.h> по имени файла
 target_include_directories(appDashboard PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/can
-    ${CMAKE_CURRENT_SOURCE_DIR}/media)
+    ${CMAKE_CURRENT_SOURCE_DIR}/media
+    ${CMAKE_CURRENT_SOURCE_DIR}/speedcam)
 
 # Все ресурсы (картинки, шрифт) кладутся в ресурсную систему по пути модуля:
 # qrc:/qt/qml/Dashboard/images/... — в QML на них ссылаемся относительными путями
@@ -30,6 +31,8 @@ qt_add_qml_module(appDashboard
         can/CanBackend.cpp
         media/MediaBackend.h
         media/MediaBackend.cpp
+        speedcam/SpeedCamManager.h
+        speedcam/SpeedCamManager.cpp
         WeatherProvider.h
         WeatherProvider.cpp
     QML_FILES
@@ -47,6 +50,7 @@ qt_add_qml_module(appDashboard
         Settings.qml
         Indicators.qml
         MapWebView.qml
+        CameraWarning.qml
     RESOURCES
         # 3D-машина, предобработанная balsam из assets/car.glb (см.
         # tools/decimate_glb.py и README): нативная сцена + .mesh вместо
@@ -105,7 +109,7 @@ set_target_properties(appDashboard PROPERTIES
 )
 
 target_link_libraries(appDashboard
-    PRIVATE Qt6::Quick Qt6::WebView Qt6::Network
+    PRIVATE Qt6::Quick Qt6::WebView Qt6::Network Qt6::Concurrent
 )
 
 include(GNUInstallDirs)
