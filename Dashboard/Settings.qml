@@ -752,7 +752,7 @@ Item {
                     id: cameraButton
                     width: 320
                     height: 56
-                    text: SpeedCamManager.cameraActive ? "Убрать камеру" : "Симулировать камеру"
+                    text: SpeedCamManager.demoCameraActive ? "Убрать демо-камеру" : "Симулировать камеру"
                     background: Rectangle {
                         color: cameraButton.pressed ? "#C08A18" : "#8A6410"
                         radius: 8
@@ -767,7 +767,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: {
-                        if (SpeedCamManager.cameraActive)
+                        if (SpeedCamManager.demoCameraActive)
                             SpeedCamManager.clearSimulated()
                         else
                             SpeedCamManager.simulateCameraAhead(60, 420)

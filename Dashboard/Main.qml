@@ -645,7 +645,7 @@ Window {
         // повторное нажатие — убрать. Нужна для проверки предупреждения дома
         // и в --mock, где реальных камер рядом с трассой демо-маршрута нет.
         Shortcut { sequence: "C"; onActivated: {
-                      if (SpeedCamManager.count > 0 && SpeedCamManager.cameraActive) {
+                      if (SpeedCamManager.demoCameraActive) {
                           SpeedCamManager.clearSimulated()
                           console.log("DEMO: камера убрана")
                       } else {

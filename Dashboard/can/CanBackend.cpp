@@ -971,10 +971,19 @@ void CanBackend::generateMockFrames()
     // со скоростью, курс берётся из направления смещения.
     {
         static int gpsDivider = 0;
+        // Отладка на стенде: DASHBOARD_MOCK_LAT / DASHBOARD_MOCK_LON переносят
+        // демо-маршрут в свой город — так базу камер можно проверить рядом с
+        // домом, не выезжая на дорогу (см. docs/speedcam.md, «Как проверить»).
+        static const double mockLat = qEnvironmentVariableIsSet("DASHBOARD_MOCK_LAT")
+            ? qEnvironmentVariable("DASHBOARD_MOCK_LAT").toDouble()
+            : 55.7520;
+        static const double mockLon = qEnvironmentVariableIsSet("DASHBOARD_MOCK_LON")
+            ? qEnvironmentVariable("DASHBOARD_MOCK_LON").toDouble()
+            : 37.6175;
         if (++gpsDivider >= 10) {
             gpsDivider = 0;
-            const double lat = 55.7520 + 0.004 * std::sin(t / 300.0);
-            const double lon = 37.6175 + 0.008 * std::cos(t / 300.0);
+            const double lat = mockLat + 0.004 * std::sin(t / 300.0);
+            const double lon = mockLon + 0.008 * std::cos(t / 300.0);
             // Курс в демо просто гуляет вокруг «на северо-восток», чтобы на
             // карте и в виджете было видно, что он приходит и меняется.
             const double course = std::fmod(90.0 + 60.0 * std::sin(t / 50.0), 360.0);

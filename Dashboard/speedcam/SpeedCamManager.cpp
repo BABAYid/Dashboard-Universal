@@ -772,6 +772,7 @@ void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters)
     buildStatusText();
     emit statusTextChanged();
 
+    emit cameraChanged();
     qInfo() << "Камеры: демо-камера поставлена в" << distanceMeters << "м впереди,"
             << "ограничение" << speedLimit << "км/ч";
 
@@ -796,6 +797,7 @@ void SpeedCamManager::clearSimulated()
         checkPosition(m_lastLat, m_lastLon, m_lastCourse, m_lastSpeed);
     else
         updateWarning(false, Point{}, 0.0, false);
+    emit cameraChanged();
     qInfo() << "Камеры: демо-камера убрана";
 }
 

@@ -73,6 +73,10 @@ class SpeedCamManager : public QObject
     Q_PROPERTY(QString cameraRangeText READ cameraRangeText NOTIFY cameraChanged) // «ДО КАМЕРЫ: 350 м»
     Q_PROPERTY(bool cameraSpeeding READ cameraSpeeding NOTIFY cameraChanged)      // едем быстрее камеры
     Q_PROPERTY(bool cameraAhead READ cameraAhead NOTIFY cameraChanged)
+    // Включена ли демо-камера (клавиша C, кнопка в настройках). Отдельное
+    // свойство: при загруженной реальной базе cameraActive может быть true
+    // из-за настоящей камеры, и по нему нельзя понять, что показывает кнопка.
+    Q_PROPERTY(bool demoCameraActive READ demoCameraActive NOTIFY cameraChanged)
 
     // --- настройки ---
     Q_PROPERTY(int warningDistance READ warningDistance WRITE setWarningDistance
@@ -119,6 +123,7 @@ public:
     QString cameraRangeText() const { return m_cameraRangeText; }
     bool cameraSpeeding() const { return m_cameraSpeeding; }
     bool cameraAhead() const { return m_cameraAhead; }
+    bool demoCameraActive() const { return m_simFollow; }
 
     int warningDistance() const { return m_warningDistance; }
     void setWarningDistance(int meters);
