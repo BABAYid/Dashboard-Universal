@@ -21,7 +21,7 @@ mkdir -p "$TMP"
 BODY="#F7F5F0";        BODY_METAL=0.25; BODY_ROUGH=0.5     # белый перламутр, полуматовый лак
 DARK="#3B2A22"                                             # тёмно-коричневый металлик
 GLASS="#0A0C10";       GLASS_ALPHA=0.7;  GLASS_ROUGH=0.05  # тонировка: чёрное, полупрозрачное
-RIM="#C9CDD3";         RIM_METAL=0.9;    RIM_ROUGH=0.25     # диски: светло-серый металлик
+RIM="#EDEFF2";         RIM_METAL=0.10;   RIM_ROUGH=0.40     # диски: светло-серый металлик
 
 [ -f "$SRC" ] || { echo "Нет исходной модели: $SRC" >&2; exit 1; }
 
