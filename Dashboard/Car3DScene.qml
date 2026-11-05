@@ -149,7 +149,7 @@ Item {
     // мелкий), а смещения заданы в метрах модели: X — ширина (левая сторона
     // +X), Y — высота, Z — длина (нос в +Z).
     readonly property bool assembling: progress < 0.999
-    readonly property real assembly: Math.max(0.0, Math.min(1.0, (progress - 0.01) / 0.62))
+    readonly property real assembly: Math.max(0.0, Math.min(1.0, (progress - 0.01) / 0.60))
 
     readonly property var assembleOffsets: [
         [0.0, 12.0, 0.0],    // 0  кузов — сверху, за кадром
@@ -534,7 +534,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.wheels.length > 0 && !scene.assembling
+                    running: ipsumCar.wheels.length > 0 && !scene.assembling && scene.assembly > 0.99
                     onTriggered: {
                         const spd = scene.roadSpeed
                         if (spd > 0.5)
@@ -551,7 +551,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.bodyParts.length > 0 && !scene.assembling
+                    running: ipsumCar.bodyParts.length > 0 && !scene.assembling && scene.assembly > 0.99
                     onTriggered: {
                         const totalScale = scene.carScale * scene.carEnlarge
                         const target = scene.suspensionOffset / totalScale
@@ -572,7 +572,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.capot !== null && !scene.assembling
+                    running: ipsumCar.capot !== null && !scene.assembling && scene.assembly > 0.99
                     onTriggered: {
                         scene.pivotPart(ipsumCar, 6, [1, 0, 0], -ipsumCar.capotAngle)
                         scene.pivotPart(ipsumCar, 1, [1, 0, 0], ipsumCar.trunkAngle)
@@ -585,7 +585,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.doors.length > 0 && !scene.assembling
+                    running: ipsumCar.doors.length > 0 && !scene.assembling && scene.assembly > 0.99
                     onTriggered: {
                         const angles = [ipsumCar.doorAngleFL, ipsumCar.doorAngleFR,
                                         ipsumCar.doorAngleRL, ipsumCar.doorAngleRR]
@@ -668,7 +668,7 @@ Item {
                     property vector3d lampPosition
                     property bool lit
 
-                    visible: lit && !scene.viewSide
+                    visible: lit && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
 
                     Model {
                         source: "#Rectangle"
@@ -713,7 +713,7 @@ Item {
                 // локальная высота плоскости становится длиной по Z.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide
+                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
                     position: Qt.vector3d(0, 0.02, 4.4)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
                     scale: Qt.vector3d(0.08, 0.05, 1)
@@ -734,7 +734,7 @@ Item {
                 // у материала отключено отсечение граней.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide
+                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
                     position: Qt.vector3d(0, 1.5, 3.05)
                     scale: Qt.vector3d(0.085, 0.06, 1)
                     materials: PrincipledMaterial {
@@ -750,7 +750,7 @@ Item {
                 // переход от машины к «дороге света» не был резким.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide
+                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
                     position: Qt.vector3d(0, 0.019, 2.9)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
                     scale: Qt.vector3d(0.055, 0.024, 1)
@@ -773,7 +773,7 @@ Item {
                     property vector3d lampPosition
                     property bool lit
 
-                    visible: lit && !scene.viewSide
+                    visible: lit && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
 
                     Model {
                         source: "#Rectangle"
@@ -821,7 +821,7 @@ Item {
                 // читался «след» света, а не второй стоп.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide
+                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
                     position: Qt.vector3d(0, 0.018, -2.9)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
                     scale: Qt.vector3d(0.042, 0.016, 1)

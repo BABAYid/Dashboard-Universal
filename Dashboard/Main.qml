@@ -307,13 +307,13 @@ Window {
                 property: "startupStage"
                 from: 0.0
                 to: 1.0
-                duration: 6200
+                duration: 9000
                 easing.type: Easing.InOutQuad
             }
             SequentialAnimation {
-                // Машина собирается ~4 с и стоит — приборы проявляются
+                // Машина собирается ~5.3 с и стоит — приборы проявляются
                 // только после сборки
-                PauseAnimation { duration: 5000 }
+                PauseAnimation { duration: 7000 }
                 // Самопроверка запускается вместе с проявлением приборов,
                 // иначе проход стрелок проходит, пока приборов ещё не видно
                 ScriptAction { script: { root.startup = true; root.lampSelfTest = true } }
