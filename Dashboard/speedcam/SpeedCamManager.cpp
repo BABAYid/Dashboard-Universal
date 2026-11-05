@@ -669,6 +669,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
         m_cameraTypeName.clear();
         m_cameraModel.clear();
         m_cameraSpeedLimit = 0;
+        m_cameraType = 0;
         m_cameraDistance = 0.0;
         m_cameraHeader.clear();
         m_cameraRangeText.clear();
@@ -709,6 +710,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
     m_cameraTypeName = typeName;
     m_cameraModel = model;
     m_cameraSpeedLimit = point.speed;
+    m_cameraType = (point.typeNameIdx == kSimulatedNameIdx) ? 1 : point.type;
     m_cameraDistance = distance;
     m_cameraAhead = ahead;
     m_cameraSpeeding = (point.speed > 0) && (m_lastSpeed > 0.0) && (m_lastSpeed > point.speed + 0.5);

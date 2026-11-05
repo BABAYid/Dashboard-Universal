@@ -109,6 +109,11 @@ def collect(path: str):
     return counts, names, speeds, dists, dirtypes, models, all_speeds
 
 
+def fmt(number: int) -> str:
+    """Число с пробелами между разрядами: 207 701."""
+    return f"{number:,}".replace(",", " ")
+
+
 def human_share(part: int, total: int) -> str:
     return f"{100.0 * part / total:.1f}%" if total else "—"
 
@@ -136,43 +141,43 @@ def main() -> int:
     dangers = total - cameras
 
     print(f"# Что есть в базе камер ({args.path})\n")
-    print(f"Всего точек: **{total:,}**".replace(",", " ") + "\n")
+    print(f"Всего точек: **{fmt(total)}**\n")
     print(f"- камеры (контроль скорости, красный свет, полоса, ДПС, засада): "
-          f"**{cameras:,}** ({human_share(cameras, total)})".replace(",", " "))
+          f"**{fmt(cameras)}** ({human_share(cameras, total)})")
     print(f"- предупреждения об опасностях (переходы, неровности, повороты…): "
-          f"**{dangers:,}** ({human_share(dangers, total)})\n".replace(",", " "))
+          f"**{fmt(dangers)}** ({human_share(dangers, total)})\n")
 
     print("## Типы объектов\n")
     print("| TYPE | Что это | Точек | Доля | Ограничения (сколько точек) | Предупреждать за |")
     print("|-----:|---------|------:|-----:|------------------------------|------------------|")
     for code, count in counts.most_common():
         name = names.get(code) or TYPE_NAMES.get(code, f"Тип {code}")
-        speed_list = ", ".join(f"{value} км/ч ×{number}" for value, number
+        speed_list = ", ".join(f"{value} км/ч ×{fmt(number)}" for value, number
                                in speeds[code].most_common(args.top))
-        dist_list = ", ".join(f"{value} м ×{number}" for value, number
+        dist_list = ", ".join(f"{value} м ×{fmt(number)}" for value, number
                               in dists[code].most_common(3))
-        print(f"| {code} | {name} | {count} | {human_share(count, total)} | {speed_list} | {dist_list} |")
+        print(f"| {code} | {name} | {fmt(count)} | {human_share(count, total)} | {speed_list} | {dist_list} |")
 
     print("\n## Ограничения скорости по всей базе\n")
     print("| Ограничение | Точек | Доля |")
     print("|------------:|------:|-----:|")
     for speed, count in sorted(all_speeds.items()):
         mark = "" if speed else " *(нет ограничения)*"
-        print(f"| {speed} км/ч{mark} | {count} | {human_share(count, total)} |")
+        print(f"| {speed} км/ч{mark} | {fmt(count)} | {human_share(count, total)} |")
 
     print("\n## Направленность (DIRTYPE)\n")
     print("| DIRTYPE | Смысл | Точек |")
     print("|--------:|-------|------:|")
     labels = {0: "без направления", 1: "направленная (в одну сторону)", 2: "прочее/оба направления"}
     for dirtype, count in sorted(dirtypes.items()):
-        print(f"| {dirtype} | {labels.get(dirtype, '—')} | {count} |")
+        print(f"| {dirtype} | {labels.get(dirtype, '—')} | {fmt(count)} |")
 
     if models:
         print("\n## Модели комплексов (топ-15)\n")
         print("| Модель | Точек |")
         print("|--------|------:|")
         for model, count in models.most_common(15):
-            print(f"| {model or '—'} | {count} |")
+            print(f"| {model or '—'} | {fmt(count)} |")
 
     print("\n---\n")
     print("Сводка получена скриптом `tools/speedcam_stats.py`;")

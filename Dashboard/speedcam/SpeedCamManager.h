@@ -67,6 +67,11 @@ class SpeedCamManager : public QObject
     Q_PROPERTY(bool cameraActive READ cameraActive NOTIFY cameraChanged)
     Q_PROPERTY(QString cameraTypeName READ cameraTypeName NOTIFY cameraChanged)   // «Статическая камера»
     Q_PROPERTY(QString cameraModel READ cameraModel NOTIFY cameraChanged)         // «Кордон», «Стрелка+»
+    // Код типа из базы (см. таблицу в docs/speedcam_stats.md) и признак
+    // «это камера, а не опасность»: по ним QML выбирает значок и цвет, не
+    // разбирая русский текст названия.
+    Q_PROPERTY(int cameraType READ cameraType NOTIFY cameraChanged)
+    Q_PROPERTY(bool cameraIsSpeedControl READ cameraIsSpeedControl NOTIFY cameraChanged)
     Q_PROPERTY(int cameraSpeedLimit READ cameraSpeedLimit NOTIFY cameraChanged)
     Q_PROPERTY(double cameraDistance READ cameraDistance NOTIFY cameraChanged)    // метры
     Q_PROPERTY(QString cameraHeader READ cameraHeader NOTIFY cameraChanged)       // «КАМЕРА: 60 км/ч»
@@ -117,6 +122,14 @@ public:
     bool cameraActive() const { return m_cameraActive; }
     QString cameraTypeName() const { return m_cameraTypeName; }
     QString cameraModel() const { return m_cameraModel; }
+    int cameraType() const { return m_cameraType; }
+    // 1 — камера скорости, 3 — красный свет, 5 — засада, 11 — полоса,
+    // 20 — пост ДПС. Остальные коды — предупреждения об опасностях.
+    bool cameraIsSpeedControl() const
+    {
+        return m_cameraType == 1 || m_cameraType == 3 || m_cameraType == 5
+            || m_cameraType == 11 || m_cameraType == 20;
+    }
     int cameraSpeedLimit() const { return m_cameraSpeedLimit; }
     double cameraDistance() const { return m_cameraDistance; }
     QString cameraHeader() const { return m_cameraHeader; }
@@ -208,6 +221,7 @@ private:
     bool m_cameraActive = false;
     QString m_cameraTypeName;
     QString m_cameraModel;
+    int m_cameraType = 0;
     int m_cameraSpeedLimit = 0;
     double m_cameraDistance = 0.0;
     QString m_cameraHeader;
