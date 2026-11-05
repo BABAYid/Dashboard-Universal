@@ -140,8 +140,48 @@ Item {
     }
 
     readonly property real carTravel: Math.min(1.0, Math.max(0.0, (progress - 0.375) / 0.375))
-    readonly property real carDepth: -7.0 * (1.0 - carTravel)
-    readonly property real carScale: 0.78 + 0.22 * carTravel
+    readonly property real carDepth: assembling ? 0.0 : -7.0 * (1.0 - carTravel)
+    readonly property real carScale: assembling ? 1.0 : 0.78 + 0.22 * carTravel
+
+    // ===== СБОРКА МОДЕЛИ ПРИ ЗАПУСКЕ =====
+    // Как в референсном ролике: детали прилетают на свои места. Пока идёт
+    // сборка, машина стоит по центру (иначе она ещё едет из глубины и кадр
+    // мелкий), а смещения заданы в метрах модели: X — ширина (левая сторона
+    // +X), Y — высота, Z — длина (нос в +Z).
+    readonly property bool assembling: progress < 0.999
+    readonly property real assembly: Math.max(0.0, Math.min(1.0, (progress - 0.02) / 0.72))
+
+    readonly property var assembleOffsets: [
+        [0.0, 3.2, 0.0],     // 0  кузов — падает сверху
+        [0.0, 0.9, -2.6],    // 1  задняя дверь — сзади
+        [1.9, 0.5, 0.7],     // 2  дверь передняя левая
+        [-1.9, 0.5, 0.7],    // 3  дверь передняя правая
+        [1.9, 0.4, -0.7],    // 4  дверь задняя левая
+        [-1.9, 0.4, -0.7],   // 5  дверь задняя правая
+        [0.0, 1.3, 2.7],     // 6  капот — спереди
+        [1.0, 0.9, -1.9],    // 7  фонарь задний левый
+        [-1.0, 0.9, -1.9],   // 8  фонарь задний правый
+        [-1.1, 0.9, 1.9],    // 9  фара правая
+        [1.1, 0.9, 1.9],     // 10 фара левая
+        [1.4, 1.2, 1.5],     // 11 поворотник левый
+        [-1.4, 1.2, 1.5],    // 12 поворотник правый
+        [0.9, -1.8, -0.7],   // 13 колесо
+        [0.9, -1.8, 1.0],    // 14 колесо
+        [-0.9, -1.8, -0.7],  // 15 колесо
+        [-0.9, -1.8, 1.0]    // 16 колесо
+    ]
+    // Задержки: кузов первым, мелочь догоняет.
+    readonly property var assembleDelays: [0.0, 0.42, 0.16, 0.20, 0.24, 0.28,
+                                           0.38, 0.50, 0.50, 0.50, 0.50, 0.55,
+                                           0.55, 0.58, 0.64, 0.61, 0.67]
+
+    // Поворот вокруг произвольной оси: возвращает кватернион [w, x, y, z] —
+    // в том же порядке, в каком хранятся собственные повороты узлов.
+    function axisAngle(ax, ay, az, degrees) {
+        const h = degrees * Math.PI / 360
+        const s = Math.sin(h)
+        return [Math.cos(h), ax * s, ay * s, az * s]
+    }
 
     // У финальной модели дизайнера нос смотрит в +Z (камера тоже с +Z),
     // поэтому 0 — машина стоит носом к зрителю; после заставки разворот на
@@ -316,6 +356,41 @@ Item {
 
                 property var models: []     // все QQuick3DModel в порядке узлов
                 property var origQuat: []   // их собственные повороты [w,x,y,z]
+                property var basePos: []    // их места «на собранной машине»
+
+                // Один кадр сборки: детали едут из своих смещений на места.
+                function applyAssembly(a) {
+                    for (let i = 0; i < models.length; ++i) {
+                        const delay = scene.assembleDelays[i] || 0
+                        let t = (a - delay) / Math.max(0.001, 1 - delay)
+                        t = Math.max(0, Math.min(1, t))
+                        const e = 1 - Math.pow(1 - t, 3)        // easeOutCubic
+                        const off = scene.assembleOffsets[i] || [0, 0, 0]
+                        const base = basePos[i]
+                        if (!base)
+                            continue
+                        models[i].position = Qt.vector3d(base[0] + off[0] * (1 - e),
+                                                         base[1] + off[1] * (1 - e),
+                                                         base[2] + off[2] * (1 - e))
+                        // пока летит — доворачиваем вокруг вертикали
+                        const q = scene.quatMul(scene.axisAngle(0, 1, 0, 140 * (1 - e)),
+                                                origQuat[i] || [1, 0, 0, 0])
+                        models[i].rotation = Qt.quaternion(q[0], q[1], q[2], q[3])
+                    }
+                }
+
+                // Сборка закончилась: ставим всё ровно по местам, дальше позами
+                // управляют обычные таймеры (двери, капот, колёса, подвеска).
+                function finishAssembly() {
+                    for (let i = 0; i < models.length; ++i) {
+                        const base = basePos[i]
+                        if (base)
+                            models[i].position = Qt.vector3d(base[0], base[1], base[2])
+                        const r = origQuat[i]
+                        if (r)
+                            models[i].rotation = Qt.quaternion(r[0], r[1], r[2], r[3])
+                    }
+                }
                 property var wheels: []     // модели колёс (ось — мировая X)
                 property var doors: []      // двери салона (ось — мировая Y)
                 property var capot: null    // капот (петля — мировая X)
@@ -382,6 +457,12 @@ Item {
 
                             ipsumCar.models = models
                             ipsumCar.origQuat = quats
+                            ipsumCar.basePos = models.map(function (m) {
+                                return [m.position.x, m.position.y, m.position.z]
+                            })
+                            // на старте детали разлетелись: покажем их сразу
+                            // разобранными, чтобы сборка не начиналась с рывка
+                            ipsumCar.applyAssembly(scene.assembly)
                             ipsumCar.capot = models[6]
                             ipsumCar.trunk = models[1]
 
@@ -431,11 +512,27 @@ Item {
                     }
                 }
 
+                // Сборка: пока идёт заставка, каждый кадр ставим детали на
+                // их промежуточные места.
+                Timer {
+                    interval: 16
+                    repeat: true
+                    running: ipsumCar.models.length > 0 && scene.assembling
+                    onTriggered: ipsumCar.applyAssembly(scene.assembly)
+                }
+                Connections {
+                    target: scene
+                    function onAssemblingChanged() {
+                        if (!scene.assembling)
+                            ipsumCar.finishAssembly()
+                    }
+                }
+
                 // Крутим колёса: угол растёт со скоростью, в покое — стоит.
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.wheels.length > 0
+                    running: ipsumCar.wheels.length > 0 && !scene.assembling
                     onTriggered: {
                         const spd = scene.roadSpeed
                         if (spd > 0.5)
@@ -452,7 +549,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.bodyParts.length > 0
+                    running: ipsumCar.bodyParts.length > 0 && !scene.assembling
                     onTriggered: {
                         const totalScale = scene.carScale * scene.carEnlarge
                         const target = scene.suspensionOffset / totalScale
@@ -473,7 +570,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.capot !== null
+                    running: ipsumCar.capot !== null && !scene.assembling
                     onTriggered: {
                         scene.pivotPart(ipsumCar, 6, [1, 0, 0], -ipsumCar.capotAngle)
                         scene.pivotPart(ipsumCar, 1, [1, 0, 0], ipsumCar.trunkAngle)
@@ -486,7 +583,7 @@ Item {
                 Timer {
                     interval: 16
                     repeat: true
-                    running: ipsumCar.doors.length > 0
+                    running: ipsumCar.doors.length > 0 && !scene.assembling
                     onTriggered: {
                         const angles = [ipsumCar.doorAngleFL, ipsumCar.doorAngleFR,
                                         ipsumCar.doorAngleRL, ipsumCar.doorAngleRR]

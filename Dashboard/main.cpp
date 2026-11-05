@@ -47,12 +47,6 @@ int main(int argc, char *argv[])
     // (или если 3D не завёлся) приборка стартует по-старому, за 2.5 с.
     // QML читает флаг сам из аргументов приложения (см. Main.qml); здесь он
     // объявлен, чтобы попал в --help и QCommandLineParser его принял.
-    // Пропустить заставку при запуске (полезно для снимков и отладки).
-    QCommandLineOption noIntroOption(
-        QStringLiteral("no-intro"),
-        QStringLiteral("Не показывать заставку при запуске."));
-    parser.addOption(noIntroOption);
-
     QCommandLineOption no3dOption(
         QStringLiteral("no-3d"),
         QStringLiteral("Не запускать 3D-заставку с машиной при старте."));
