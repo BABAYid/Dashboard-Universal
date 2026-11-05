@@ -39,7 +39,11 @@ BODY_MATERIAL = "base white"
 # (узел, индекс примитива с краской кузова)
 PART_TARGETS = {
     "roof": (0, 1),      # base → примитив с материалом base white
-    "grille": (6, 0),    # front door (капот)
+    # Решётка радиатора — отдельный кластер ЧЁРНОГО ГЛЯНЦА в кузове
+    # (X 1.07…1.73, Y 2.67…2.80, Z 4.13…4.26), а не вся передняя кромка:
+    # в панели «front door» она не выделена, поэтому раньше в коричневый
+    # уезжала половина капота.
+    "grille": (0, 0),    # base → примитив black glossy
     "spoiler": (1, 2),   # door back → примитив с материалом base white
 }
 
@@ -137,7 +141,9 @@ def main() -> int:
     parser.add_argument("--metal", type=float, default=0.85, help="металличность новых частей (по умолчанию 0.85)")
     parser.add_argument("--rough", type=float, default=0.30, help="шероховатость новых частей (по умолчанию 0.30)")
     parser.add_argument("--roof-level", type=float, default=3.50, help="порог высоты крыши, м (3.50)")
-    parser.add_argument("--grille-z", type=float, default=4.00, help="с какого Z начинается решётка (4.00)")
+    parser.add_argument("--grille-z", type=float, default=4.05, help="с какого Z начинается решётка (4.05)")
+    parser.add_argument("--grille-x0", type=float, default=1.00, help="левая граница решётки по X (1.00)")
+    parser.add_argument("--grille-x1", type=float, default=1.80, help="правая граница решётки по X (1.80)")
     parser.add_argument("--spoiler-level", type=float, default=3.05, help="порог высоты спойлеров, м (3.05)")
     args = parser.parse_args()
 
@@ -190,7 +196,10 @@ def main() -> int:
             if part == "roof":
                 take = cy > args.roof_level and ny_norm > 0.55
             elif part == "grille":
-                take = cz > args.grille_z
+                # спереди и по центру: у решётки X 1.07…1.73, у всей панели
+                # вокруг — от 0.55 до 2.25, поэтому ограничиваем полосу
+                cx = (a[0] + b[0] + c[0]) / 3.0
+                take = cz > args.grille_z and args.grille_x0 <= cx <= args.grille_x1
             elif part == "spoiler":
                 take = cy > args.spoiler_level
             (moved if take else keep).extend(indices[t * 3:t * 3 + 3])
