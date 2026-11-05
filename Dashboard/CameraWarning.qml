@@ -1,37 +1,65 @@
 import QtQuick 2.15
+import QtQuick.Shapes 1.15
 import QtMultimedia
 import Dashboard
 
 // ============================================================================
-//  CameraWarning.qml — предупреждение о камере (Smart Driver).
+//  CameraWarning.qml — предупреждение о камере или опасности (Smart Driver).
 //
-//  Встаёт в верхнюю полосу между приборами (x центральной области, над
-//  центральной панелью) и живёт там, пока камера впереди ближе 500 м.
-//  Звук — короткий бип на появление новой камеры (сигнал cameraApproaching
-//  от C++ приходит только в этот момент, а не на каждое обновление GPS).
+//  Схема (по просьбе заказчика): знак — стрелочка — сколько осталось до точки.
 //
-//  Цвет: жёлтый — едем в пределах ограничения, красный — превышаем.
-//  Текст: «КАМЕРА: 60 км/ч» и «ДО КАМЕРЫ: 350 м».
+//    ┌──────────────────────────────────────────────┐
+//    │  ( 60 )   ▶▶   350 м                         │   ← знак ограничения,
+//    │  📷 Статическая камера · Кордон              │     стрелка, дистанция
+//    │  ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬░░░░░░░░░░░░░░░░       │   ← полоса «сколько
+//    └──────────────────────────────────────────────┘     осталось»
+//
+//  Знак — как настоящий дорожный: белый круг, красная обводка, чёрное число
+//  (ограничение из базы есть у каждой точки, даже у «лежачего полицейского»).
+//  В углу знака маленький значок: камера (контроль) или треугольник
+//  (опасность) — по cameraIsSpeedControl.
+//
+//  Цвет: спокойный янтарный, а при превышении всё краснеет и пульсирует.
+//  Бип играет при появлении новой точки (сигнал cameraApproaching приходит
+//  только в этот момент, а не на каждый кадр GPS).
 // ============================================================================
 Item {
     id: rootWarning
 
-    // Показывать вообще (настройка в настройках приборки).
+    // Показывать вообще (выключатель «Камеры» в настройках).
     property bool enabled: true
-    // В навигации карта занимает весь экран — предупреждение всё равно нужно,
-    // но рисуем его чуть плотнее, чтобы не мешало разметке карты.
+    // В навигации карта на весь экран — оставляем только знак, стрелку и
+    // дистанцию, без типа и полосы.
     property bool compact: false
+    // Полоса «сколько осталось до точки» (1 — только подъехали, 0 — у точки).
+    property bool showProgress: true
 
     readonly property bool active: enabled && SpeedCamManager.cameraActive
     readonly property color accent: SpeedCamManager.cameraSpeeding ? "#FF3B30" : "#FFC02A"
     readonly property color accentSoft: SpeedCamManager.cameraSpeeding ? "#66201012" : "#66241C05"
+    // Цвет кольца знака — как у настоящего знака ограничения.
+    readonly property color signRing: "#D8231A"
+    readonly property color signFace: "#F4F6F9"
+    readonly property color signInk: "#12161C"
+
+    // Сколько осталось: до 1000 м — метры (кратно 10), дальше — километры.
+    readonly property int metersLeft: Math.max(0, Math.round(SpeedCamManager.cameraDistance / 10) * 10)
+    readonly property string distanceValue: metersLeft >= 1000
+                                            ? (metersLeft / 1000).toFixed(1)
+                                            : String(metersLeft)
+    readonly property string distanceUnit: metersLeft >= 1000 ? "км" : "м"
+    // Доля оставшегося пути: в начале предупреждения 1, у точки 0.
+    readonly property real leftShare: SpeedCamManager.cameraWarnDistance > 0
+                                      ? Math.max(0, Math.min(1, SpeedCamManager.cameraDistance
+                                                               / SpeedCamManager.cameraWarnDistance))
+                                      : 0
 
     visible: opacity > 0
     opacity: active ? 1.0 : 0.0
     Behavior on opacity { NumberAnimation { duration: 180 } }
 
-    // Бип при появлении камеры. SoundEffect не блокирует интерфейс, а при
-    // отсутствии звуковой карты просто молчит (ошибку в лог, не в UI).
+    // Бип при появлении точки. SoundEffect не блокирует интерфейс, а при
+    // отсутствии звуковой карты просто молчит.
     SoundEffect {
         id: beep
         source: "assets/sounds/camera_beep.wav"
@@ -46,8 +74,8 @@ Item {
         }
     }
 
-    // Пульс на превышении: спокойное предупреждение не мигает, а «вы превышаете»
-    // должно бросаться в глаза.
+    // Пульс на превышении: спокойное предупреждение не мигает, а «вы
+    // превышаете» должно бросаться в глаза.
     property real pulse: 1.0
     SequentialAnimation {
         running: rootWarning.active && SpeedCamManager.cameraSpeeding
@@ -57,8 +85,8 @@ Item {
     }
     onActiveChanged: if (!active) rootWarning.pulse = 1.0
 
-    // Мягкое свечение в цвет предупреждения: два полупрозрачных «ореола»
-    // вместо шейдерной тени — дешевле на слабом GPU и не ломает рендер.
+    // Мягкое свечение в цвет предупреждения: полупрозрачный «ореол» вместо
+    // шейдерной тени — дешевле на слабом GPU и не ломает рендер видео.
     Rectangle {
         anchors.fill: parent
         anchors.margins: -height * 0.06
@@ -73,108 +101,214 @@ Item {
     Rectangle {
         id: card
         anchors.fill: parent
-        radius: height * 0.18
+        radius: height * 0.16
         color: "#E60A0E14"
         border.width: 2
         border.color: rootWarning.accent
-        opacity: rootWarning.active ? rootWarning.pulse : 0
+        // Пульсирует не весь баннер (иначе половину времени его не прочесть),
+        // а только ореол и толщина обводки: содержимое остаётся читаемым.
+        opacity: rootWarning.active ? 1.0 : 0.0
         Behavior on border.color { ColorAnimation { duration: 200 } }
 
-        // ---------------- значок камеры (нарисован примитивами) ----------------
+        // Пульсирующая обводка поверх карточки: при превышении красная рамка
+        // «дышит», а текст, знак и стрелка остаются на месте.
+        Rectangle {
+            anchors.fill: parent
+            radius: card.radius
+            color: "transparent"
+            border.width: Math.max(2, card.height * 0.03)
+            border.color: card.border.color
+            opacity: SpeedCamManager.cameraSpeeding ? rootWarning.pulse : 0.0
+        }
+
+        readonly property real pad: height * 0.12
+        readonly property real signSize: height * (rootWarning.compact ? 0.74 : 0.60)
+
+        // ------------------------- ЗНАК ОГРАНИЧЕНИЯ -------------------------
         Item {
-            id: icon
-            width: parent.height * 0.52
+            id: sign
+            width: card.signSize
             height: width
-            anchors.left: parent.left
-            anchors.leftMargin: width * 0.28
+            x: card.pad
             anchors.verticalCenter: parent.verticalCenter
-            opacity: rootWarning.pulse
 
-            // корпус
+            // Белый круг с красной обводкой — как настоящий знак «3.24».
             Rectangle {
-                id: body
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.verticalCenterOffset: parent.height * 0.06
-                width: parent.width * 0.92
-                height: parent.height * 0.58
-                radius: height * 0.24
-                color: rootWarning.accent
-            }
-
-            // «козырёк» сверху (объектив с направленным взглядом)
-            Rectangle {
-                anchors.horizontalCenter: body.horizontalCenter
-                anchors.bottom: body.top
-                width: body.width * 0.46
-                height: body.height * 0.22
-                radius: height * 0.3
-                color: rootWarning.accent
-            }
-
-            // объектив
-            Rectangle {
-                anchors.centerIn: body
-                width: body.height * 0.66
-                height: width
+                anchors.fill: parent
                 radius: width / 2
-                color: "#10151C"
-                border.width: Math.max(1, width * 0.16)
-                border.color: "#F2F5F8"
+                color: rootWarning.signFace
+                border.width: Math.max(2, width * 0.105)
+                border.color: rootWarning.signRing
             }
 
-            // вспышка-«глазок» справа сверху
-            Rectangle {
-                anchors.right: body.right
-                anchors.rightMargin: body.width * 0.08
-                anchors.top: body.top
-                anchors.topMargin: body.height * 0.12
-                width: body.height * 0.2
-                height: width
-                radius: width / 2
-                color: "#10151C"
+            // Ограничение скорости из базы. У трёхзначных (100/110/130) шрифт
+            // мельче — как на настоящих знаках, иначе число не влезает в круг.
+            Text {
+                id: signNumber
+                anchors.centerIn: parent
+                readonly property string label: SpeedCamManager.cameraSpeedLimit > 0
+                                                ? String(SpeedCamManager.cameraSpeedLimit) : "!"
+                text: label
+                color: rootWarning.signInk
+                font.pixelSize: parent.height * (label.length >= 3 ? 0.34 : 0.46)
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+
+        }
+
+        // ------------------------- СТРЕЛОЧКА -------------------------
+        Shape {
+            id: arrow
+            width: card.height * 0.26
+            height: card.height * 0.30
+            anchors.left: sign.right
+            anchors.leftMargin: card.pad * 0.7
+            anchors.verticalCenter: parent.verticalCenter
+
+            ShapePath {
+                fillColor: rootWarning.accent
+                strokeWidth: 0
+                startX: 0
+                startY: arrow.height * 0.34
+                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.34 }
+                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.08 }
+                PathLine { x: arrow.width;        y: arrow.height * 0.5 }
+                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.92 }
+                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.66 }
+                PathLine { x: 0;                  y: arrow.height * 0.66 }
+                PathLine { x: 0;                  y: arrow.height * 0.34 }
             }
         }
 
-        // ---------------- тексты ----------------
-        Column {
-            id: texts
-            anchors.left: icon.right
-            anchors.leftMargin: icon.width * 0.3
-            anchors.right: card.right
-            anchors.rightMargin: card.height * 0.18
+        // ------------------------- СКОЛЬКО ОСТАЛОСЬ -------------------------
+        Row {
+            id: distanceRow
+            anchors.left: arrow.right
+            anchors.leftMargin: card.pad * 0.7
             anchors.verticalCenter: parent.verticalCenter
-            spacing: card.height * 0.03
+            spacing: card.height * 0.035
 
             Text {
-                text: SpeedCamManager.cameraHeader
-                color: rootWarning.accent
-                font.pixelSize: card.height * 0.30
+                id: distanceValueText
+                text: rootWarning.distanceValue
+                color: "#FFFFFF"
+                font.pixelSize: card.height * (rootWarning.compact ? 0.42 : 0.34)
                 font.bold: true
-                elide: Text.ElideRight
-                width: texts.width
+                anchors.baseline: distanceUnitText.baseline
             }
 
             Text {
-                text: SpeedCamManager.cameraRangeText
-                color: "#E8EDF3"
-                font.pixelSize: card.height * 0.22
-                elide: Text.ElideRight
-                width: texts.width
+                id: distanceUnitText
+                text: rootWarning.distanceUnit
+                color: rootWarning.accent
+                font.pixelSize: card.height * (rootWarning.compact ? 0.24 : 0.18)
+                font.bold: true
+            }
+        }
+
+        // ------------------------- ПИКТОГРАММА, ТИП И МОДЕЛЬ -------------------------
+        // Камера и опасность различаются не мелкой точкой в углу знака, а
+        // полноценным значком перед названием: на приборке это читается
+        // боковым зрением, а микро-иконка в 17 px — нет.
+        Item {
+            id: typeBadge
+            visible: !rootWarning.compact
+            width: card.height * 0.20
+            height: width
+            anchors.left: distanceRow.left
+            anchors.bottom: card.bottom
+            anchors.bottomMargin: card.pad * (rootWarning.showProgress ? 1.45 : 0.55)
+
+            // Камера: корпус с объективом (контроль скорости).
+            Item {
+                anchors.fill: parent
+                visible: SpeedCamManager.cameraIsSpeedControl
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: height * 0.22
+                    color: rootWarning.accent
+                }
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: parent.height * 0.58
+                    height: width
+                    radius: width / 2
+                    color: "#12161C"
+                    border.width: Math.max(1, width * 0.20)
+                    border.color: "#F4F6F9"
+                }
             }
 
-            Text {
-                // Тип и модель комплекса мелким шрифтом: «Статическая камера ·
-                // Кордон». В PocketGIS-выгрузке это есть у каждой точки, в
-                // компактном iGO-файле — только тип из встроенной таблицы.
-                text: SpeedCamManager.cameraModel.length > 0
-                      ? SpeedCamManager.cameraTypeName + " · " + SpeedCamManager.cameraModel
-                      : SpeedCamManager.cameraTypeName
-                color: "#9AA4B2"
-                font.pixelSize: card.height * 0.155
-                elide: Text.ElideRight
-                width: texts.width
-                visible: !rootWarning.compact
+            // Опасность: треугольник с восклицательным знаком.
+            Item {
+                anchors.fill: parent
+                visible: !SpeedCamManager.cameraIsSpeedControl
+
+                Shape {
+                    anchors.fill: parent
+                    ShapePath {
+                        fillColor: rootWarning.accent
+                        strokeWidth: 0
+                        startX: typeBadge.width * 0.5
+                        startY: typeBadge.height * 0.02
+                        PathLine { x: typeBadge.width * 0.98; y: typeBadge.height * 0.94 }
+                        PathLine { x: typeBadge.width * 0.02; y: typeBadge.height * 0.94 }
+                        PathLine { x: typeBadge.width * 0.5; y: typeBadge.height * 0.02 }
+                    }
+                }
+                Text {
+                    anchors.centerIn: parent
+                    anchors.verticalCenterOffset: parent.height * 0.16
+                    text: "!"
+                    color: "#12161C"
+                    font.pixelSize: parent.height * 0.52
+                    font.bold: true
+                }
+            }
+        }
+
+        Text {
+            id: typeLine
+            visible: !rootWarning.compact
+            anchors.left: typeBadge.right
+            anchors.leftMargin: card.height * 0.06
+            anchors.right: card.right
+            anchors.rightMargin: card.pad
+            anchors.verticalCenter: typeBadge.verticalCenter
+            text: SpeedCamManager.cameraModel.length > 0
+                  ? SpeedCamManager.cameraTypeName + " · " + SpeedCamManager.cameraModel
+                  : SpeedCamManager.cameraTypeName
+            color: "#98A2AE"
+            font.pixelSize: card.height * 0.135
+            elide: Text.ElideRight
+        }
+
+        // ------------------------- ПОЛОСА «СКОЛЬКО ОСТАЛОСЬ» -------------------------
+        // Заполнение = оставшаяся часть пути до точки: в начале предупреждения
+        // полоса полная, у самой точки — пустая.
+        Rectangle {
+            id: progressTrack
+            visible: rootWarning.showProgress && !rootWarning.compact
+            anchors.left: distanceRow.left
+            anchors.right: card.right
+            anchors.rightMargin: card.pad
+            anchors.bottom: card.bottom
+            anchors.bottomMargin: card.pad * 0.55
+            height: Math.max(3, card.height * 0.045)
+            radius: height / 2
+            color: "#2A3038"
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: parent.width * rootWarning.leftShare
+                radius: parent.radius
+                color: rootWarning.accent
+                Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutQuad } }
             }
         }
     }

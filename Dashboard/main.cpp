@@ -87,8 +87,12 @@ int main(int argc, char *argv[])
     // DASHBOARD_DEMO_CAMERA=200 даёт «без превышения», чтобы баннер не мигал.
     if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_CAMERA")) {
         const int limit = qEnvironmentVariableIntValue("DASHBOARD_DEMO_CAMERA");
-        QTimer::singleShot(5000, speedcam, [limit]() {
-            SpeedCamManager::instance()->simulateCameraAhead(limit > 0 ? limit : 60, 420);
+        // DASHBOARD_DEMO_CAMERA_TYPE — код типа для проверки вида опасности
+        // (102 — искусственная неровность, 22 — пешеходный переход и т. д.).
+        const int typeCode = qEnvironmentVariableIntValue("DASHBOARD_DEMO_CAMERA_TYPE");
+        QTimer::singleShot(5000, speedcam, [limit, typeCode]() {
+            SpeedCamManager::instance()->simulateCameraAhead(limit > 0 ? limit : 60, 420,
+                                                             typeCode > 0 ? typeCode : 1);
         });
     }
 

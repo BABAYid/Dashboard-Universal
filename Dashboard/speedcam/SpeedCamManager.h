@@ -73,6 +73,10 @@ class SpeedCamManager : public QObject
     Q_PROPERTY(int cameraType READ cameraType NOTIFY cameraChanged)
     Q_PROPERTY(bool cameraIsSpeedControl READ cameraIsSpeedControl NOTIFY cameraChanged)
     Q_PROPERTY(int cameraSpeedLimit READ cameraSpeedLimit NOTIFY cameraChanged)
+    // За сколько метров до этой точки начинать предупреждать: своя дистанция
+    // из базы (у «лежачего полицейского» 100 м, у камеры 500) либо общая
+    // настройка, если в базе её нет. По ней QML рисует полосу прогресса.
+    Q_PROPERTY(int cameraWarnDistance READ cameraWarnDistance NOTIFY cameraChanged)
     Q_PROPERTY(double cameraDistance READ cameraDistance NOTIFY cameraChanged)    // метры
     Q_PROPERTY(QString cameraHeader READ cameraHeader NOTIFY cameraChanged)       // «КАМЕРА: 60 км/ч»
     Q_PROPERTY(QString cameraRangeText READ cameraRangeText NOTIFY cameraChanged) // «ДО КАМЕРЫ: 350 м»
@@ -109,7 +113,11 @@ public:
     // Демо/проверка без реальной камеры: поставить «камеру» в distanceMeters
     // впереди машины (по курсу, а если курса нет — на север) и сразу её показать.
     // Пока её не убрали, она держится впереди (едет вместе с машиной).
-    Q_INVOKABLE void simulateCameraAhead(int speedLimit = 60, double distanceMeters = 420.0);
+    // typeCode — код типа для показа: 1 — камера, 102 — «искусственная
+    // неровность» и т. д. Нужен, чтобы проверить вид предупреждения об
+    // опасности, не выезжая к настоящей неровности.
+    Q_INVOKABLE void simulateCameraAhead(int speedLimit = 60, double distanceMeters = 420.0,
+                                         int typeCode = 1);
     Q_INVOKABLE void clearSimulated();
 
     bool loaded() const { return m_loaded.load(); }
@@ -131,6 +139,7 @@ public:
             || m_cameraType == 11 || m_cameraType == 20;
     }
     int cameraSpeedLimit() const { return m_cameraSpeedLimit; }
+    int cameraWarnDistance() const { return m_cameraWarnDistance; }
     double cameraDistance() const { return m_cameraDistance; }
     QString cameraHeader() const { return m_cameraHeader; }
     QString cameraRangeText() const { return m_cameraRangeText; }
@@ -208,6 +217,7 @@ private:
     bool m_simFollow = false;
     double m_simFollowDistance = 420.0;
     int m_simFollowSpeed = 60;
+    quint8 m_simFollowType = 1;
 
     std::atomic<bool> m_loaded{false};
     std::atomic<bool> m_loading{false};
@@ -222,6 +232,7 @@ private:
     QString m_cameraTypeName;
     QString m_cameraModel;
     int m_cameraType = 0;
+    int m_cameraWarnDistance = 500;
     int m_cameraSpeedLimit = 0;
     double m_cameraDistance = 0.0;
     QString m_cameraHeader;

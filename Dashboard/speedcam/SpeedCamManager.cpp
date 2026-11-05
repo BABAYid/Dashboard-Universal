@@ -556,7 +556,7 @@ void SpeedCamManager::checkPosition(double lat, double lon, double course, doubl
     if (m_simFollow) {
         const double rad = deg2rad(std::isfinite(course) ? course : 0.0);
         Point p;
-        p.type = 1;
+        p.type = static_cast<quint8>(m_simFollowType);   // камера или опасность
         p.speed = static_cast<qint16>(qBound(0, m_simFollowSpeed, 400));
         p.dirType = 0;
         p.direction = -1;
@@ -670,6 +670,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
         m_cameraModel.clear();
         m_cameraSpeedLimit = 0;
         m_cameraType = 0;
+        m_cameraWarnDistance = m_warningDistance;
         m_cameraDistance = 0.0;
         m_cameraHeader.clear();
         m_cameraRangeText.clear();
@@ -710,7 +711,10 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
     m_cameraTypeName = typeName;
     m_cameraModel = model;
     m_cameraSpeedLimit = point.speed;
-    m_cameraType = (point.typeNameIdx == kSimulatedNameIdx) ? 1 : point.type;
+    m_cameraType = point.type;
+    m_cameraWarnDistance = (point.warnDistance > 0 && point.warnDistance < m_warningDistance)
+                               ? point.warnDistance
+                               : m_warningDistance;
     m_cameraDistance = distance;
     m_cameraAhead = ahead;
     m_cameraSpeeding = (point.speed > 0) && (m_lastSpeed > 0.0) && (m_lastSpeed > point.speed + 0.5);
@@ -728,6 +732,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
     emit cameraChanged();
     if (newCamera || !wasActive) {
         qInfo() << "Камеры: впереди" << m_cameraTypeName << m_cameraModel
+                << "тип" << m_cameraType << (cameraIsSpeedControl() ? "(камера)" : "(опасность)")
                 << "ограничение" << m_cameraSpeedLimit << "км/ч, до неё"
                 << qRound(distance) << "м" << (m_cameraSpeeding ? "(превышение)" : "");
         emit cameraApproaching(m_cameraTypeName, m_cameraSpeedLimit, distance);
@@ -737,7 +742,7 @@ void SpeedCamManager::updateWarning(bool active, const Point &point, double dist
 // ---------------------------------------------------------------------------
 //  Демо-камера
 // ---------------------------------------------------------------------------
-void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters)
+void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters, int typeCode)
 {
     // Ставим камеру в distanceMeters впереди машины: по курсу, а если курса
     // нет — строго на север. По той же логике, что и в тестах навигаторов.
@@ -747,7 +752,7 @@ void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters)
     const double courseRad = deg2rad(course);
 
     Point p;
-    p.type = 1;
+    p.type = static_cast<quint8>(qBound(0, typeCode, 255));
     p.speed = static_cast<qint16>(qBound(0, speedLimit, 400));
     p.dirType = 0;
     p.direction = -1;
@@ -759,7 +764,8 @@ void SpeedCamManager::simulateCameraAhead(int speedLimit, double distanceMeters)
     m_simFollow = true;
     m_simFollowDistance = distanceMeters;
     m_simFollowSpeed = p.speed;
-    m_simTypeName = tr("Статическая камера (демо)");
+    m_simFollowType = p.type;
+    m_simTypeName = defaultTypeName(p.type) + tr(" (демо)");
     m_simModel = tr("проверка");
 
     int points = 0;
