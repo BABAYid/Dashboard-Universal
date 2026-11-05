@@ -665,6 +665,74 @@ Item {
                     }
                 }
 
+                // ===== ЗАДНИЕ ФОНАРИ =====
+                // То же мягкое свечение, что у фар и поворотников, только
+                // красное. В обычном виде мы смотрим на машину сзади, так что
+                // этот свет виден всегда (в отличие от фар).
+                component TailLamp: Node {
+                    id: tailRoot
+                    property vector3d lampPosition
+                    property bool lit
+
+                    visible: lit && !scene.viewSide
+
+                    Model {
+                        source: "#Rectangle"
+                        position: tailRoot.lampPosition
+                        eulerRotation: Qt.vector3d(0, 180, 0)
+                        scale: Qt.vector3d(0.024, 0.018, 0.012)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FF2A12"
+                            baseColorMap: turnGlowTexture
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.85
+                        }
+                    }
+                    Model {
+                        source: "#Rectangle"
+                        position: tailRoot.lampPosition
+                        eulerRotation: Qt.vector3d(0, 180, 0)
+                        scale: Qt.vector3d(0.011, 0.008, 0.006)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FF8A70"
+                            baseColorMap: turnGlowTexture
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.9
+                        }
+                    }
+                }
+
+                TailLamp {
+                    lampPosition: Qt.vector3d(0.74, 0.93, -2.10)    // задний левый
+                    lit: scene.headlightsOn
+                }
+                TailLamp {
+                    lampPosition: Qt.vector3d(-0.74, 0.93, -2.10)   // задний правый
+                    lit: scene.headlightsOn
+                }
+
+                // Красное пятно на дороге позади машины — короткое, чтобы
+                // читался «след» света, а не второй стоп.
+                Model {
+                    source: "#Rectangle"
+                    visible: scene.headlightsOn && !scene.viewSide
+                    position: Qt.vector3d(0, 0.018, -2.9)
+                    eulerRotation: Qt.vector3d(-90, 0, 0)
+                    scale: Qt.vector3d(0.042, 0.016, 1)
+                    materials: PrincipledMaterial {
+                        baseColor: "#FF3A1F"
+                        baseColorMap: turnGlowTexture
+                        lighting: PrincipledMaterial.NoLighting
+                        alphaMode: PrincipledMaterial.Blend
+                        cullMode: PrincipledMaterial.NoCulling
+                        opacity: 0.45
+                    }
+                }
+
                 TurnLamp {
                     lampPosition: Qt.vector3d(0.92, 0.84, 1.13)     // передний левый
                     faceYaw: 35
