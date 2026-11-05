@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Controls 2.15
+import QtMultimedia
 import "."
 import Dashboard
 
@@ -154,6 +155,105 @@ Window {
     // Заставка уже запущена (ровно один раз).
     property bool startupStarted: false
 
+    // ---- Заставка при запуске ----
+    // Ролик показывается во весь экран после первого отрисованного кадра.
+    // Когда он закончился (или его пропустили кликом/клавишей) — приборка
+    // переходит в штатный режим: запускаются приборы и самопроверка ламп.
+    // Длительность ролика 47 с: если он не «кончился» (битый файл, нет кодека),
+    // страховочный таймер закроет заставку сам.
+    property string introVideoPath: Qt.application.arguments.indexOf("--no-intro") === -1
+                                    ? "media/startup_intro.mp4" : ""
+    property bool introPlaying: false
+    property int introSkipCounter: 0
+
+    // Запуск делает autoPlay: ручной play() в этот момент приходил раньше,
+    // чем MediaPlayer завершал смену source, и воспроизведение сбрасывалось
+    // (status=LoadedMedia, playbackState=Stopped).
+    onIntroPlayingChanged: if (!root.introPlaying) introPlayer.stop()
+
+    function startIntroOrStartup() {
+        if (root.introVideoPath.length > 0 && !root.introShown) {
+            root.introShown = true
+            root.introPlaying = true
+            console.log("Заставка: старт", root.introVideoPath)
+            return
+        }
+        root.beginStartup()
+    }
+    property bool introShown: false
+
+    function finishIntro() {
+        if (!root.introPlaying && root.introShown && root.startupStarted)
+            return
+        root.introPlaying = false
+        root.beginStartup()
+    }
+
+    // Сама заставка: ролик + чёрный фон под ним.
+    Item {
+        id: introOverlay
+        anchors.fill: parent
+        visible: root.introPlaying
+        z: 200
+
+        Rectangle { anchors.fill: parent; color: "black" }
+
+        // Ролик: MediaPlayer + VideoOutput отдельно (у видео-айтема нет
+        // обработчика onStatusChanged, а у MediaPlayer есть mediaStatusChanged).
+        MediaPlayer {
+            id: introPlayer
+            source: root.introPlaying ? root.introVideoPath : ""
+            videoOutput: introOutput
+            audioOutput: null
+            autoPlay: true
+            loops: 1
+            onMediaStatusChanged: {
+                if (mediaStatus === MediaPlayer.EndOfMedia) {
+                    console.log("Заставка: ролик закончился")
+                    root.finishIntro()
+                } else if (mediaStatus === MediaPlayer.InvalidMedia) {
+                    console.log("Заставка: битый ролик, пропускаю:", errorString)
+                    root.finishIntro()
+                }
+            }
+            onErrorOccurred: {
+                console.log("Заставка: ошибка воспроизведения, пропускаю:", errorString)
+                root.finishIntro()
+            }
+        }
+
+        VideoOutput {
+            id: introOutput
+            anchors.fill: parent
+            fillMode: VideoOutput.PreserveAspectCrop
+        }
+
+        // Пропуск: клик в любом месте или Esc/Space.
+        MouseArea { anchors.fill: parent; onClicked: root.finishIntro() }
+
+        Text {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 24
+            text: "клик — пропустить"
+            color: "#55FFFFFF"
+            font.pixelSize: 18
+        }
+
+        // Страховка: ролик 47 с, если что-то зависло — не держим экран вечно.
+        Timer {
+            interval: 55000
+            running: root.introPlaying
+            onTriggered: {
+                console.log("Заставка: страховочный таймер, закрываю")
+                root.finishIntro()
+            }
+        }
+    }
+
+    Shortcut { sequence: "Escape"; enabled: root.introPlaying; onActivated: root.finishIntro() }
+    Shortcut { sequence: "Space"; enabled: root.introPlaying; onActivated: root.finishIntro() }
+
     // Сигнал «запуск закончен»: по нему приборка переходит в штатный режим.
     signal startupFinished()
 
@@ -167,14 +267,14 @@ Window {
         startupSequence.start()
     }
 
-    onFirstFrameRenderedChanged: if (root.firstFrameRendered) root.beginStartup()
+    onFirstFrameRenderedChanged: if (root.firstFrameRendered) root.startIntroOrStartup()
 
     // Страховка: если хук первого кадра почему-то не сработал — стартуем сами.
     Timer {
         interval: 12000
         repeat: false
-        running: root.car3d && !root.startupStarted
-        onTriggered: root.beginStartup()
+        running: root.car3d && !root.startupStarted && !root.introPlaying
+        onTriggered: root.startIntroOrStartup()
     }
 
     // Применить коэффициенты из настроек (после их загрузки с диска).

@@ -66,6 +66,8 @@ qt_add_qml_module(appDashboard
         assets/ipsum_fin.glb
         assets/3.glb
         assets/engine_anim.js
+        # Заставка при запуске приборки (47 с, 1918x734, без звука)
+        media/startup_intro.mp4
         # Бип предупреждения о камере (Smart Driver)
         assets/sounds/camera_beep.wav
         fonts/KdamThmorPro-Regular.ttf
