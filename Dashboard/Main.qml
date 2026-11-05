@@ -830,7 +830,7 @@ Window {
             // начинается с y=154, крыша машины примерно с 250).
             x: root.centerX + (root.centerWidth - width) / 2
             y: root.navigationMode ? 10 : 160
-            width: root.navigationMode ? 250 : 380
+            width: root.navigationMode ? 300 : 480
             height: root.navigationMode ? 60 : 78
             z: 6
             compact: root.navigationMode

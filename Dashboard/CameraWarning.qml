@@ -40,10 +40,16 @@ Item {
                                       ? Math.max(0, Math.min(1, SpeedCamManager.cameraDistance
                                                                / SpeedCamManager.cameraWarnDistance))
                                       : 0
-    // Сдвиги по просьбе заказчика: знак левее, расстояние правее, стрелка
-    // (две галочки ▶▶) остаётся на месте.
-    readonly property int signShift: 50
-    readonly property int distanceShift: 50
+    // Сдвиги по просьбе заказчика: знак левее, расстояние правее, галочки
+    // остаются по центру. Значение — в логических пикселях панели (1920).
+    readonly property int signShift: 78
+    readonly property int distanceShift: 78
+    // Сколько галочек ▶▶▶▶▶▶ всего; сколько из них горит — см. litChevrons.
+    readonly property int chevronCount: 6
+    // Сколько галочек осталось гореть: чем ближе точка, тем меньше.
+    readonly property int litChevrons: Math.max(1, Math.ceil(leftShare * chevronCount))
+    // Цифры чуть ниже центра: тогда галочки смотрят им ровно в середину.
+    readonly property int distanceDrop: 8
 
     visible: opacity > 0
     opacity: active ? 1.0 : 0.0
@@ -82,9 +88,10 @@ Item {
         height: parent.height
         anchors.centerIn: parent
 
-        readonly property real chevronWidth: height * 0.22
-        readonly property real chevronGap: height * 0.04
-        readonly property real arrowWidth: chevronWidth * 2 + chevronGap
+        readonly property real chevronWidth: height * 0.16
+        readonly property real chevronGap: height * 0.03
+        readonly property real arrowWidth: chevronWidth * rootWarning.chevronCount
+                                            + chevronGap * (rootWarning.chevronCount - 1)
         readonly property real gap: height * 0.16
 
         // ------------------------- ЗНАК ОГРАНИЧЕНИЯ -------------------------
@@ -138,7 +145,7 @@ Item {
             // правая горит до самой точки и показывает на оставшееся
             // расстояние.
             Repeater {
-                model: 2
+                model: rootWarning.chevronCount
                 delegate: Shape {
                     id: chevron
                     required property int index
@@ -146,7 +153,9 @@ Item {
                     width: row.chevronWidth
                     height: row.height * 0.36
                     visible: opacity > 0
-                    opacity: (index === 0 && rootWarning.leftShare <= 0.5) ? 0 : 1
+                    // Гаснут с левого края: чем ближе точка, тем меньше
+                    // галочек остаётся, а последняя всегда смотрит на цифры.
+                    opacity: index >= (rootWarning.chevronCount - rootWarning.litChevrons) ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 260 } }
 
                     ShapePath {
@@ -169,6 +178,7 @@ Item {
             anchors.left: arrows.right
             anchors.leftMargin: row.gap + rootWarning.distanceShift
             anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: rootWarning.distanceDrop
             spacing: row.height * 0.03
 
             Text {
