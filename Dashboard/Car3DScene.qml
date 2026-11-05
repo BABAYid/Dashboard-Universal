@@ -407,6 +407,10 @@ Item {
                                 models[12].materials = [turnMaterialRight]
                                 console.log("3D: поворотники — узлы 11 (левый) и 12 (правый), "
                                             + "emissive управляется фазой turnBlink")
+                                console.log("3D: у узла 11 материалов", models[11].materials.length,
+                                            "emissive", models[11].materials[0].emissiveFactor.x,
+                                            "| у узла 12 материалов", models[12].materials.length,
+                                            "emissive", models[12].materials[0].emissiveFactor.x)
                             }
                         }
                     }
@@ -487,8 +491,8 @@ Item {
                     visible: scene.leftTurn && scene.turnBlink && !scene.viewSide
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(0.88, -1.16, 1.11)   // передний левый
-                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
+                        position: Qt.vector3d(0.88, 0.84, 1.11)    // передний левый
+                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -496,8 +500,8 @@ Item {
                     }
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(0.78, -1.07, -2.07)  // задний левый
-                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
+                        position: Qt.vector3d(0.78, 0.93, -2.07)   // задний левый
+                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -508,8 +512,8 @@ Item {
                     visible: scene.rightTurn && scene.turnBlink && !scene.viewSide
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(-0.87, -1.12, 1.11)  // передний правый
-                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
+                        position: Qt.vector3d(-0.87, 0.88, 1.11)   // передний правый
+                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -517,8 +521,8 @@ Item {
                     }
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(-0.78, -1.07, -2.07) // задний правый
-                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
+                        position: Qt.vector3d(-0.78, 0.93, -2.07)  // задний правый
+                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
