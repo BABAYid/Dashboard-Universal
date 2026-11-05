@@ -117,6 +117,11 @@ def main() -> int:
     parser.add_argument("--wheel", type=hex_to_rgb, help="шины")
     parser.add_argument("--taillight", type=hex_to_rgb, help="задние фонари")
     parser.add_argument("--turn-signal", type=hex_to_rgb, help="поворотники")
+    # Для перламутра и «полуматового» лака нужны ещё металличность и
+    # шероховатость: у модели по умолчанию metal=0.8/rough=0.2 — это
+    # зеркальный металлик, а не полумат.
+    parser.add_argument("--body-metal", type=float, help="металличность кузова 0…1")
+    parser.add_argument("--body-rough", type=float, help="шероховатость кузова 0…1")
     args = parser.parse_args()
 
     gltf, binary, _version = read_glb(args.src)
@@ -166,6 +171,19 @@ def main() -> int:
         print(f"  {name}: #%02X%02X%02X → #%02X%02X%02X" % (
             int(round(old[0] * 255)), int(round(old[1] * 255)), int(round(old[2] * 255)),
             int(round(rgb[0] * 255)), int(round(rgb[1] * 255)), int(round(rgb[2] * 255))))
+
+    # Металличность/шероховатость — только для кузова (перламутр под лаком).
+    if args.body_metal is not None or args.body_rough is not None:
+        for index, material in enumerate(materials):
+            if (material.get("name") or by_index.get(index, "")) != "base white":
+                continue
+            pbr = material.setdefault("pbrMetallicRoughness", {})
+            if args.body_metal is not None:
+                print(f"  base white: metallic {pbr.get('metallicFactor', 1.0)} → {args.body_metal}")
+                pbr["metallicFactor"] = args.body_metal
+            if args.body_rough is not None:
+                print(f"  base white: roughness {pbr.get('roughnessFactor', 0.5)} → {args.body_rough}")
+                pbr["roughnessFactor"] = args.body_rough
 
     out = args.dst or args.src.replace(".glb", "_painted.glb")
     write_glb(out, gltf, binary)
