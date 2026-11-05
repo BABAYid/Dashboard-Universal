@@ -112,7 +112,11 @@ def main() -> int:
     parser.add_argument("--body", type=hex_to_rgb, help="кузов (base white)")
     parser.add_argument("--black-glossy", type=hex_to_rgb, help="чёрный глянец")
     parser.add_argument("--inside", type=hex_to_rgb, help="салон")
-    parser.add_argument("--glass", type=hex_to_rgb, help="стёкла")
+    parser.add_argument("--glass", type=hex_to_rgb, help="стёкла (тонировка)")
+    parser.add_argument("--glass-alpha", type=float, default=None,
+                        help="прозрачность стёкол 0…1 (0.5 — полупрозрачные)")
+    parser.add_argument("--glass-rough", type=float, default=None,
+                        help="шероховатость стёкол (0.05 — глянец)")
     parser.add_argument("--metallic", type=hex_to_rgb, help="хром/металл")
     parser.add_argument("--wheel", type=hex_to_rgb, help="шины")
     parser.add_argument("--taillight", type=hex_to_rgb, help="задние фонари")
@@ -184,6 +188,27 @@ def main() -> int:
             if args.body_rough is not None:
                 print(f"  base white: roughness {pbr.get('roughnessFactor', 0.5)} → {args.body_rough}")
                 pbr["roughnessFactor"] = args.body_rough
+
+    # Стекло: цвет + прозрачность. В glTF прозрачность задаётся альфой
+    # baseColorFactor и режимом alphaMode=BLEND, иначе материал рисуется
+    # непрозрачным и стекло выглядит серой пластмассой.
+    for index, material in enumerate(materials):
+        if (material.get("name") or by_index.get(index, "")) != "black glass":
+            continue
+        if args.glass is None and args.glass_alpha is None and args.glass_rough is None:
+            break
+        pbr = material.setdefault("pbrMetallicRoughness", {})
+        color = pbr.get("baseColorFactor", [1, 1, 1, 1])
+        rgb = args.glass if args.glass is not None else color[:3]
+        alpha = args.glass_alpha if args.glass_alpha is not None else (color[3] if len(color) > 3 else 1.0)
+        pbr["baseColorFactor"] = [rgb[0], rgb[1], rgb[2], alpha]
+        pbr["metallicFactor"] = 0.0
+        if args.glass_rough is not None:
+            pbr["roughnessFactor"] = args.glass_rough
+        material["alphaMode"] = "BLEND"
+        material["doubleSided"] = True
+        print(f"  black glass: #%02X%02X%02X, alpha {alpha}, alphaMode BLEND" % (
+            int(round(rgb[0] * 255)), int(round(rgb[1] * 255)), int(round(rgb[2] * 255))))
 
     out = args.dst or args.src.replace(".glb", "_painted.glb")
     write_glb(out, gltf, binary)
