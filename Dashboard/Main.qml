@@ -375,7 +375,10 @@ Window {
             roadSpeed: root.speed
             // Свет по CAN: фары/габариты зажигают фары и задние фонари на
             // модели, поворотники мигают вместе с лампой на панели.
-            headlightsOn: root.lowBeam || root.positionLights || root.debugHeadlights
+            // Фары светятся при габаритах и противотуманках (у владельца они
+            // включаются вместе), плюс при ближнем свете и в отладке.
+            headlightsOn: root.lowBeam || root.positionLights || root.fogLights
+                          || root.debugHeadlights
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
             turnBlink: root.turnBlink

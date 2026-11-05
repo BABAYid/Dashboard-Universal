@@ -559,7 +559,7 @@ Item {
                     Model {
                         source: "#Rectangle"
                         position: headRoot.lampPosition
-                        scale: Qt.vector3d(0.022, 0.016, 0.012)
+                        scale: Qt.vector3d(0.028, 0.022, 0.012)
                         materials: PrincipledMaterial {
                             baseColor: "#FFE3A8"
                             baseColorMap: turnGlowTexture
@@ -572,7 +572,7 @@ Item {
                     Model {
                         source: "#Rectangle"
                         position: headRoot.lampPosition
-                        scale: Qt.vector3d(0.008, 0.006, 0.006)
+                        scale: Qt.vector3d(0.011, 0.009, 0.006)
                         materials: PrincipledMaterial {
                             baseColor: "#FFFFFF"
                             baseColorMap: turnGlowTexture
@@ -593,21 +593,60 @@ Item {
                     lit: scene.headlightsOn
                 }
 
-                // Пятно света на дороге перед машиной: лежит горизонтально,
-                // поэтому читается с любого верхнего ракурса.
+                // Свет фар: вытянутое пятно на дороге от бампера вперёд, до
+                // верхней линии панели. Лежит горизонтально, поэтому читается
+                // с любого верхнего ракурса. Развёрнуто на -90° вокруг X:
+                // локальная высота плоскости становится длиной по Z.
                 Model {
                     source: "#Rectangle"
                     visible: scene.headlightsOn && !scene.viewSide
-                    position: Qt.vector3d(0, 0.02, 3.4)
+                    position: Qt.vector3d(0, 0.02, 4.4)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
-                    scale: Qt.vector3d(0.055, 0.034, 1)
+                    scale: Qt.vector3d(0.05, 0.05, 1)
                     materials: PrincipledMaterial {
                         baseColor: "#FFE9B8"
                         baseColorMap: turnGlowTexture
                         lighting: PrincipledMaterial.NoLighting
                         alphaMode: PrincipledMaterial.Blend
                         cullMode: PrincipledMaterial.NoCulling
-                        opacity: 0.55
+                        opacity: 0.6
+                    }
+                }
+                // Световой «столб» перед машиной: вертикальная плоскость,
+                // поднимающаяся от бампера вверх. Пятно на земле далеко от
+                // камеры и его съедает туман сцены (density 0.55, ближе 6 —
+                // без тумана), поэтому вертикальная пелена ближе к камере и
+                // дотягивается до верхней линии панели. Ориентация не важна:
+                // у материала отключено отсечение граней.
+                Model {
+                    source: "#Rectangle"
+                    visible: scene.headlightsOn && !scene.viewSide
+                    position: Qt.vector3d(0, 1.5, 3.05)
+                    scale: Qt.vector3d(0.05, 0.055, 1)
+                    materials: PrincipledMaterial {
+                        baseColor: "#FFEFC8"
+                        baseColorMap: turnGlowTexture
+                        lighting: PrincipledMaterial.NoLighting
+                        alphaMode: PrincipledMaterial.Blend
+                        cullMode: PrincipledMaterial.NoCulling
+                        opacity: 0.42
+                    }
+                }
+                // Второе, короткое и плотное — прямо перед бампером: чтобы
+                // переход от машины к «дороге света» не был резким.
+                Model {
+                    source: "#Rectangle"
+                    visible: scene.headlightsOn && !scene.viewSide
+                    position: Qt.vector3d(0, 0.019, 2.9)
+                    eulerRotation: Qt.vector3d(-90, 0, 0)
+                    scale: Qt.vector3d(0.035, 0.022, 1)
+                    materials: PrincipledMaterial {
+                        baseColor: "#FFF2D4"
+                        baseColorMap: turnGlowTexture
+                        lighting: PrincipledMaterial.NoLighting
+                        alphaMode: PrincipledMaterial.Blend
+                        cullMode: PrincipledMaterial.NoCulling
+                        opacity: 0.75
                     }
                 }
 
