@@ -119,6 +119,10 @@ def main() -> int:
                         help="шероховатость стёкол (0.05 — глянец)")
     parser.add_argument("--metallic", type=hex_to_rgb, help="хром/металл")
     parser.add_argument("--wheel", type=hex_to_rgb, help="шины")
+    # Диски в модели идут материалом metallic (он же хром в фарах).
+    parser.add_argument("--rim", type=hex_to_rgb, help="колёсные диски (metallic)")
+    parser.add_argument("--rim-metal", type=float, help="металличность дисков 0…1")
+    parser.add_argument("--rim-rough", type=float, help="шероховатость дисков 0…1")
     parser.add_argument("--taillight", type=hex_to_rgb, help="задние фонари")
     parser.add_argument("--turn-signal", type=hex_to_rgb, help="поворотники")
     # Для перламутра и «полуматового» лака нужны ещё металличность и
@@ -149,10 +153,13 @@ def main() -> int:
 
     changes = {
         "base white": args.body,
+        # ключ «metallic» один: и --rim, и старый --metallic красят один и тот
+        # же материал (раньше здесь было два одинаковых ключа, и второй
+        # затирал первый — цвет дисков молча не применялся)
+        "metallic": args.rim if args.rim is not None else args.metallic,
         "black glossy": args.black_glossy,
         "inside black": args.inside,
         "black glass": args.glass,
-        "metallic": args.metallic,
         "wheel": args.wheel,
         "red": args.taillight,
         "orange": args.turn_signal,
@@ -175,6 +182,19 @@ def main() -> int:
         print(f"  {name}: #%02X%02X%02X → #%02X%02X%02X" % (
             int(round(old[0] * 255)), int(round(old[1] * 255)), int(round(old[2] * 255)),
             int(round(rgb[0] * 255)), int(round(rgb[1] * 255)), int(round(rgb[2] * 255))))
+
+    # Диски: металличность/шероховатость отдельно от цвета.
+    if args.rim_metal is not None or args.rim_rough is not None:
+        for index, material in enumerate(materials):
+            if (material.get("name") or by_index.get(index, "")) != "metallic":
+                continue
+            pbr = material.setdefault("pbrMetallicRoughness", {})
+            if args.rim_metal is not None:
+                pbr["metallicFactor"] = args.rim_metal
+                print(f"  metallic: metal → {args.rim_metal}")
+            if args.rim_rough is not None:
+                pbr["roughnessFactor"] = args.rim_rough
+                print(f"  metallic: rough → {args.rim_rough}")
 
     # Металличность/шероховатость — только для кузова (перламутр под лаком).
     if args.body_metal is not None or args.body_rough is not None:

@@ -21,11 +21,13 @@ mkdir -p "$TMP"
 BODY="#F7F5F0";        BODY_METAL=0.25; BODY_ROUGH=0.5     # белый перламутр, полуматовый лак
 DARK="#3B2A22"                                             # тёмно-коричневый металлик
 GLASS="#0A0C10";       GLASS_ALPHA=0.7;  GLASS_ROUGH=0.05  # тонировка: чёрное, полупрозрачное
+RIM="#C9CDD3";         RIM_METAL=0.9;    RIM_ROUGH=0.25     # диски: светло-серый металлик
 
 [ -f "$SRC" ] || { echo "Нет исходной модели: $SRC" >&2; exit 1; }
 
 python3 "$ROOT/tools/paint_model.py" --in "$SRC" --out "$TMP/car_1.glb" \
-    --body "$BODY" --body-metal "$BODY_METAL" --body-rough "$BODY_ROUGH"
+    --body "$BODY" --body-metal "$BODY_METAL" --body-rough "$BODY_ROUGH" \
+    --rim "$RIM" --rim-metal "$RIM_METAL" --rim-rough "$RIM_ROUGH"
 python3 "$ROOT/tools/paint_parts.py" --in "$TMP/car_1.glb" --out "$TMP/car_2.glb" \
     --roof "$DARK" --spoiler "$DARK"
 python3 "$ROOT/tools/paint_parts.py" --in "$TMP/car_2.glb" --out "$TMP/car_3.glb" \
