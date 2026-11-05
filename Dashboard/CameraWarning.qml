@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick 2.15
 import QtQuick.Shapes 1.15
 import QtMultimedia
@@ -33,6 +34,17 @@ Item {
     // Сколько осталось — всегда в метрах (предупреждение и так ближе 500 м).
     readonly property int metersLeft: Math.max(0, Math.round(SpeedCamManager.cameraDistance / 10) * 10)
 
+    // Доля оставшегося пути (1 — только что появилось, 0 — у самой точки).
+    // По ней гаснут стрелки: чем ближе, тем меньше «галочек».
+    readonly property real leftShare: SpeedCamManager.cameraWarnDistance > 0
+                                      ? Math.max(0, Math.min(1, SpeedCamManager.cameraDistance
+                                                               / SpeedCamManager.cameraWarnDistance))
+                                      : 0
+    // Сдвиги по просьбе заказчика: знак левее, расстояние правее, стрелка
+    // (две галочки ▶▶) остаётся на месте.
+    readonly property int signShift: 50
+    readonly property int distanceShift: 50
+
     visible: opacity > 0
     opacity: active ? 1.0 : 0.0
     Behavior on opacity { NumberAnimation { duration: 180 } }
@@ -64,22 +76,26 @@ Item {
     }
     onSpeedingChanged: if (!speeding) rootWarning.signPulse = 1.0
 
-    Row {
+    Item {
         id: row
-        // Рамки у предупреждения больше нет, поэтому содержимое центрируем
-        // по своей ширине, а не растягиваем на всю отведённую область.
-        width: childrenRect.width
+        width: parent.width
         height: parent.height
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Math.min(height * 0.14, width * 0.05)
+        anchors.centerIn: parent
+
+        readonly property real chevronWidth: height * 0.22
+        readonly property real chevronGap: height * 0.04
+        readonly property real arrowWidth: chevronWidth * 2 + chevronGap
+        readonly property real gap: height * 0.16
 
         // ------------------------- ЗНАК ОГРАНИЧЕНИЯ -------------------------
         // Как настоящий дорожный: белый круг, красная обводка, чёрное число.
         // У трёхзначных (100/110/130) шрифт мельче — как на реальных знаках.
         Item {
             id: sign
-            width: parent.height
-            height: parent.height
+            width: row.height
+            height: row.height
+            anchors.right: arrows.left
+            anchors.rightMargin: row.gap + rootWarning.signShift
             anchors.verticalCenter: parent.verticalCenter
             opacity: rootWarning.signPulse
             scale: 0.86 + 0.14 * rootWarning.signPulse
@@ -107,33 +123,53 @@ Item {
             }
         }
 
-        // ------------------------- СТРЕЛОЧКА -------------------------
-        Shape {
-            id: arrow
-            width: parent.height * 0.30
-            height: parent.height * 0.34
+        // ------------------------- СТРЕЛКИ ▶▶ -------------------------
+        // Две галочки от знака к цифрам. По мере приближения гаснут по одной:
+        // пока путь длинный — горят обе, на второй половине остаётся правая
+        // (она и показывает на оставшееся расстояние).
+        Item {
+            id: arrows
+            width: row.arrowWidth
+            height: row.height * 0.36
+            anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
 
-            ShapePath {
-                fillColor: rootWarning.accent
-                strokeWidth: 0
-                startX: 0
-                startY: arrow.height * 0.34
-                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.34 }
-                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.08 }
-                PathLine { x: arrow.width;        y: arrow.height * 0.5 }
-                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.92 }
-                PathLine { x: arrow.width * 0.52; y: arrow.height * 0.66 }
-                PathLine { x: 0;                  y: arrow.height * 0.66 }
-                PathLine { x: 0;                  y: arrow.height * 0.34 }
+            // Две галочки ▶▶: левая гаснет, когда пройдена половина пути,
+            // правая горит до самой точки и показывает на оставшееся
+            // расстояние.
+            Repeater {
+                model: 2
+                delegate: Shape {
+                    id: chevron
+                    required property int index
+                    x: index * (row.chevronWidth + row.chevronGap)
+                    width: row.chevronWidth
+                    height: row.height * 0.36
+                    visible: opacity > 0
+                    opacity: (index === 0 && rootWarning.leftShare <= 0.5) ? 0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 260 } }
+
+                    ShapePath {
+                        fillColor: rootWarning.accent
+                        strokeWidth: 0
+                        startX: 0
+                        startY: 0
+                        PathLine { x: chevron.width; y: chevron.height * 0.5 }
+                        PathLine { x: 0; y: chevron.height }
+                        PathLine { x: chevron.width * 0.34; y: chevron.height * 0.5 }
+                        PathLine { x: 0; y: 0 }
+                    }
+                }
             }
         }
 
         // ------------------------- СКОЛЬКО ОСТАЛОСЬ -------------------------
         Row {
             id: distanceRow
+            anchors.left: arrows.right
+            anchors.leftMargin: row.gap + rootWarning.distanceShift
             anchors.verticalCenter: parent.verticalCenter
-            spacing: parent.height * 0.03
+            spacing: row.height * 0.03
 
             Text {
                 text: rootWarning.metersLeft
