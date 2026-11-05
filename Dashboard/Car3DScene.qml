@@ -149,7 +149,7 @@ Item {
     // мелкий), а смещения заданы в метрах модели: X — ширина (левая сторона
     // +X), Y — высота, Z — длина (нос в +Z).
     readonly property bool assembling: progress < 0.999
-    readonly property real assembly: Math.max(0.0, Math.min(1.0, (progress - 0.02) / 0.72))
+    readonly property real assembly: Math.max(0.0, Math.min(1.0, (progress - 0.01) / 0.62))
 
     readonly property var assembleOffsets: [
         [0.0, 12.0, 0.0],    // 0  кузов — сверху, за кадром
@@ -171,9 +171,9 @@ Item {
         [-5.0, -7.0, 4.5]    // 16 колесо
     ]
     // Задержки: кузов первым, мелочь догоняет.
-    readonly property var assembleDelays: [0.0, 0.38, 0.14, 0.18, 0.22, 0.26,
-                                           0.34, 0.46, 0.46, 0.46, 0.46, 0.52,
-                                           0.52, 0.56, 0.60, 0.58, 0.62]
+    readonly property var assembleDelays: [0.00, 0.48, 0.22, 0.28, 0.34, 0.40,
+                                           0.12, 0.55, 0.58, 0.62, 0.65, 0.70,
+                                           0.72, 0.78, 0.84, 0.88, 0.92]
 
     // Поворот вокруг произвольной оси: возвращает кватернион [w, x, y, z] —
     // в том же порядке, в каком хранятся собственные повороты узлов.

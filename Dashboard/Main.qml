@@ -307,12 +307,13 @@ Window {
                 property: "startupStage"
                 from: 0.0
                 to: 1.0
-                duration: 4000
+                duration: 6200
                 easing.type: Easing.InOutQuad
             }
             SequentialAnimation {
-                // Машина одна на экране до 3 с — потом проявляются приборы
-                PauseAnimation { duration: 3000 }
+                // Машина собирается ~4 с и стоит — приборы проявляются
+                // только после сборки
+                PauseAnimation { duration: 5000 }
                 // Самопроверка запускается вместе с проявлением приборов,
                 // иначе проход стрелок проходит, пока приборов ещё не видно
                 ScriptAction { script: { root.startup = true; root.lampSelfTest = true } }
@@ -321,7 +322,7 @@ Window {
                     property: "gaugesOpacity"
                     from: 0.0
                     to: 1.0
-                    duration: 1000
+                    duration: 1200
                 }
             }
         }
