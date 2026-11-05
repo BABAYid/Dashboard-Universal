@@ -34,6 +34,14 @@ Item {
     // Полоса «сколько осталось до точки» (1 — только подъехали, 0 — у точки).
     property bool showProgress: true
 
+    // Картинки от дизайнера для конкретных типов (ключ — код TYPE из базы).
+    // Пока есть только «искусственная неровность» (102); для остальных типов
+    // пиктограмма рисуется примитивами (камера или треугольник «!»).
+    // Чтобы добавить новый значок: положить PNG с прозрачностью в
+    // assets/images/speedcam/type_<код>.png и дописать строку в карту.
+    readonly property var typeIcons: ({ "102": "images/speedcam/type_102.png" })
+    readonly property string typeIcon: typeIcons[String(SpeedCamManager.cameraType)] || ""
+
     readonly property bool active: enabled && SpeedCamManager.cameraActive
     readonly property color accent: SpeedCamManager.cameraSpeeding ? "#FF3B30" : "#FFC02A"
     readonly property color accentSoft: SpeedCamManager.cameraSpeeding ? "#66201012" : "#66241C05"
@@ -215,16 +223,26 @@ Item {
         Item {
             id: typeBadge
             visible: !rootWarning.compact
-            width: card.height * 0.20
+            width: card.height * 0.24
             height: width
             anchors.left: distanceRow.left
             anchors.bottom: card.bottom
             anchors.bottomMargin: card.pad * (rootWarning.showProgress ? 1.45 : 0.55)
 
+            // Готовая картинка от дизайнера, если для этого типа она есть.
+            Image {
+                anchors.fill: parent
+                visible: rootWarning.typeIcon !== ""
+                source: rootWarning.typeIcon
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+            }
+
             // Камера: корпус с объективом (контроль скорости).
             Item {
                 anchors.fill: parent
-                visible: SpeedCamManager.cameraIsSpeedControl
+                visible: rootWarning.typeIcon === "" && SpeedCamManager.cameraIsSpeedControl
 
                 Rectangle {
                     anchors.fill: parent
@@ -245,7 +263,7 @@ Item {
             // Опасность: треугольник с восклицательным знаком.
             Item {
                 anchors.fill: parent
-                visible: !SpeedCamManager.cameraIsSpeedControl
+                visible: rootWarning.typeIcon === "" && !SpeedCamManager.cameraIsSpeedControl
 
                 Shape {
                     anchors.fill: parent

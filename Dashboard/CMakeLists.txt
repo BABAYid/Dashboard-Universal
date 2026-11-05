@@ -105,6 +105,8 @@ qt_add_qml_module(appDashboard
         images/temp_dvs_blue.png
         images/temp_dvs_red.png
         images/tuman.png
+        # Значки типов камер от дизайнера (для предупреждений Smart Driver)
+        images/speedcam/type_102.png
 )
 
 set_target_properties(appDashboard PROPERTIES
