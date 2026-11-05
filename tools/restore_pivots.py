@@ -93,8 +93,13 @@ def accessor_slice(gltf: dict, index: int) -> tuple[int, int, int, str]:
     return start, acc["count"], ncomp, fmt
 
 
-def first_successor_summary(name: str) -> str:
-    return name
+def quat_rotate(quaternion: list[float], vector: list[float]) -> list[float]:
+    """Поворот вектора кватернионом glTF (x, y, z, w)."""
+    x, y, z, w = quaternion
+    m = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+         [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+    return [sum(m[i][k] * vector[k] for k in range(3)) for i in range(3)]
 
 
 def main() -> int:
@@ -154,9 +159,16 @@ def main() -> int:
             acc["min"] = [round(lo[k] - pivot[k], 6) for k in range(3)]
             acc["max"] = [round(hi[k] - pivot[k], 6) for k in range(3)]
 
-        node["translation"] = [round(v, 6) for v in pivot]
+        # Вершины сдвинуты на -pivot в ЛОКАЛЬНЫХ координатах детали. Чтобы при
+        # нулевом повороте всё осталось на своих местах, узел должен вернуть
+        # точку обратно: translation = R * pivot. Для дверей и капота поворот
+        # единичный и это просто pivot, а у колёс узел повёрнут на 90/180° —
+        # без умножения на R колесо уезжало в сторону (шины «разлетались»).
+        translation = quat_rotate(node.get("rotation", [0, 0, 0, 1]), pivot)
+        node["translation"] = [round(v, 6) for v in translation]
         print(f"  узел {node_index:2} {node.get('name', ''):22} петля "
-              f"X {pivot[0]:.2f} Y {pivot[1]:.2f} Z {pivot[2]:.2f} ({rule})")
+              f"X {pivot[0]:.2f} Y {pivot[1]:.2f} Z {pivot[2]:.2f} ({rule}), "
+              f"translation X {translation[0]:.2f} Y {translation[1]:.2f} Z {translation[2]:.2f}")
 
     write_glb(args.dst, gltf, binary)
     print(f"Записано: {args.dst}")
