@@ -49,7 +49,7 @@ Item {
     // Сколько галочек осталось гореть: чем ближе точка, тем меньше.
     readonly property int litChevrons: Math.max(1, Math.ceil(leftShare * chevronCount))
     // Цифры чуть ниже центра: тогда галочки смотрят им ровно в середину.
-    readonly property int distanceDrop: 8
+    readonly property int distanceDrop: 15
 
     visible: opacity > 0
     opacity: active ? 1.0 : 0.0
@@ -149,6 +149,10 @@ Item {
                 delegate: Shape {
                     id: chevron
                     required property int index
+                    // Без сэмплов края Shape выходят «лесенкой» — на маленькой
+                    // галочке это заметно. Слой с 4 сэмплами сглаживает её.
+                    layer.enabled: true
+                    layer.samples: 4
                     x: index * (row.chevronWidth + row.chevronGap)
                     width: row.chevronWidth
                     height: row.height * 0.36
