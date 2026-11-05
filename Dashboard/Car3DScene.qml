@@ -484,50 +484,81 @@ Item {
 
                 // ===== ПОВОРОТНИКИ =====
                 // У модели есть свои узлы поворотников, но они по 4 см — на
-                // приборке не видны, поэтому светим шариками на их местах.
-                // Координаты — мировые координаты модели минус её сдвиг
-                // (-1.40, -2.00, -2.00), чтобы они сидели на фарах.
-                Node {
-                    visible: scene.leftTurn && scene.turnBlink && !scene.viewSide
+                // приборке не видны. Светим на их местах, но не «бильярдными
+                // шариками», а мягким свечением: на шар натянута радиальная
+                // текстура lights_glow.png (белый центр, прозрачные края),
+                // поэтому край растворяется в фоне, как у настоящего огня.
+                // Координаты — мировые координаты огней минус сдвиг carModel
+                // (-1.40, -2.00, -2.00).
+                Texture {
+                    id: turnGlowTexture
+                    source: "images/lights_glow.png"
+                    generateMipmaps: true
+                    mipFilter: Texture.Linear
+                }
+
+                component TurnLamp: Node {
+                    id: lampRoot
+                    property vector3d lampPosition
+                    property bool lit
+
+                    visible: lit && !scene.viewSide
+
+                    // ореол — большой и почти прозрачный
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(0.88, 0.84, 1.11)    // передний левый
-                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
+                        position: lampRoot.lampPosition
+                        scale: Qt.vector3d(0.011, 0.011, 0.011)
                         materials: PrincipledMaterial {
-                            baseColor: "#FF9A1A"
+                            baseColor: "#FF7A00"
+                            baseColorMap: turnGlowTexture
                             lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.55
                         }
                     }
+                    // само свечение — плотнее и меньше
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(0.78, 0.93, -2.07)   // задний левый
-                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
+                        position: lampRoot.lampPosition
+                        scale: Qt.vector3d(0.006, 0.006, 0.006)
                         materials: PrincipledMaterial {
-                            baseColor: "#FF9A1A"
+                            baseColor: "#FFA033"
+                            baseColorMap: turnGlowTexture
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.9
+                        }
+                    }
+                    // ядро лампы
+                    Model {
+                        source: "#Sphere"
+                        position: lampRoot.lampPosition
+                        scale: Qt.vector3d(0.0018, 0.0018, 0.0018)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FFD9A0"
                             lighting: PrincipledMaterial.NoLighting
                         }
                     }
                 }
-                Node {
-                    visible: scene.rightTurn && scene.turnBlink && !scene.viewSide
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-0.87, 0.88, 1.11)   // передний правый
-                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FF9A1A"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
-                    Model {
-                        source: "#Sphere"
-                        position: Qt.vector3d(-0.78, 0.93, -2.07)  // задний правый
-                        scale: Qt.vector3d(0.0022, 0.0022, 0.0022)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FF9A1A"
-                            lighting: PrincipledMaterial.NoLighting
-                        }
-                    }
+
+                TurnLamp {
+                    lampPosition: Qt.vector3d(0.88, 0.84, 1.11)     // передний левый
+                    lit: scene.leftTurn && scene.turnBlink
+                }
+                TurnLamp {
+                    lampPosition: Qt.vector3d(0.78, 0.93, -2.07)    // задний левый
+                    lit: scene.leftTurn && scene.turnBlink
+                }
+                TurnLamp {
+                    lampPosition: Qt.vector3d(-0.87, 0.88, 1.11)    // передний правый
+                    lit: scene.rightTurn && scene.turnBlink
+                }
+                TurnLamp {
+                    lampPosition: Qt.vector3d(-0.78, 0.93, -2.07)   // задний правый
+                    lit: scene.rightTurn && scene.turnBlink
                 }
             }
         }
