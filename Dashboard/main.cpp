@@ -127,6 +127,12 @@ int main(int argc, char *argv[])
     // Отладка на стенде: DASHBOARD_DEMO_TURN=left|right включает демо-поворотник
     // (то же, что стрелки на клавиатуре) — нужно для снимков и проверки
     // мигания 3D-огней без клавиатуры.
+    // DASHBOARD_DEMO_LIGHTS=1 — включить фары на 3D-модели (для снимков).
+    if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_LIGHTS")) {
+        if (auto *root = engine.rootObjects().constFirst())
+            root->setProperty("debugHeadlights", true);
+    }
+
     const QByteArray demoTurn = qgetenv("DASHBOARD_DEMO_TURN").toLower();
     if (!demoTurn.isEmpty()) {
         if (auto *root = engine.rootObjects().constFirst()) {

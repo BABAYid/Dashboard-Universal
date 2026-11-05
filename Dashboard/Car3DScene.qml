@@ -545,6 +545,72 @@ Item {
                     }
                 }
 
+                // ===== ФАРЫ =====
+                // То же мягкое свечение, что у поворотников: плоские «блины»
+                // с текстурой turn_glow.png, развёрнутые вперёд. Плюс пятно
+                // света на дороге — его видно и в нашем ракурсе (сзади-сверху).
+                component HeadLamp: Node {
+                    id: headRoot
+                    property vector3d lampPosition
+                    property bool lit
+
+                    visible: lit && !scene.viewSide
+
+                    Model {
+                        source: "#Rectangle"
+                        position: headRoot.lampPosition
+                        scale: Qt.vector3d(0.022, 0.016, 0.012)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FFE3A8"
+                            baseColorMap: turnGlowTexture
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.6
+                        }
+                    }
+                    Model {
+                        source: "#Rectangle"
+                        position: headRoot.lampPosition
+                        scale: Qt.vector3d(0.008, 0.006, 0.006)
+                        materials: PrincipledMaterial {
+                            baseColor: "#FFFFFF"
+                            baseColorMap: turnGlowTexture
+                            lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.9
+                        }
+                    }
+                }
+
+                HeadLamp {
+                    lampPosition: Qt.vector3d(-0.60, 0.76, 2.33)    // правая фара
+                    lit: scene.headlightsOn
+                }
+                HeadLamp {
+                    lampPosition: Qt.vector3d(0.60, 0.76, 2.33)     // левая фара
+                    lit: scene.headlightsOn
+                }
+
+                // Пятно света на дороге перед машиной: лежит горизонтально,
+                // поэтому читается с любого верхнего ракурса.
+                Model {
+                    source: "#Rectangle"
+                    visible: scene.headlightsOn && !scene.viewSide
+                    position: Qt.vector3d(0, 0.02, 3.4)
+                    eulerRotation: Qt.vector3d(-90, 0, 0)
+                    scale: Qt.vector3d(0.055, 0.034, 1)
+                    materials: PrincipledMaterial {
+                        baseColor: "#FFE9B8"
+                        baseColorMap: turnGlowTexture
+                        lighting: PrincipledMaterial.NoLighting
+                        alphaMode: PrincipledMaterial.Blend
+                        cullMode: PrincipledMaterial.NoCulling
+                        opacity: 0.55
+                    }
+                }
+
                 TurnLamp {
                     lampPosition: Qt.vector3d(0.92, 0.84, 1.13)     // передний левый
                     faceYaw: 35

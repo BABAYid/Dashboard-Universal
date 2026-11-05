@@ -64,6 +64,8 @@ Window {
     // Перекрываем именно обороты, которые видит приборка: стрелка, цифры и
     // анимация идут вместе, а не вразнобой.
     property bool debugFullThrottle: false
+    // Отладка: DASHBOARD_DEMO_LIGHTS=1 включает фары на модели (для снимков).
+    property bool debugHeadlights: false
     readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
 
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
@@ -373,7 +375,7 @@ Window {
             roadSpeed: root.speed
             // Свет по CAN: фары/габариты зажигают фары и задние фонари на
             // модели, поворотники мигают вместе с лампой на панели.
-            headlightsOn: root.lowBeam || root.positionLights
+            headlightsOn: root.lowBeam || root.positionLights || root.debugHeadlights
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
             turnBlink: root.turnBlink
