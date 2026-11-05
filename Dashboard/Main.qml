@@ -825,10 +825,13 @@ Window {
         // Пока камера дальше 500 м (или база пуста) — блока нет вообще,
         // и он не перекрывает центральную панель.
         CameraWarning {
+            // Под верхней полосой и над машиной: раньше висело у самого края
+            // экрана, теперь — в верхней части центральной области (панель
+            // начинается с y=154, крыша машины примерно с 250).
             x: root.centerX + (root.centerWidth - width) / 2
-            y: root.navigationMode ? 8 : 15
-            width: root.centerWidth * 0.96
-            height: root.navigationMode ? 60 : 118
+            y: root.navigationMode ? 10 : 160
+            width: root.navigationMode ? 250 : 300
+            height: root.navigationMode ? 60 : 78
             z: 6
             compact: root.navigationMode
             enabled: root.cameraWarningEnabled
