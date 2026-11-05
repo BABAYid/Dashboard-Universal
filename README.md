@@ -34,13 +34,36 @@ cmake --build build -j4
 
 ## Запуск
 
+Самый простой путь — скрипт `run.sh` (собирает, если нужно, и запускает):
+
+```bash
+./run.sh                        # в машине: CAN can0, полный экран
+./run.sh --window --mock        # на столе: окно и демо-данные
+./run.sh --mock --city 56.8052,60.6512   # демо-маршрут в своём городе
+./run.sh --mock --demo-camera 20 --demo-type 102   # сразу камера впереди
+./run.sh --shot /tmp/dash.png --mock --shot-delay 12000   # снимок и выход
+./run.sh --help                 # все ключи
+```
+
+Напрямую, без скрипта:
+
 ```bash
 ./build/appDashboard --mock          # демо-режим: данные генерируются, CAN не нужен
 ./build/appDashboard --can can0      # приём реальных кадров с интерфейса can0
 ./build/appDashboard --fullscreen    # для установки в автомобиль (без рамки)
 ```
 
-Отладочный снимок экрана (удобно на устройстве без монитора):
+Полезные переменные окружения (их же подставляет `run.sh`):
+
+| Переменная | Что делает |
+|---|---|
+| `DASHBOARD_SHOT` / `DASHBOARD_SHOT_DELAY` | снимок окна в файл и выход (для устройства без монитора) |
+| `DASHBOARD_DEMO_CAMERA` | демо-камера в 420 м впереди (значение — ограничение км/ч) |
+| `DASHBOARD_DEMO_CAMERA_TYPE` | код типа демо-точки (1 камера, 102 неровность, 22 переход…) |
+| `DASHBOARD_MOCK_LAT` / `DASHBOARD_MOCK_LON` | перенести демо-маршрут в свой город |
+| `DASHBOARD_SPEEDCAM` | путь к базе камер (иначе ищется автоматически) |
+
+Отладочный снимок экрана напрямую:
 
 ```bash
 DASHBOARD_SHOT=/tmp/dash.png ./build/appDashboard --mock
