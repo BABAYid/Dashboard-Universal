@@ -364,6 +364,24 @@ balsam /tmp/cruiser_baked.glb -o /tmp/cruiser_out/
 0.058 л, средний расход 8.5 л/100 (в демо мгновенный гуляет 8.1–8.9), запас хода
 543 км при 77 % бака и 60 л.
 
+### Покраска 3D-модели
+
+Цвет машины на приборке задаётся материалами в GLB. Кузов — материал
+`base white` (отдельного «крыши» нет), поэтому покраска делается скриптом:
+
+```bash
+python3 tools/paint_model.py --list                    # какие материалы есть
+python3 tools/paint_model.py --body "#1E2A44" --out /tmp/car_blue.glb
+python3 tools/paint_model.py --body "#1E2A44" --wheel "#2A2E33" \
+        --out Dashboard/assets/ipsum_fin.glb           # покрасить на месте
+```
+
+Материалы: `base white` кузов · `black glossy` молдинги · `inside black` салон ·
+`red` фонари · `black glass` стёкла · `orange`/`orange glass` поворотники и
+фары · `metallic` хром · `wheel` шины. Скрипт меняет только
+`baseColorFactor`, геометрию не трогает, поэтому двери и анимации продолжают
+работать.
+
 ## Геометрия стрелок и шкал
 
 Замерено по исходникам дизайнера — это нужно для любой правки приборов.
