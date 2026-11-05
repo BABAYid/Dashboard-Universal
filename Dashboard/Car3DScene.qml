@@ -492,7 +492,9 @@ Item {
                 // (-1.40, -2.00, -2.00).
                 Texture {
                     id: turnGlowTexture
-                    source: "images/lights_glow.png"
+                    // своя текстура с длинным плавным хвостом: у lights_glow
+                    // край гаснет резко, из-за чего огонь читался как шарик
+                    source: "images/turn_glow.png"
                     generateMipmaps: true
                     mipFilter: Texture.Linear
                 }
@@ -515,24 +517,30 @@ Item {
                         source: "#Rectangle"
                         position: lampRoot.lampPosition
                         eulerRotation: Qt.vector3d(0, lampRoot.faceYaw, 0)
-                        scale: Qt.vector3d(0.0075, 0.0075, 0.0075)
+                        scale: Qt.vector3d(0.013, 0.013, 0.013)
                         materials: PrincipledMaterial {
                             baseColor: "#FF8A1A"
                             baseColorMap: turnGlowTexture
                             lighting: PrincipledMaterial.NoLighting
                             alphaMode: PrincipledMaterial.Blend
                             cullMode: PrincipledMaterial.NoCulling
-                            opacity: 0.85
+                            opacity: 0.55
                         }
                     }
-                    // Ядро лампы: яркая точка ровно на месте огня.
+                    // Ядро — такой же плоский блин, только меньше и плотнее:
+                    // жёсткого шара больше нет, поэтому граница не читается.
                     Model {
-                        source: "#Sphere"
+                        source: "#Rectangle"
                         position: lampRoot.lampPosition
-                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
+                        eulerRotation: Qt.vector3d(0, lampRoot.faceYaw, 0)
+                        scale: Qt.vector3d(0.0065, 0.0065, 0.0065)
                         materials: PrincipledMaterial {
-                            baseColor: "#FFD9A0"
+                            baseColor: "#FFC169"
+                            baseColorMap: turnGlowTexture
                             lighting: PrincipledMaterial.NoLighting
+                            alphaMode: PrincipledMaterial.Blend
+                            cullMode: PrincipledMaterial.NoCulling
+                            opacity: 0.95
                         }
                     }
                 }
