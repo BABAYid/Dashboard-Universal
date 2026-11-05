@@ -124,6 +124,19 @@ int main(int argc, char *argv[])
     if (engine.rootObjects().isEmpty())
         return -1;
 
+    // Отладка на стенде: DASHBOARD_DEMO_TURN=left|right включает демо-поворотник
+    // (то же, что стрелки на клавиатуре) — нужно для снимков и проверки
+    // мигания 3D-огней без клавиатуры.
+    const QByteArray demoTurn = qgetenv("DASHBOARD_DEMO_TURN").toLower();
+    if (!demoTurn.isEmpty()) {
+        if (auto *root = engine.rootObjects().constFirst()) {
+            if (demoTurn == "left")
+                root->setProperty("demoLeftTurn", true);
+            else if (demoTurn == "right")
+                root->setProperty("demoRightTurn", true);
+        }
+    }
+
     if (parser.isSet(fullscreenOption)) {
         if (auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst()))
             window->showFullScreen();

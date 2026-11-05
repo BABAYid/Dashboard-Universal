@@ -72,6 +72,28 @@ Item {
     readonly property real suspensionOffset: suspensionLevel > 0 ? 0.9
                                              : suspensionLevel < 0 ? -0.5 : 0.0
 
+    // ---- Поворотники: свечение (emissive) вместо подмены геометрии ----
+    // У модели есть свои узлы «lighter turner left/rigth» (по 4 см), но их
+    // материал `orange` общий с задними фонарями, поэтому мигать будет всё
+    // сразу. Даём каждому поворотнику СВОЙ материал — тогда левый и правый
+    // мигают независимо, а стёкла/фонари остаются как были.
+    // Частота 1.5 Гц — это фаза turnBlink из Main.qml (333 мс), поэтому
+    // стрелки на панели и огни на модели мигают синхронно.
+    PrincipledMaterial {
+        id: turnMaterialLeft
+        baseColor: "#CC2600"
+        roughness: 0.5
+        emissiveFactor: (scene.leftTurn && scene.turnBlink)
+                        ? Qt.vector3d(1.0, 0.5, 0.0) : Qt.vector3d(0, 0, 0)
+    }
+    PrincipledMaterial {
+        id: turnMaterialRight
+        baseColor: "#CC2600"
+        roughness: 0.5
+        emissiveFactor: (scene.rightTurn && scene.turnBlink)
+                        ? Qt.vector3d(1.0, 0.5, 0.0) : Qt.vector3d(0, 0, 0)
+    }
+
     signal modelReady()
     signal modelFailed()
 
@@ -376,6 +398,16 @@ Item {
                             // 4 — задняя левая, 5 — задняя правая.
                             ipsumCar.doors = [models[2], models[3], models[4], models[5]]
                             ipsumCar.wheels = [models[13], models[14], models[15], models[16]]
+
+                            // Поворотники: 11 — левый, 12 — правый. Подменяем
+                            // материал на свой, чтобы управлять свечением
+                            // независимо (родной `orange` общий с фонарями).
+                            if (models.length > 12) {
+                                models[11].materials = [turnMaterialLeft]
+                                models[12].materials = [turnMaterialRight]
+                                console.log("3D: поворотники — узлы 11 (левый) и 12 (правый), "
+                                            + "emissive управляется фазой turnBlink")
+                            }
                         }
                     }
                 }
