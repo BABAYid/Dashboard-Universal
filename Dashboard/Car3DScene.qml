@@ -399,18 +399,33 @@ Item {
                             ipsumCar.doors = [models[2], models[3], models[4], models[5]]
                             ipsumCar.wheels = [models[13], models[14], models[15], models[16]]
 
-                            // Поворотники: 11 — левый, 12 — правый. Подменяем
-                            // материал на свой, чтобы управлять свечением
-                            // независимо (родной `orange` общий с фонарями).
+                            // Поворотники в модели — три места, и все должны
+                            // мигать от одного сигнала:
+                            //   11 и 12 — отдельные маленькие узлы;
+                            //   9 и 10  — фары, где поворотник в крыле сделан
+                            //             одним из примитивов (материал
+                            //             `orange glass`, индекс 1);
+                            //   7 и 8   — задние фонари, поворотник там
+                            //             примитив 0 (материал `orange`).
+                            // Материалы родные общие, поэтому каждому месту
+                            // подставляем свой — с управляемым emissive.
                             if (models.length > 12) {
+                                const swap = function (index, slot, material) {
+                                    const list = models[index].materials.slice()
+                                    list[slot] = material
+                                    models[index].materials = list
+                                }
+                                // левая сторона: 10 (фара) и 7 (фонарь) + 11
+                                swap(10, 1, turnMaterialLeft)
+                                swap(7, 0, turnMaterialLeft)
                                 models[11].materials = [turnMaterialLeft]
+                                // правая сторона: 9 (фара) и 8 (фонарь) + 12
+                                swap(9, 1, turnMaterialRight)
+                                swap(8, 0, turnMaterialRight)
                                 models[12].materials = [turnMaterialRight]
-                                console.log("3D: поворотники — узлы 11 (левый) и 12 (правый), "
-                                            + "emissive управляется фазой turnBlink")
-                                console.log("3D: у узла 11 материалов", models[11].materials.length,
-                                            "emissive", models[11].materials[0].emissiveFactor.x,
-                                            "| у узла 12 материалов", models[12].materials.length,
-                                            "emissive", models[12].materials[0].emissiveFactor.x)
+                                console.log("3D: поворотники — поворотник в крыле (узлы 9/10, "
+                                            + "примитив orange glass), задние фонари (7/8) и "
+                                            + "отдельные узлы 11/12 управляются фазой turnBlink")
                             }
                         }
                     }
