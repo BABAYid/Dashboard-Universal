@@ -706,12 +706,15 @@ Item {
                     }
                 }
 
+                // Фонари продолжаются на крышке багажника той же линией
+                // (в модели это красная полоса X -0.64…0.64 на узле door back),
+                // поэтому свет ставим не в углах, а вдоль этой линии — внутрь.
                 TailLamp {
-                    lampPosition: Qt.vector3d(0.74, 0.93, -2.10)    // задний левый
+                    lampPosition: Qt.vector3d(0.44, 0.93, -2.34)    // левая половина полосы
                     lit: scene.headlightsOn
                 }
                 TailLamp {
-                    lampPosition: Qt.vector3d(-0.74, 0.93, -2.10)   // задний правый
+                    lampPosition: Qt.vector3d(-0.44, 0.93, -2.34)   // правая половина полосы
                     lit: scene.headlightsOn
                 }
 
