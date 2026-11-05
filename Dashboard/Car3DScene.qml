@@ -501,42 +501,35 @@ Item {
                     id: lampRoot
                     property vector3d lampPosition
                     property bool lit
+                    // Куда смотрит «блин» свечения: передние огни — вперёд,
+                    // задние — назад, и все чуть наружу, чтобы не заезжать
+                    // на кузов.
+                    property real faceYaw: 0
 
                     visible: lit && !scene.viewSide
 
-                    // ореол — большой и почти прозрачный
+                    // Свечение — плоский «блин» с радиальной текстурой, а не
+                    // шар: шар обнимал кузов и подсвечивал крыло, плоскость
+                    // же стоит в плоскости фонаря и на кузов не заходит.
                     Model {
-                        source: "#Sphere"
+                        source: "#Rectangle"
                         position: lampRoot.lampPosition
-                        scale: Qt.vector3d(0.011, 0.011, 0.011)
+                        eulerRotation: Qt.vector3d(0, lampRoot.faceYaw, 0)
+                        scale: Qt.vector3d(0.0075, 0.0075, 0.0075)
                         materials: PrincipledMaterial {
-                            baseColor: "#FF7A00"
+                            baseColor: "#FF8A1A"
                             baseColorMap: turnGlowTexture
                             lighting: PrincipledMaterial.NoLighting
                             alphaMode: PrincipledMaterial.Blend
                             cullMode: PrincipledMaterial.NoCulling
-                            opacity: 0.55
+                            opacity: 0.85
                         }
                     }
-                    // само свечение — плотнее и меньше
+                    // Ядро лампы: яркая точка ровно на месте огня.
                     Model {
                         source: "#Sphere"
                         position: lampRoot.lampPosition
-                        scale: Qt.vector3d(0.006, 0.006, 0.006)
-                        materials: PrincipledMaterial {
-                            baseColor: "#FFA033"
-                            baseColorMap: turnGlowTexture
-                            lighting: PrincipledMaterial.NoLighting
-                            alphaMode: PrincipledMaterial.Blend
-                            cullMode: PrincipledMaterial.NoCulling
-                            opacity: 0.9
-                        }
-                    }
-                    // ядро лампы
-                    Model {
-                        source: "#Sphere"
-                        position: lampRoot.lampPosition
-                        scale: Qt.vector3d(0.0018, 0.0018, 0.0018)
+                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
                         materials: PrincipledMaterial {
                             baseColor: "#FFD9A0"
                             lighting: PrincipledMaterial.NoLighting
@@ -545,19 +538,23 @@ Item {
                 }
 
                 TurnLamp {
-                    lampPosition: Qt.vector3d(0.88, 0.84, 1.11)     // передний левый
+                    lampPosition: Qt.vector3d(0.92, 0.84, 1.13)     // передний левый
+                    faceYaw: 35
                     lit: scene.leftTurn && scene.turnBlink
                 }
                 TurnLamp {
-                    lampPosition: Qt.vector3d(0.78, 0.93, -2.07)    // задний левый
+                    lampPosition: Qt.vector3d(0.82, 0.93, -2.09)    // задний левый
+                    faceYaw: 145
                     lit: scene.leftTurn && scene.turnBlink
                 }
                 TurnLamp {
-                    lampPosition: Qt.vector3d(-0.87, 0.88, 1.11)    // передний правый
+                    lampPosition: Qt.vector3d(-0.91, 0.88, 1.13)    // передний правый
+                    faceYaw: -35
                     lit: scene.rightTurn && scene.turnBlink
                 }
                 TurnLamp {
-                    lampPosition: Qt.vector3d(-0.78, 0.93, -2.07)   // задний правый
+                    lampPosition: Qt.vector3d(-0.82, 0.93, -2.09)   // задний правый
+                    faceYaw: 215
                     lit: scene.rightTurn && scene.turnBlink
                 }
             }
