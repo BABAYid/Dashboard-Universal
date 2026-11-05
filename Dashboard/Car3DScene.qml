@@ -617,7 +617,7 @@ Item {
                     visible: scene.headlightsOn && !scene.viewSide
                     position: Qt.vector3d(0, 0.02, 4.4)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
-                    scale: Qt.vector3d(0.05, 0.05, 1)
+                    scale: Qt.vector3d(0.08, 0.05, 1)
                     materials: PrincipledMaterial {
                         baseColor: "#FFE9B8"
                         baseColorMap: turnGlowTexture
@@ -637,7 +637,7 @@ Item {
                     source: "#Rectangle"
                     visible: scene.headlightsOn && !scene.viewSide
                     position: Qt.vector3d(0, 1.5, 3.05)
-                    scale: Qt.vector3d(0.05, 0.055, 1)
+                    scale: Qt.vector3d(0.085, 0.06, 1)
                     materials: PrincipledMaterial {
                         baseColor: "#FFEFC8"
                         baseColorMap: turnGlowTexture
@@ -654,7 +654,7 @@ Item {
                     visible: scene.headlightsOn && !scene.viewSide
                     position: Qt.vector3d(0, 0.019, 2.9)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
-                    scale: Qt.vector3d(0.035, 0.022, 1)
+                    scale: Qt.vector3d(0.055, 0.024, 1)
                     materials: PrincipledMaterial {
                         baseColor: "#FFF2D4"
                         baseColorMap: turnGlowTexture
