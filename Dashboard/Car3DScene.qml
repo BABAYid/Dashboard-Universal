@@ -87,18 +87,52 @@ Item {
         }
     }
 
+    // ---- Поворот узла вокруг МИРОВОЙ оси с сохранением его собственного
+    // поворота. Нужно потому, что у правых дверей узел в файле повёрнут на
+    // 180° вокруг X (и отзеркален масштабом), а у колёс — на 90°: если просто
+    // задать eulerRotation, этот поворот потеряется и деталь окажется не на
+    // месте. Петля считается как q_new = q_hinge * q_orig (кватернионы [w,x,y,z]).
+    function quatMul(a, b) {
+        return [
+            a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3],
+            a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2],
+            a[0]*b[2] - a[1]*b[3] + a[2]*b[0] + a[3]*b[1],
+            a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + a[3]*b[0]
+        ]
+    }
+
+    // axis — мировая ось ([0,1,0] — вертикаль для дверей, [1,0,0] — поперечная
+    // для капота, задней двери и колёс), degrees — угол петли.
+    function pivotPart(car, index, axis, degrees) {
+        if (!car || index >= car.models.length)
+            return
+        const node = car.models[index]
+        if (!node)
+            return
+        const half = degrees * Math.PI / 360
+        const s = Math.sin(half)
+        const hinge = [Math.cos(half), axis[0]*s, axis[1]*s, axis[2]*s]
+        const orig = car.origQuat[index] || [1, 0, 0, 0]
+        const q = quatMul(hinge, orig)
+        node.rotation = Qt.quaternion(q[0], q[1], q[2], q[3])
+    }
+
     readonly property real carTravel: Math.min(1.0, Math.max(0.0, (progress - 0.375) / 0.375))
     readonly property real carDepth: -7.0 * (1.0 - carTravel)
     readonly property real carScale: 0.78 + 0.22 * carTravel
 
-    // Модель cruiser300 в сантиметрах, длина вдоль X: +90° ставит её вдоль Z
-    // носом к камере; после заставки разворот на 180° — корма к зрителю.
-    property real carYaw: 90
+    // У финальной модели дизайнера нос смотрит в +Z (камера тоже с +Z),
+    // поэтому 0 — машина стоит носом к зрителю; после заставки разворот на
+    // 180° — кормой к зрителю, как и было.
+    // Трёхчетвертной ракурс (-35°: видно и перед, и левый борт) — так машина
+    // читается объёмно; строго в нос/корму 4.6-метровая модель выглядит
+    // плоской полосой. После заставки доворачиваем на 180°, как и раньше.
+    property real carYaw: -35
     SequentialAnimation on carYaw {
         running: scene.progress >= 0.999
         PauseAnimation { duration: 800 }
         NumberAnimation {
-            from: 90; to: -90
+            from: -35; to: 145
             duration: 2200
             easing.type: Easing.InOutCubic
         }
@@ -154,7 +188,16 @@ Item {
         // Заливка, чтобы кузов читался: разгорается за первые 0.5 с.
         DirectionalLight {
             eulerRotation: Qt.vector3d(-35, -20, 0)
-            brightness: 1.5 * Math.min(1.0, scene.progress / 0.125)
+            brightness: 1.9 * Math.min(1.0, scene.progress / 0.125)
+            castsShadow: false
+        }
+
+        // Вторая заливка с противоположной стороны: у финальной модели
+        // материалы без текстуры, и одним источником половина кузова уходила
+        // в чёрное (на ASCII-проверке тёмных пикселей было втрое больше).
+        DirectionalLight {
+            eulerRotation: Qt.vector3d(-25, 150, 0)
+            brightness: 0.9 * Math.min(1.0, scene.progress / 0.125)
             castsShadow: false
         }
 
@@ -220,7 +263,7 @@ Item {
             position: Qt.vector3d(0, 0, scene.carDepth)
             scale: Qt.vector3d(scene.carScale * scene.carEnlarge, scene.carScale * scene.carEnlarge, scene.carScale * scene.carEnlarge)
             // В 6-м виде — боком (профиль); иначе обычный разворот заставки.
-            eulerRotation: Qt.vector3d(0, scene.viewSide ? 0 : scene.carYaw, 0)
+            eulerRotation: Qt.vector3d(0, scene.viewSide ? 90 : scene.carYaw, 0)
             // Behavior на eulerRotation тут ВРЕДИТ: разворот кормой идёт
             // анимацией carYaw, а Behavior перезапускался на каждом её кадре
             // и замораживал поворот. Позиция — другое дело: меняется только
@@ -229,23 +272,29 @@ Item {
                 NumberAnimation { duration: 500; easing.type: Easing.InOutQuad }
             }
 
-            // ===== НОВАЯ МОДЕЛЬ: ipsum_3D.glb (единицы — метры, ~1.9 м) =====
-            // Грузим в рантайме через RuntimeLoader. В нашем GLB узлы идут
-            // в порядке: 0 Capot, 1 Car_body, 2 Door_5 (багажник), 3 Door_FL,
-            // 4 Door_FR, 5 Door_RL, 6 Door_RR, 7 Wheel_FL, 8 Wheel_FR,
-            // 9 Wheel_RL, 10 Wheel_RR. Имена в QML не сохраняются
-            // (objectName пустые) — порядок и позиции проверены разбором
-            // GLB, поэтому роли назначаем по индексу после загрузки.
+            // ===== ФИНАЛЬНАЯ МОДЕЛЬ ДИЗАЙНЕРА: ipsum_fin.glb =====
+            // Габариты 4.59 (длина, Z) x 2.05 (ширина, X) x 1.73 (высота, Y),
+            // нос смотрит в +Z, единицы — метры. Узлы идут в порядке:
+            //   0 base (кузов)            1 door back (задняя дверь)
+            //   2 door front left         3 door front right
+            //   4 door left back          5 door right back
+            //   6 front door (капот)      7-8 задние фонари
+            //   9-10 фары                 11-12 поворотники
+            //   13-16 колёса
+            // Имена RuntimeLoader не сохраняет (objectName пустой), поэтому
+            // роли раздаём по индексу — порядок проверен разбором GLB.
             Node {
                 id: ipsumCar
-                scale: Qt.vector3d(2.6, 2.6, 2.6)   // подгонка под кадр
+                scale: Qt.vector3d(1, 1, 1)
 
-                property var wheels: []     // модели колёс (ось вращения — z)
-                property var doors: []      // двери салона (ось — y)
-                property var capot: null    // капот (петля — задняя верхняя кромка)
-                property var trunk: null    // багажник (петля — верх, 5-я дверь)
-                // Части, которые поднимаются вместе с кузовом (всё, кроме
-                // колёс): 0 Capot, 1 Car_body, 2 Door_5, 3..6 двери.
+                property var models: []     // все QQuick3DModel в порядке узлов
+                property var origQuat: []   // их собственные повороты [w,x,y,z]
+                property var wheels: []     // модели колёс (ось — мировая X)
+                property var doors: []      // двери салона (ось — мировая Y)
+                property var capot: null    // капот (петля — мировая X)
+                property var trunk: null    // задняя дверь (петля — мировая X)
+                // Кузов и всё, что над колёсами (0…6) — поднимается подвеской;
+                // колёса (13…16) остаются на земле.
                 property var bodyParts: []
                 property var bodyOrigY: []
                 property real bodyLift: 0
@@ -268,55 +317,65 @@ Item {
                     NumberAnimation { duration: 700; easing.type: Easing.OutCubic }
                 }
 
-                RuntimeLoader {
-                    id: ipsumLoader
-                    source: "assets/ipsum_3D.glb"
+                Node {
+                    id: carModel
+                    // У модели низ кузова на y=2.0, центр по X и Z — 1.40 и 2.00:
+                    // сдвигаем, чтобы машина стояла на земле и вращалась вокруг
+                    // собственного центра, а не вокруг угла файла.
+                    position: Qt.vector3d(-1.40, -2.00, -2.00)
 
-                    onStatusChanged: {
-                        if (status !== RuntimeLoader.Success)
-                            return
+                    RuntimeLoader {
+                        id: ipsumLoader
+                        source: "assets/ipsum_fin.glb"
 
-                        // Модели в порядке узлов glTF (проверено позициями).
-                        const models = []
-                        scene.collectModels(ipsumLoader, models)
-                        const names = ["Capot", "Car_body", "Door_5", "Door_FL",
-                                       "Door_FR", "Door_RL", "Door_RR",
-                                       "Wheel_FL", "Wheel_FR", "Wheel_RL", "Wheel_RR"]
-                        console.log("3D: ipsum_3D.glb загружена, узлов:", models.length)
-                        for (let i = 0; i < models.length; ++i) {
-                            const m = models[i]
-                            m.objectName = names[i] || ("node" + i)
-                            const p = m.position
-                            console.log("3D: узел", i, m.objectName,
-                                        "pos=", p.x.toFixed(3), p.y.toFixed(3), p.z.toFixed(3))
+                        onStatusChanged: {
+                            if (status !== RuntimeLoader.Success)
+                                return
+
+                            const models = []
+                            scene.collectModels(ipsumLoader, models)
+                            const names = ["base", "door back", "door front left", "door front right",
+                                           "door left back", "door right back", "капот",
+                                           "фонарь задний левый", "фонарь задний правый",
+                                           "фара правая", "фара левая",
+                                           "поворотник левый", "поворотник правый",
+                                           "колесо", "колесо", "колесо", "колесо"]
+                            console.log("3D: ipsum_fin.glb загружена, узлов:", models.length)
+
+                            const quats = []
+                            for (let i = 0; i < models.length; ++i) {
+                                const m = models[i]
+                                m.objectName = names[i] || ("node" + i)
+                                const r = m.rotation
+                                quats.push([r.scalar, r.x, r.y, r.z])
+                                const p = m.position
+                                console.log("3D: узел", i, m.objectName,
+                                            "pos=", p.x.toFixed(3), p.y.toFixed(3), p.z.toFixed(3))
+                            }
+
+                            ipsumCar.models = models
+                            ipsumCar.origQuat = quats
+                            ipsumCar.capot = models[6]
+                            ipsumCar.trunk = models[1]
+
+                            // Кузов и всё над колёсами поднимаются подвеской.
+                            const parts = []
+                            const origY = []
+                            for (let b = 0; b <= 6 && b < models.length; ++b) {
+                                parts.push(models[b])
+                                origY.push(models[b].position.y)
+                            }
+                            ipsumCar.bodyOrigY = origY
+                            ipsumCar.bodyParts = parts
+                            // Двери: 2 — передняя левая, 3 — передняя правая,
+                            // 4 — задняя левая, 5 — задняя правая.
+                            ipsumCar.doors = [models[2], models[3], models[4], models[5]]
+                            ipsumCar.wheels = [models[13], models[14], models[15], models[16]]
                         }
-                        // На Door_FL в файле лежит случайный поворот — сбрасываем,
-                        // позу дверей задаём сами.
-                        for (let d = 3; d <= 6 && d < models.length; ++d)
-                            models[d].eulerRotation = Qt.vector3d(0, 0, 0)
-
-                        ipsumCar.capot = models[0]
-                        ipsumCar.trunk = models[2]
-                        // Кузов и двери поднимаются подвеской; колёса —
-                        // нет, поэтому их позиции не трогаем.
-                        // Собираем локально и присваиваем разом: push в
-                        // существующий массив не меняет свойство, и binding
-                        // `running` у таймера подъёма не пересчитался бы.
-                        const parts = []
-                        const origY = []
-                        for (let b = 0; b <= 6 && b < models.length; ++b) {
-                            parts.push(models[b])
-                            origY.push(models[b].position.y)
-                        }
-                        ipsumCar.bodyOrigY = origY
-                        ipsumCar.bodyParts = parts
-                        ipsumCar.doors = [models[3], models[4], models[5], models[6]]
-                        ipsumCar.wheels = [models[7], models[8], models[9], models[10]]
                     }
                 }
 
                 // Крутим колёса: угол растёт со скоростью, в покое — стоит.
-                // Ось колеса в модели — локальная z (диск лежит в x-y).
                 Timer {
                     interval: 16
                     repeat: true
@@ -325,26 +384,22 @@ Item {
                         const spd = scene.roadSpeed
                         if (spd > 0.5)
                             ipsumCar.wheelAngle += spd * 0.015
-                        for (let i = 0; i < ipsumCar.wheels.length; ++i) {
-                            const w = ipsumCar.wheels[i]
-                            if (w)
-                                w.eulerRotation = Qt.vector3d(0, 0, ipsumCar.wheelAngle)
-                        }
+                        for (let i = 13; i <= 16 && i < ipsumCar.models.length; ++i)
+                            scene.pivotPart(ipsumCar, i, [1, 0, 0], ipsumCar.wheelAngle)
                     }
                 }
 
                 // Подвеска: кузов плавно поднимается/опускается относительно
-                // колёс. suspensionOffset задан в единицах сцены, а части
-                // кузова — внутри масштабированного контейнера, поэтому
-                // делим на полный масштаб цепочки.
+                // колёс. suspensionOffset задан в единицах сцены, а части кузова —
+                // внутри масштабированного контейнера, поэтому делим на полный
+                // масштаб цепочки.
                 Timer {
                     interval: 16
                     repeat: true
                     running: ipsumCar.bodyParts.length > 0
                     onTriggered: {
-                        const totalScale = scene.carScale * scene.carEnlarge * 2.6
+                        const totalScale = scene.carScale * scene.carEnlarge
                         const target = scene.suspensionOffset / totalScale
-                        // плавное догоняние (~0.2 с)
                         ipsumCar.bodyLift += (target - ipsumCar.bodyLift) * 0.25
                         for (let b = 0; b < ipsumCar.bodyParts.length; ++b) {
                             const m = ipsumCar.bodyParts[b]
@@ -356,54 +411,47 @@ Item {
                     }
                 }
 
-                // Капот и багажник: поворот вокруг горизонтальной оси z.
-                // Капот — петля сзади сверху (передняя кромка идёт вверх);
-                // багажник — 5-я дверь, нижняя кромка уходит вверх.
+                // Капот и задняя дверь: петля — горизонтальная мировая ось X.
+                // Капот поднимается передней кромкой (минус), задняя дверь —
+                // нижней кромкой (плюс).
                 Timer {
                     interval: 16
                     repeat: true
                     running: ipsumCar.capot !== null
                     onTriggered: {
-                        if (ipsumCar.capot)
-                            ipsumCar.capot.eulerRotation = Qt.vector3d(0, 0, -ipsumCar.capotAngle)
-                        if (ipsumCar.trunk)
-                            ipsumCar.trunk.eulerRotation = Qt.vector3d(0, 0, ipsumCar.trunkAngle)
+                        scene.pivotPart(ipsumCar, 6, [1, 0, 0], -ipsumCar.capotAngle)
+                        scene.pivotPart(ipsumCar, 1, [1, 0, 0], ipsumCar.trunkAngle)
                     }
                 }
 
-                // Двери: открываются наружу поворотом вокруг вертикали.
-                // Левая сторона (z+) и правая (z−) — знак разный.
+                // Двери открываются наружу поворотом вокруг мировой вертикали.
+                // У правых дверей узел в файле повёрнут на 180° вокруг X и
+                // отзеркален — поэтому петля идёт в другую сторону.
                 Timer {
                     interval: 16
                     repeat: true
                     running: ipsumCar.doors.length > 0
                     onTriggered: {
-                        for (let i = 0; i < ipsumCar.doors.length; ++i) {
-                            const d = ipsumCar.doors[i]
-                            if (!d)
-                                continue
-                            // 0=FL, 1=FR, 2=RL, 3=RR; слева (z+) — плюс,
-                            // справа (z−) — минус.
-                            const left = (i === 0 || i === 2)
-                            const sign = left ? -1 : 1
-                            const angles = [ipsumCar.doorAngleFL, ipsumCar.doorAngleFR,
-                                            ipsumCar.doorAngleRL, ipsumCar.doorAngleRR]
-                            d.eulerRotation = Qt.vector3d(0, sign * angles[i], 0)
-                        }
+                        const angles = [ipsumCar.doorAngleFL, ipsumCar.doorAngleFR,
+                                        ipsumCar.doorAngleRL, ipsumCar.doorAngleRR]
+                        const nodes = [2, 3, 4, 5]
+                        const signs = [-1, 1, -1, 1]   // левые — минус, правые — плюс
+                        for (let i = 0; i < nodes.length; ++i)
+                            scene.pivotPart(ipsumCar, nodes[i], [0, 1, 0], signs[i] * angles[i])
                     }
                 }
-            }
 
-                // ===== ПОВОРОТНИКИ (мигают вместе с лампой на панели) =====
-                // Левый борт в локальных осях модели — +z (перед у неё −x):
-                // тогда при виде спереди «левый» поворотник светится справа
-                // на экране, как на настоящей машине.
+                // ===== ПОВОРОТНИКИ =====
+                // У модели есть свои узлы поворотников, но они по 4 см — на
+                // приборке не видны, поэтому светим шариками на их местах.
+                // Координаты — мировые координаты модели минус её сдвиг
+                // (-1.40, -2.00, -2.00), чтобы они сидели на фарах.
                 Node {
                     visible: scene.leftTurn && scene.turnBlink && !scene.viewSide
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.55, 1.30)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
+                        position: Qt.vector3d(0.88, -1.16, 1.11)   // передний левый
+                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -411,8 +459,8 @@ Item {
                     }
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(2.72, 0.60, 1.30)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
+                        position: Qt.vector3d(0.78, -1.07, -2.07)  // задний левый
+                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -423,8 +471,8 @@ Item {
                     visible: scene.rightTurn && scene.turnBlink && !scene.viewSide
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(-2.72, 0.55, -1.30)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
+                        position: Qt.vector3d(-0.87, -1.12, 1.11)  // передний правый
+                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -432,8 +480,8 @@ Item {
                     }
                     Model {
                         source: "#Sphere"
-                        position: Qt.vector3d(2.72, 0.60, -1.30)
-                        scale: Qt.vector3d(0.003, 0.003, 0.003)
+                        position: Qt.vector3d(-0.78, -1.07, -2.07) // задний правый
+                        scale: Qt.vector3d(0.0016, 0.0016, 0.0016)
                         materials: PrincipledMaterial {
                             baseColor: "#FF9A1A"
                             lighting: PrincipledMaterial.NoLighting
@@ -443,3 +491,4 @@ Item {
             }
         }
     }
+}

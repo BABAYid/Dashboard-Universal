@@ -60,6 +60,10 @@ qt_add_qml_module(appDashboard
         # Новая модель машины (Toyota Ipsum, метры, ~1.9 м): грузится
         # в рантайме через RuntimeLoader — имена узлов разбираем по порядку.
         assets/ipsum_3D.glb
+        # Финальная модель от дизайнера (Toyota Ipsum, метры, 4.59 x 2.05 x 1.73):
+        # кузов, 4 двери, задняя дверь, капот, колёса, фары/фонари/поворотники
+        # отдельными узлами, 9 материалов без текстур.
+        assets/ipsum_fin.glb
         assets/3.glb
         assets/engine_anim.js
         # Бип предупреждения о камере (Smart Driver)
