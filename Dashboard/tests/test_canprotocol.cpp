@@ -1,5 +1,5 @@
 // ============================================================================
-//  Тест разбора CAN-протокола (can_protocol_v1.4.txt).
+//  Тест разбора CAN-протокола (can_protocol_v1.5.txt).
 //
 //  Проверяются примеры кадров прямо из документации плюс граничные случаи:
 //  определение передачи по проводам S1/S2, режимы АКПП, отрицательная
@@ -19,6 +19,7 @@
 #include <QDebug>
 #include <QtMath>
 #include <QTimer>
+#include <QEventLoop>
 
 static int g_failures = 0;
 
@@ -380,6 +381,74 @@ int main(int argc, char *argv[])
     // Неизвестный вид события — тишина, а не падение.
     can.feedFrame(0x530, frame({0x7F, 0x01, 0x01, 0x10}));
     check(buttonEvents == 2 && encoderEvents == 2, "неизвестный вид события игнорируется");
+
+    // ---- 0x540 / 0x541: команды климату (протокол 1.5) ----
+    qInfo() << "0x540 / 0x541 — управление климатом (новое в 1.5)";
+    // Демо-режим без шины: отправка считается успешной, а ответ подаём сами —
+    // так проверяется вся машина состояний, а не только разбор ответа.
+    can.setMockMode(true);
+
+    int sentId = -1, sentAction = 0, sentCount = 0;
+    int resId = -1, resAction = 0, resResult = -1, resCount = 0;
+    QObject::connect(&can, &CanBackend::climateCommandSent,
+                     [&](int id, int action) { ++sentCount; sentId = id; sentAction = action; });
+    QObject::connect(&can, &CanBackend::climateCommandResult,
+                     [&](int id, int action, int result) {
+                         ++resCount; resId = id; resAction = action; resResult = result;
+                     });
+
+    const int cmdId = can.pressClimateButton(CanBackend::ClimateTempUp);
+    check(cmdId >= 0, QStringLiteral("команда отправлена, id %1").arg(cmdId));
+    check(sentCount == 1 && sentAction == CanBackend::ClimateTempUp,
+          "сигнал «отправлено» с действием «температура +»");
+    check(can.pressClimateButton(CanBackend::ClimateAc) == -2,
+          "вторая команда до ответа отклоняется как «занято»");
+    check(can.pressClimateButton(0x7F) == -3, "неизвестное действие отклоняется");
+
+    // Ответ на чужой id: сигнал приходит, но ожидание не снимается.
+    can.feedFrame(0x541, frame({0xEE, 0x01, 0x06, 0x01}));
+    check(resCount == 1 && resResult == CanBackend::ClimateDone,
+          "ответ на чужой id всё равно отдаётся наверх");
+    check(can.pressClimateButton(CanBackend::ClimateFanUp) == -2,
+          "после чужого ответа команда всё ещё занята");
+
+    // Ответ на свой id: ожидание снимается, результат — «панель изменилась».
+    can.feedFrame(0x541, frame({cmdId, 0x01, CanBackend::ClimateTempUp, 0x02}));
+    check(resCount == 2 && resId == cmdId && resResult == CanBackend::ClimateDone,
+          "ответ сопоставлен по id, результат «выполнена»");
+    check(resAction == CanBackend::ClimateTempUp, "действие в ответе совпадает");
+
+    const int nextId = can.pressClimateButton(CanBackend::ClimateFanUp);
+    check(nextId >= 0, "после ответа следующая команда проходит");
+    can.feedFrame(0x541, frame({nextId, 0x05, CanBackend::ClimateFanUp, 0x03}));
+    check(resResult == CanBackend::ClimateNoPanel, "«панель не отвечает» передаётся как есть");
+
+    // Предел шкалы — отдельный код, не путать с «нет связи».
+    const int thirdId = can.pressClimateButton(CanBackend::ClimateTempDown);
+    can.feedFrame(0x541, frame({thirdId, 0x02, CanBackend::ClimateTempDown, 0x04}));
+    check(resResult == CanBackend::ClimateNoChange, "«нет изменения» — свой код");
+
+    // Таймаут: отправили, ответа нет — через 700 мс должен прийти
+    // результат ClimateTimeout. Проверяем настоящим ожиданием событий.
+    {
+        can.setMockMode(true);
+        int timeoutResult = -1;
+        QObject::connect(&can, &CanBackend::climateCommandResult,
+                         [&](int, int, int result) { timeoutResult = result; });
+        const int id = can.pressClimateButton(CanBackend::ClimateAuto);
+        check(id >= 0, "команда для проверки таймаута отправлена");
+
+        QEventLoop loop;
+        QTimer::singleShot(900, &loop, &QEventLoop::quit);
+        loop.exec();
+        check(timeoutResult == CanBackend::ClimateTimeout,
+              QStringLiteral("без ответа через 900 мс — таймаут, получено %1").arg(timeoutResult));
+        check(can.pressClimateButton(CanBackend::ClimateAuto) >= 0,
+              "после таймаута приборка снова свободна");
+        can.setMockMode(false);
+    }
+
+    can.setMockMode(false);
 
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин

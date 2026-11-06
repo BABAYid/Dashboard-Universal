@@ -165,6 +165,48 @@ public:
     Q_INVOKABLE void stop();
     Q_INVOKABLE void resetJourney();   // обнулить маршрутный компьютер
     Q_INVOKABLE void simulateFueling();   // тест: поднять уровень топлива
+
+    // --- 0x540 / 0x541: команды климату (протокол 1.5) ---
+    // Команда — это НАЖАТИЕ КНОПКИ родной панели, а не абсолютное значение:
+    // физику делает ESP32 у панели (оптроны поверх кнопок), а он не знает
+    // уставку, пока не нажал. Поэтому интерфейс присылает «теплее», а не
+    // «22 °C», и повторяет команду, пока панель не доедет до нужного.
+    enum ClimateAction {
+        ClimateTempUp = 0x01,       // температура +
+        ClimateTempDown,            // температура −
+        ClimateFanUp,               // вентилятор +
+        ClimateFanDown,             // вентилятор −
+        ClimateAuto,                // режим AUTO
+        ClimateAc,                  // кондиционер вкл/выкл
+        ClimateRecirculation,       // рециркуляция
+        ClimateDefrostFront,        // обдув лобового
+        ClimateDefrostRear,         // обогрев заднего стекла
+        ClimateModeFace,            // поток в лицо
+        ClimateModeFeet,            // поток в ноги
+        ClimateModeFaceFeet,        // лицо + ноги
+        ClimateTempUpRight,         // вторая зона +
+        ClimateTempDownRight        // вторая зона −
+    };
+    Q_ENUM(ClimateAction)
+
+    // Результаты из 0x541 плюс два своих: таймаут и «не отправлено».
+    // Различать «нет изменения» (предел шкалы) и «нет связи» важно: интерфейс
+    // показывает разное, и врать водителю о причине нельзя.
+    enum ClimateResult {
+        ClimateAccepted     = 0x00,   // принята, нажатие началось
+        ClimateDone         = 0x01,   // панель изменила состояние
+        ClimateNoChange     = 0x02,   // нажата, панель не изменилась
+        ClimateBusy         = 0x03,   // ESP32 занят предыдущим нажатием
+        ClimateUnknownAction = 0x04,  // ESP32 не знает такой кнопки
+        ClimateNoPanel      = 0x05,   // панель не читается
+        ClimateNotSent      = 0xFE,   // приборка сама не отправила
+        ClimateTimeout      = 0xFF    // отправлено, ответа нет
+    };
+    Q_ENUM(ClimateResult)
+
+    // Отправить команду климату. Возвращает идентификатор команды (0…255)
+    // или отрицательное число: -1 — нет шины, -2 — прошлая ещё не закрыта.
+    Q_INVOKABLE int pressClimateButton(int action);
     Q_INVOKABLE void resetTripA();
     Q_INVOKABLE void resetTripB();
 
@@ -364,6 +406,12 @@ signals:
     void buttonEvent(int code, bool pressed);
     void encoderTurned(int delta);
 
+    // Команда климату ушла в шину и на неё пришёл (или не пришёл) ответ.
+    // id — идентификатор команды, чтобы интерфейс мог сопоставить ответ
+    // с конкретным нажатием, когда пользователь жмёт быстро.
+    void climateCommandSent(int id, int action);
+    void climateCommandResult(int id, int action, int result);
+
 private:
     void openSocket();
     void readFrames();
@@ -378,6 +426,11 @@ private:
     void handleGpsPositionFrame(const quint8 *d);
     void handleGpsMotionFrame(const quint8 *d);
     void handleInputFrame(const quint8 *d);
+    void handleClimateAckFrame(const quint8 *d);
+
+    // Отправка кадра в шину. Возвращает false, если сокет не открыт или
+    // писать не удалось. В демо-режиме (--mock) считается, что ушло.
+    bool sendFrame(quint32 id, const quint8 *data);
     void updateDataValidity();
     // Пересчёт состояния «идёт заправка» по времени (3 с роста / 5 с тишины)
     void updateFuelingState();
@@ -495,6 +548,12 @@ private:
     int m_deviceRestarts = 0;
     int m_deviceBusErrors = 0;
     int m_lastStatusCounter = -1;      // счётчик предыдущего кадра статуса
+    // --- команды климату (0x540/0x541) ---
+    quint8 m_climateCounter = 0;      // счётчик кадра 0x540
+    int m_climatePendingId = -1;      // id команды, ждущей ответа; -1 — нет
+    int m_climatePendingAction = 0;
+    QTimer *m_climateAckTimer = nullptr;   // 700 мс на ответ
+
     quint32 m_lastUptime = 0;
     QElapsedTimer m_sinceDeviceStatus;
     int m_mockLastStatusSecond = -1;   // для отправки 0x7F0 раз в секунду в демо-режиме

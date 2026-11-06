@@ -20,7 +20,7 @@
 #endif
 
 namespace {
-// ID сообщений (can_protocol_v1.4.txt)
+// ID сообщений (can_protocol_v1.5.txt)
 constexpr quint32 kIdMotion  = 0x100;   // скорость и обороты
 constexpr quint32 kIdStatus  = 0x200;   // лампы и индикаторы
 constexpr quint32 kIdSensors = 0x300;   // датчики
@@ -31,6 +31,16 @@ constexpr quint32 kIdGpsPos  = 0x520;   // GPS: положение (проток
 constexpr quint32 kIdGpsMove = 0x521;   // GPS: движение и качество (протокол 1.3)
 constexpr quint32 kIdDevice  = 0x7F0;   // статус блока сбора (протокол 1.1)
 constexpr quint32 kIdInput   = 0x530;   // событие ввода с джойстика (протокол 1.4)
+constexpr quint32 kIdClimaCmd = 0x540;  // команда климату (протокол 1.5)
+constexpr quint32 kIdClimaAck = 0x541;  // ответ ESP32 климата (протокол 1.5)
+
+// Сколько ждём ответ 0x541 на отправленную команду. ESP32 нажимает кнопку
+// 100-200 мс и ещё читает панель, так что 700 мс — с запасом; дольше держать
+// интерфейс в «жду ответа» бессмысленно, пользователь уже забыл про нажатие.
+constexpr int kClimateAckTimeoutMs = 700;
+
+// Кадры в протоколе всегда по 8 байт (DLC = 8) — так же, как в прошивке.
+constexpr int kFrameLen = 8;
 
 // Виды события в кадре 0x530 (байт 0)
 constexpr quint8 kInputKindButton  = 0x01;
@@ -236,6 +246,7 @@ void CanBackend::handleFrame(quint32 id, const quint8 *d, int len)
     case kIdGpsMove: handleGpsMotionFrame(d);   break;
     case kIdDevice:  handleDeviceStatusFrame(d); break;
     case kIdInput:   handleInputFrame(d);    break;
+    case kIdClimaAck: handleClimateAckFrame(d); break;
     default: break;   // неизвестные ID игнорируем
     }
 }
@@ -523,6 +534,106 @@ void CanBackend::handleInputFrame(const quint8 *d)
     }
 
     // Неизвестный вид события — задел на будущее, не ломаемся.
+}
+
+// 0x541: ответ ESP32 климата на команду из 0x540.
+//
+// Приборка сопоставляет ответ с ожидающей командой по id и снимает ожидание.
+// Если ответ пришёл на чужой id (например, запоздавший на уже потерянную
+// команду) — сигнал всё равно отдаём: интерфейс сам решит, показывать ли
+// «устаревший» ответ; скрывать такие ответы значит терять информацию для
+// журнала.
+void CanBackend::handleClimateAckFrame(const quint8 *d)
+{
+    const int id = static_cast<int>(d[0]);
+    const int result = static_cast<int>(d[1]);
+    const int action = static_cast<int>(d[2]);
+
+    if (id == m_climatePendingId) {
+        if (m_climateAckTimer)
+            m_climateAckTimer->stop();
+        m_climatePendingId = -1;
+    }
+
+    emit climateCommandResult(id, action, result);
+}
+
+// Отправка 8-байтного кадра в шину. Пишем в тот же сокет, что читаем:
+// SocketCAN позволяет и то, и другое на одном дескрипторе.
+bool CanBackend::sendFrame(quint32 id, const quint8 *data)
+{
+    if (m_mockMode) {
+        // Демо-режим: шины нет, но интерфейс должен быть живым. Считаем, что
+        // кадр ушёл, а ответ прилетит отдельно (тесты и демо подают его сами).
+        return true;
+    }
+#if defined(Q_OS_LINUX)
+    if (m_socket < 0)
+        return false;
+
+    struct can_frame frame;
+    std::memset(&frame, 0, sizeof(frame));
+    frame.can_id = id & CAN_SFF_MASK;
+    frame.can_dlc = kFrameLen;
+    std::memcpy(frame.data, data, kFrameLen);
+
+    const ssize_t written = ::write(m_socket, &frame, sizeof(frame));
+    if (written != static_cast<ssize_t>(sizeof(frame))) {
+        qWarning() << "CAN: не удалось отправить кадр" << Qt::hex << id
+                   << std::strerror(errno);
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+// Отправить нажатие кнопки климата (кадр 0x540, протокол 1.5).
+//
+// Одно нажатие за раз: интерфейс пользователя всё равно не может нажать две
+// кнопки одновременно, а второй кадр, пришедший раньше ответа, ESP32 отбросит
+// как «занято» — то есть мы бы создали очередь без причины. Возвращаем id
+// команды, чтобы вызывающий мог сопоставить его с ответом.
+int CanBackend::pressClimateButton(int action)
+{
+    if (action < ClimateTempUp || action > ClimateTempDownRight)
+        return -3;                      // такого действия у панели нет
+
+    if (m_climatePendingId >= 0)
+        return -2;                      // прошлая команда ещё не закрыта
+
+    const quint8 id = m_climateCounter++;
+
+    quint8 frame[kFrameLen] = {0};
+    frame[0] = id;
+    frame[1] = static_cast<quint8>(action);
+    frame[2] = 10;                      // 100 мс: типичное нажатие кнопки панели
+    frame[3] = m_climateCounter;        // счётчик кадров (не id: он растёт всегда)
+
+    if (!sendFrame(kIdClimaCmd, frame)) {
+        emit climateCommandResult(id, action, ClimateNotSent);
+        return -1;
+    }
+
+    m_climatePendingId = id;
+    m_climatePendingAction = action;
+    if (!m_climateAckTimer) {
+        m_climateAckTimer = new QTimer(this);
+        m_climateAckTimer->setSingleShot(true);
+        connect(m_climateAckTimer, &QTimer::timeout, this, [this]() {
+            if (m_climatePendingId < 0)
+                return;
+            const int id = m_climatePendingId;
+            const int action = m_climatePendingAction;
+            m_climatePendingId = -1;
+            emit climateCommandResult(id, action, ClimateTimeout);
+        });
+    }
+    m_climateAckTimer->start(kClimateAckTimeoutMs);
+
+    emit climateCommandSent(id, action);
+    return id;
 }
 
 // ------------------------------------------------------------------ контроль
