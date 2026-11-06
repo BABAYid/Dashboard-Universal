@@ -235,6 +235,7 @@ void CanBackend::handleFrame(quint32 id, const quint8 *d, int len)
     case kIdGpsPos:  handleGpsPositionFrame(d); break;
     case kIdGpsMove: handleGpsMotionFrame(d);   break;
     case kIdDevice:  handleDeviceStatusFrame(d); break;
+    case kIdInput:   handleInputFrame(d);    break;
     default: break;   // неизвестные ID игнорируем
     }
 }
