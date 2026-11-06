@@ -20,7 +20,7 @@
 #endif
 
 namespace {
-// ID сообщений (can_protocol_v1.3.txt)
+// ID сообщений (can_protocol_v1.4.txt)
 constexpr quint32 kIdMotion  = 0x100;   // скорость и обороты
 constexpr quint32 kIdStatus  = 0x200;   // лампы и индикаторы
 constexpr quint32 kIdSensors = 0x300;   // датчики
