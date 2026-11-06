@@ -133,6 +133,11 @@ int main(int argc, char *argv[])
             root->setProperty("debugHeadlights", true);
     }
 
+    if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_LOWBEAM")) {
+        if (auto *root = engine.rootObjects().constFirst())
+            root->setProperty("debugLowBeam", true);
+    }
+
     const QByteArray demoTurn = qgetenv("DASHBOARD_DEMO_TURN").toLower();
     if (!demoTurn.isEmpty()) {
         if (auto *root = engine.rootObjects().constFirst()) {

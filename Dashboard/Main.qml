@@ -66,6 +66,7 @@ Window {
     property bool debugFullThrottle: false
     // Отладка: DASHBOARD_DEMO_LIGHTS=1 включает фары на модели (для снимков).
     property bool debugHeadlights: false
+    property bool debugLowBeam: false
     readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
 
     // Приколы (анимация в правом верхнем углу) включаются и выключаются
@@ -308,7 +309,9 @@ Window {
                 from: 0.0
                 to: 1.0
                 duration: 9000
-                easing.type: Easing.InOutQuad
+                // Линейно: иначе в самом начале был «мёртвый» участок, пока
+                // кривая разгонялась, и детали стояли на месте.
+                easing.type: Easing.Linear
             }
             SequentialAnimation {
                 // Машина собирается ~5.3 с и стоит — приборы проявляются
@@ -376,11 +379,14 @@ Window {
             roadSpeed: root.speed
             // Свет по CAN: фары/габариты зажигают фары и задние фонари на
             // модели, поворотники мигают вместе с лампой на панели.
-            // Свечение фар и задних габаритов — ТОЛЬКО при физически
-            // включённых габаритах (0x200, байт 0, бит 4). Противотуманки и
-            // ближний свет его не включают: заказчик просил строго по
-            // габаритам. debugHeadlights — только для снимков на стенде.
+            // Два уровня света, как на настоящей машине:
+            //   габариты (0x200 байт 0 бит 4) — слабое свечение ламп и фонарей;
+            //   ближний свет (бит 3)         — основной, яркий свет и пятно
+            //                                  на дороге.
+            // Пока модель не собрана, света нет совсем.
+            // debugHeadlights/debugLowBeam — только для снимков на стенде.
             headlightsOn: root.positionLights || root.debugHeadlights
+            mainBeamOn: root.lowBeam || root.debugLowBeam
             leftTurn: root.leftTurn
             rightTurn: root.rightTurn
             turnBlink: root.turnBlink

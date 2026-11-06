@@ -20,6 +20,7 @@ Item {
     property bool roadVisible: true
     property real roadSpeed: 0
     property bool headlightsOn: false
+    property bool mainBeamOn: false
     property bool leftTurn: false
     property bool rightTurn: false
     property bool turnBlink: false
@@ -54,6 +55,7 @@ Item {
             scene.roadVisible = Qt.binding(function() { return root.roadVisible })
             scene.roadSpeed = Qt.binding(function() { return root.roadSpeed })
             scene.headlightsOn = Qt.binding(function() { return root.headlightsOn })
+            scene.mainBeamOn = Qt.binding(function() { return root.mainBeamOn })
             scene.leftTurn = Qt.binding(function() { return root.leftTurn })
             scene.rightTurn = Qt.binding(function() { return root.rightTurn })
             scene.turnBlink = Qt.binding(function() { return root.turnBlink })

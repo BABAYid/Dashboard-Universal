@@ -52,7 +52,14 @@ Item {
 
     // Свет по CAN: фары/габариты, поворотники. У модели нет отдельных узлов
     // фар, поэтому лампы — светящиеся шарики на местах огней.
+    // Габариты — слабое свечение ламп и фонарей; ближний свет — основной
+    // (яркое свечение и пятно света на дороге). Пока модель не собрана,
+    // света нет вообще: сначала появляется машина, потом зажигается свет.
     property bool headlightsOn: false
+    property bool mainBeamOn: false
+    readonly property real lampGlow: assembly > 0.99
+                                     ? (mainBeamOn ? 1.0 : (headlightsOn ? 0.38 : 0.0))
+                                     : 0.0
     property bool leftTurn: false
     property bool rightTurn: false
     // Фаза мигания приходит из Main (общий таймер) — стрелки на панели и
@@ -149,7 +156,7 @@ Item {
     // мелкий), а смещения заданы в метрах модели: X — ширина (левая сторона
     // +X), Y — высота, Z — длина (нос в +Z).
     readonly property bool assembling: progress < 0.999
-    readonly property real assembly: Math.max(0.0, Math.min(1.0, (progress - 0.01) / 0.60))
+    readonly property real assembly: Math.max(0.0, Math.min(1.0, progress / 0.60))
 
     readonly property var assembleOffsets: [
         [0.0, 12.0, 0.0],    // 0  кузов — сверху, за кадром
@@ -165,10 +172,10 @@ Item {
         [6.5, 4.0, 9.0],     // 10 фара левая
         [7.5, 5.0, 7.0],     // 11 поворотник левый
         [-7.5, 5.0, 7.0],    // 12 поворотник правый
-        [5.0, -7.0, -4.0],   // 13 колесо
-        [5.0, -7.0, 4.5],    // 14 колесо
-        [-5.0, -7.0, -4.0],  // 15 колесо
-        [-5.0, -7.0, 4.5]    // 16 колесо
+        [5.0, -16.0, -4.0],  // 13 колесо — глубоко снизу, вне кадра
+        [5.0, -16.0, 4.5],   // 14 колесо
+        [-5.0, -16.0, -4.0], // 15 колесо
+        [-5.0, -16.0, 4.5]   // 16 колесо
     ]
     // Задержки: кузов первым, мелочь догоняет.
     readonly property var assembleDelays: [0.00, 0.48, 0.22, 0.28, 0.34, 0.40,
@@ -668,7 +675,7 @@ Item {
                     property vector3d lampPosition
                     property bool lit
 
-                    visible: lit && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
+                    visible: scene.lampGlow > 0.01 && !scene.viewSide
 
                     Model {
                         source: "#Rectangle"
@@ -713,7 +720,7 @@ Item {
                 // локальная высота плоскости становится длиной по Z.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
+                    visible: scene.mainBeamOn && !scene.viewSide && scene.assembly > 0.99
                     position: Qt.vector3d(0, 0.02, 4.4)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
                     scale: Qt.vector3d(0.08, 0.05, 1)
@@ -734,7 +741,7 @@ Item {
                 // у материала отключено отсечение граней.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
+                    visible: scene.mainBeamOn && !scene.viewSide && scene.assembly > 0.99
                     position: Qt.vector3d(0, 1.5, 3.05)
                     scale: Qt.vector3d(0.085, 0.06, 1)
                     materials: PrincipledMaterial {
@@ -750,7 +757,7 @@ Item {
                 // переход от машины к «дороге света» не был резким.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
+                    visible: scene.mainBeamOn && !scene.viewSide && scene.assembly > 0.99
                     position: Qt.vector3d(0, 0.019, 2.9)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
                     scale: Qt.vector3d(0.055, 0.024, 1)
@@ -773,7 +780,7 @@ Item {
                     property vector3d lampPosition
                     property bool lit
 
-                    visible: lit && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
+                    visible: scene.lampGlow > 0.01 && !scene.viewSide
 
                     Model {
                         source: "#Rectangle"
@@ -786,7 +793,7 @@ Item {
                             lighting: PrincipledMaterial.NoLighting
                             alphaMode: PrincipledMaterial.Blend
                             cullMode: PrincipledMaterial.NoCulling
-                            opacity: 0.85
+                            opacity: 0.85 * scene.lampGlow
                         }
                     }
                     Model {
@@ -821,7 +828,7 @@ Item {
                 // читался «след» света, а не второй стоп.
                 Model {
                     source: "#Rectangle"
-                    visible: scene.headlightsOn && !scene.viewSide && !scene.assembling && scene.assembly > 0.99
+                    visible: scene.mainBeamOn && !scene.viewSide && scene.assembly > 0.99
                     position: Qt.vector3d(0, 0.018, -2.9)
                     eulerRotation: Qt.vector3d(-90, 0, 0)
                     scale: Qt.vector3d(0.042, 0.016, 1)
