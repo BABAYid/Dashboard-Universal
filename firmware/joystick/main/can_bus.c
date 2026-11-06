@@ -11,7 +11,6 @@
 
 #include "driver/twai.h"
 #include "esp_log.h"
-#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
