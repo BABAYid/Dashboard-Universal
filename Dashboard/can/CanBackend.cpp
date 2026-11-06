@@ -30,6 +30,11 @@ constexpr quint32 kIdClimate = 0x510;   // климат (протокол 1.3)
 constexpr quint32 kIdGpsPos  = 0x520;   // GPS: положение (протокол 1.3)
 constexpr quint32 kIdGpsMove = 0x521;   // GPS: движение и качество (протокол 1.3)
 constexpr quint32 kIdDevice  = 0x7F0;   // статус блока сбора (протокол 1.1)
+constexpr quint32 kIdInput   = 0x530;   // событие ввода с джойстика (протокол 1.4)
+
+// Виды события в кадре 0x530 (байт 0)
+constexpr quint8 kInputKindButton  = 0x01;
+constexpr quint8 kInputKindEncoder = 0x02;
 
 // Данные считаются устаревшими, если кадров нет дольше этого времени
 constexpr int kDataTimeoutMs = 1500;
