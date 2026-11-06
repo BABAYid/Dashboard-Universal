@@ -42,7 +42,6 @@ qt_add_qml_module(appDashboard
         GasAnimation.qml
         Car3DView.qml
         Car3DScene.qml
-        CarModel.qml
         EngineView.qml
         WeatherFx.qml
         Speedometer.qml
@@ -52,14 +51,6 @@ qt_add_qml_module(appDashboard
         MapWebView.qml
         CameraWarning.qml
     RESOURCES
-        # 3D-машина, предобработанная balsam из assets/car.glb (см.
-        # tools/decimate_glb.py и README): нативная сцена + .mesh вместо
-        # рантайм-импорта glTF, который в этой сборке Qt работает ненадёжно.
-        assets/cruiser/maps/textureData.web
-        assets/cruiser/meshes/meshes_0__mesh.mesh
-        # Новая модель машины (Toyota Ipsum, метры, ~1.9 м): грузится
-        # в рантайме через RuntimeLoader — имена узлов разбираем по порядку.
-        assets/ipsum_3D.glb
         # Финальная модель от дизайнера (Toyota Ipsum, метры, 4.59 x 2.05 x 1.73):
         # кузов, 4 двери, задняя дверь, капот, колёса, фары/фонари/поворотники
         # отдельными узлами, 9 материалов без текстур.

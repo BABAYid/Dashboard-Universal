@@ -354,6 +354,13 @@ signals:
     // и скоростью из 0x521, иначе «камера впереди/позади» не посчитать.
     void gpsPositionUpdated(double lat, double lon, double course, double speedKmh);
 
+    // Событие ввода с джойстика (кадр 0x530, протокол 1.4). Кнопка приходит
+    // отдельным сигналом с кодом и признаком нажатия, энкодер — знакомой
+    // дельтой поворота. Почему сигналы, а не свойства: событие не имеет
+    // состояния, которое можно перезапросить, — только момент во времени.
+    void buttonEvent(int code, bool pressed);
+    void encoderTurned(int delta);
+
 private:
     void openSocket();
     void readFrames();
@@ -367,6 +374,7 @@ private:
     void handleClimateFrame(const quint8 *d);
     void handleGpsPositionFrame(const quint8 *d);
     void handleGpsMotionFrame(const quint8 *d);
+    void handleInputFrame(const quint8 *d);
     void updateDataValidity();
     // Пересчёт состояния «идёт заправка» по времени (3 с роста / 5 с тишины)
     void updateFuelingState();
