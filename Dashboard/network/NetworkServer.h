@@ -57,7 +57,12 @@ class NetworkServer : public QObject
     Q_PROPERTY(bool mapVisible READ mapVisible NOTIFY mapFrameChanged)
 
 public:
-    explicit NetworkServer(QObject *parent = nullptr);
+    // Внимание: конструктор намеренно БЕЗ аргумента по умолчанию — ровно как
+    // в CanBackend. Если класс default-constructible, Qt при регистрации
+    // QML-синглтона создаёт СВОЙ экземпляр, игнорируя create(), и QML видит
+    // пустой объект вместо того, что поднимает main.cpp (клиенты «есть», а
+    // QML говорит «нет связи»).
+    explicit NetworkServer(QObject *parent);
     ~NetworkServer() override;
 
     static NetworkServer *instance();
@@ -70,6 +75,10 @@ public:
     // Приборка вошла/вышла из навигационного режима. Отсюда же уходит
     // подписка на кадры карты: в обычном режиме картинка не нужна.
     Q_INVOKABLE void setNavigationActive(bool on);
+
+    // Правило фокуса: пока приборка в своем интерактивном слое (настройки,
+    // навигация), события джойстика не пересылаются в мультимедиа.
+    Q_INVOKABLE void setInputForwarding(bool on);
 
     // Текущий кадр карты для QQuickImageProvider (`image://mapframe/<seq>`).
     QImage mapFrame() const;
@@ -132,6 +141,7 @@ private:
     QString m_clientApi;
     bool m_mapSupported = false;
     bool m_navigationActive = false;   // приборка в навигационном режиме
+    bool m_forwardInput = true;        // пересылать ли джойстик в мультимедиа
 
     bool m_navActive = false;
     QString m_navManeuver;

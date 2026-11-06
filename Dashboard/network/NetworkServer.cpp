@@ -138,7 +138,7 @@ NetworkServer *NetworkServer::instance()
     // Синглтон-экземпляр создаёт QML (см. main.cpp/CanBackend — та же схема).
     static NetworkServer *self = nullptr;
     if (!self) {
-        self = new NetworkServer;
+        self = new NetworkServer(nullptr);
         self->setObjectName(QStringLiteral("NetworkServer"));
     }
     return self;
@@ -149,7 +149,18 @@ int NetworkServer::start()
     if (m_http)
         return m_tcp ? m_tcp->serverPort() : 0;
 
+    // Сначала слушаем порт, потом связываем: QHttpServer::bind() в Qt 6.8+
+    // рассчитан на уже слушающий QTcpServer (сам он больше не слушает).
+    bool ok = false;
+    const int port = qEnvironmentVariableIntValue("DASHBOARD_NET_PORT", &ok);
+    const quint16 listenPort = static_cast<quint16>(ok && port > 0 ? port : kDefaultPort);
+
     m_tcp = new QTcpServer(this);
+    if (!m_tcp->listen(QHostAddress::Any, listenPort)) {
+        qWarning() << "Сеть: не удалось занять порт" << listenPort << m_tcp->errorString();
+        return 0;
+    }
+
     m_http = new QHttpServer(this);
     if (!m_http->bind(m_tcp)) {
         qWarning() << "Сеть: не удалось связать QHttpServer с TCP-сервером";
@@ -165,14 +176,6 @@ int NetworkServer::start()
     });
     connect(m_http, &QAbstractHttpServer::newWebSocketConnection,
             this, &NetworkServer::acceptWebSockets);
-
-    bool ok = false;
-    const int port = qEnvironmentVariableIntValue("DASHBOARD_NET_PORT", &ok);
-    const quint16 listenPort = static_cast<quint16>(ok && port > 0 ? port : kDefaultPort);
-    if (!m_tcp->listen(QHostAddress::Any, listenPort)) {
-        qWarning() << "Сеть: не удалось занять порт" << listenPort << m_tcp->errorString();
-        return 0;
-    }
     qInfo() << "Сеть: HTTP+WS на порту" << m_tcp->serverPort()
             << "(10.0.0.1 по проекту)";
 
@@ -196,7 +199,12 @@ int NetworkServer::start()
     // пока он сам в навигации или в настройках, он эти коды не шлёт).
     auto *can = CanBackend::instance();
     connect(can, &CanBackend::buttonEvent, this, [this](int code, bool pressed) {
-        if (!pressed || m_clients.isEmpty())
+        if (!pressed || m_clients.isEmpty() || !m_forwardInput)
+            return;
+        // NAV/BACK/OPTION/MENU остаются за приборкой всегда (правило фокуса
+        // из ARCHITECTURE.md §6): это переключение видов самой приборки,
+        // а не мультимедиа.
+        if (code == 1 || code == 2 || code == 3 || code == 6)
             return;
         QJsonObject message;
         message.insert(QStringLiteral("type"), QStringLiteral("input"));
@@ -206,7 +214,7 @@ int NetworkServer::start()
         sendToClients(message);
     });
     connect(can, &CanBackend::encoderTurned, this, [this](int delta) {
-        if (delta == 0 || m_clients.isEmpty())
+        if (delta == 0 || m_clients.isEmpty() || !m_forwardInput)
             return;
         QJsonObject message;
         message.insert(QStringLiteral("type"), QStringLiteral("input"));
@@ -621,6 +629,15 @@ void NetworkServer::checkNavStale()
 // ============================================================================
 //  Навигация
 // ============================================================================
+
+void NetworkServer::setInputForwarding(bool on)
+{
+    // Правило фокуса: когда у приборки открыт свой интерактивный слой
+    // (настройки или навигация), события джойстика принадлежат ей и в
+    // мультимедиа не уходят. Иначе — уходят, чтобы джойстик листал
+    // тач-интерфейс Android.
+    m_forwardInput = on;
+}
 
 void NetworkServer::setNavigationActive(bool on)
 {

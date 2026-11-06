@@ -145,7 +145,19 @@ Window {
     // Вошли в навигацию — просим у Android кадры карты; вышли — перестаём.
     // В обычном режиме канал не должен тратиться на картинку, которую никто
     // не смотрит.
-    onNavigationModeChanged: NetworkServer.setNavigationActive(navigationMode)
+    onNavigationModeChanged: root.syncInputRouting()
+
+    // Правило фокуса (ARCHITECTURE.md §6): пока приборка в навигации или в
+    // настройках, джойстик принадлежит ей и в мультимедиа не уходит.
+    function syncInputRouting() {
+        NetworkServer.setNavigationActive(root.navigationMode)
+        NetworkServer.setInputForwarding(!root.navigationMode && !calibration.visible)
+    }
+
+    Connections {
+        target: calibration
+        function onVisibleChanged() { root.syncInputRouting() }
+    }
 
     // --- Кинематографичный запуск с 3D-машиной (см. Car3DView.qml) ---
     // Приборка читает флаг командной строки сама: при --no-3d старт без
