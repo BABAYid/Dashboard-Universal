@@ -197,6 +197,13 @@ static bool parse_event(const uint8_t d[8], input_event_t *event)
     case BMW_MOD_DIRECTION: {
         const uint8_t code = button_code_from_direction(state);
         if (code != 0) {
+            // Ручку перевели в другое направление, не прислав отпускание
+            // предыдущего (быстрый перевод). Снимаем бит молча: иначе в маске
+            // нажатий навсегда останется «залипшее» направление, и следующее
+            // нажатие того же направления не даст события.
+            if (s_dir_code != 0 && s_dir_code != code)
+                s_pressed &= (uint16_t)~(1u << s_dir_code);
+
             s_dir_code = code;
             return mark_button(code, true, event);
         }
