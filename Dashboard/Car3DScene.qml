@@ -76,8 +76,8 @@ Item {
     // Амплитуда хода кузова. Раньше было 0.18/−0.10 — на глаз почти не
     // читалось (это ~4% длины машины); теперь заметно, но колёса не
     // отрываются от земли настолько, чтобы это выглядело сломанным.
-    readonly property real suspensionOffset: suspensionLevel > 0 ? 0.9
-                                             : suspensionLevel < 0 ? -0.5 : 0.0
+    readonly property real suspensionOffset: suspensionLevel > 0 ? 0.45
+                                             : suspensionLevel < 0 ? -0.18 : 0.0
 
     // ---- Поворотники: свечение (emissive) вместо подмены геометрии ----
     // У модели есть свои узлы «lighter turner left/rigth» (по 4 см), но их
@@ -478,7 +478,9 @@ Item {
                             // Кузов и всё над колёсами поднимаются подвеской.
                             const parts = []
                             const origY = []
-                            for (let b = 0; b <= 6 && b < models.length; ++b) {
+                            // 0…6 — кузов, двери, капот; 7…12 — фонари, фары,
+                            // поворотники (тоже поднимаются с кузовом)
+                            for (let b = 0; b <= 12 && b < models.length; ++b) {
                                 parts.push(models[b])
                                 origY.push(models[b].position.y)
                             }
@@ -562,7 +564,7 @@ Item {
                     onTriggered: {
                         const totalScale = scene.carScale * scene.carEnlarge
                         const target = scene.suspensionOffset / totalScale
-                        ipsumCar.bodyLift += (target - ipsumCar.bodyLift) * 0.25
+                        ipsumCar.bodyLift += (target - ipsumCar.bodyLift) * 0.06
                         for (let b = 0; b < ipsumCar.bodyParts.length; ++b) {
                             const m = ipsumCar.bodyParts[b]
                             if (!m)
@@ -636,7 +638,9 @@ Item {
                     // же стоит в плоскости фонаря и на кузов не заходит.
                     Model {
                         source: "#Rectangle"
-                        position: lampRoot.lampPosition
+                        position: Qt.vector3d(lampRoot.lampPosition.x,
+                                              lampRoot.lampPosition.y + ipsumCar.bodyLift,
+                                              lampRoot.lampPosition.z)
                         eulerRotation: Qt.vector3d(0, lampRoot.faceYaw, 0)
                         scale: Qt.vector3d(0.013, 0.013, 0.013)
                         materials: PrincipledMaterial {
@@ -652,7 +656,9 @@ Item {
                     // жёсткого шара больше нет, поэтому граница не читается.
                     Model {
                         source: "#Rectangle"
-                        position: lampRoot.lampPosition
+                        position: Qt.vector3d(lampRoot.lampPosition.x,
+                                              lampRoot.lampPosition.y + ipsumCar.bodyLift,
+                                              lampRoot.lampPosition.z)
                         eulerRotation: Qt.vector3d(0, lampRoot.faceYaw, 0)
                         scale: Qt.vector3d(0.0065, 0.0065, 0.0065)
                         materials: PrincipledMaterial {
@@ -679,7 +685,9 @@ Item {
 
                     Model {
                         source: "#Rectangle"
-                        position: headRoot.lampPosition
+                        position: Qt.vector3d(headRoot.lampPosition.x,
+                                              headRoot.lampPosition.y + ipsumCar.bodyLift,
+                                              headRoot.lampPosition.z)
                         scale: Qt.vector3d(0.028, 0.022, 0.012)
                         materials: PrincipledMaterial {
                             baseColor: "#FFE3A8"
@@ -692,7 +700,9 @@ Item {
                     }
                     Model {
                         source: "#Rectangle"
-                        position: headRoot.lampPosition
+                        position: Qt.vector3d(headRoot.lampPosition.x,
+                                              headRoot.lampPosition.y + ipsumCar.bodyLift,
+                                              headRoot.lampPosition.z)
                         scale: Qt.vector3d(0.011, 0.009, 0.006)
                         materials: PrincipledMaterial {
                             baseColor: "#FFFFFF"
@@ -784,7 +794,9 @@ Item {
 
                     Model {
                         source: "#Rectangle"
-                        position: tailRoot.lampPosition
+                        position: Qt.vector3d(tailRoot.lampPosition.x,
+                                              tailRoot.lampPosition.y + ipsumCar.bodyLift,
+                                              tailRoot.lampPosition.z)
                         eulerRotation: Qt.vector3d(0, 180, 0)
                         scale: Qt.vector3d(0.024, 0.018, 0.012)
                         materials: PrincipledMaterial {
@@ -798,7 +810,9 @@ Item {
                     }
                     Model {
                         source: "#Rectangle"
-                        position: tailRoot.lampPosition
+                        position: Qt.vector3d(tailRoot.lampPosition.x,
+                                              tailRoot.lampPosition.y + ipsumCar.bodyLift,
+                                              tailRoot.lampPosition.z)
                         eulerRotation: Qt.vector3d(0, 180, 0)
                         scale: Qt.vector3d(0.011, 0.008, 0.006)
                         materials: PrincipledMaterial {

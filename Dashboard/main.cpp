@@ -138,6 +138,16 @@ int main(int argc, char *argv[])
             root->setProperty("debugLowBeam", true);
     }
 
+    // DASHBOARD_DEMO_MODE=5 и DASHBOARD_DEMO_SUSP=1|-1 — открыть 6-й вид
+    // (подвеска) и сразу поднять/опустить кузов: удобно для снимков.
+    if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_MODE")) {
+        if (auto *root = engine.rootObjects().constFirst()) {
+            root->setProperty("centerMode", qEnvironmentVariableIntValue("DASHBOARD_DEMO_MODE"));
+            if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_SUSP"))
+                root->setProperty("suspensionLevel", qEnvironmentVariableIntValue("DASHBOARD_DEMO_SUSP"));
+        }
+    }
+
     const QByteArray demoTurn = qgetenv("DASHBOARD_DEMO_TURN").toLower();
     if (!demoTurn.isEmpty()) {
         if (auto *root = engine.rootObjects().constFirst()) {
