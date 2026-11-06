@@ -143,6 +143,15 @@ IDF_TOOLS_PATH="/home/oleg/Документы/новая приборка/.dsh-i
 /home/oleg/Документы/новая приборка/.dsh-idf/esp-idf-v5.5.6/tools/idf.py build
 ```
 
+Если сборка падает на первом запуске с ошибкой менеджера компонентов
+`Failed to create cache directory: ~/.cache/Espressif/ComponentManager` — это
+значит, что домашний каталог недоступен для записи (например, сборка идёт под
+другим пользователем или в песочнице). Достаточно указать свой кэш:
+
+```bash
+export XDG_CACHE_HOME=/tmp/idf-cache && mkdir -p /tmp/idf-cache
+```
+
 ## Как проверить
 
 ### 1. Стол, без машины и без приборки
