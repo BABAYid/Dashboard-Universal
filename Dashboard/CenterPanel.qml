@@ -15,9 +15,12 @@ import Dashboard
 //    3 — Напряжение:  график напряжения АКБ за последние 5 минут
 //    4 — Машина:      3D-модель (сама модель — отдельным слоем под панелью)
 //    5 — Подвеска:    пневмоподвеска, стрелки вверх/вниз
-//    6 — Климат:      состояние родного климата (кадр 0x510, протокол 1.3)
-//    7 — Медиа:       что играет в мультимедиа-центре (JSON по сети)
-//    8 — Двигатель:   3D-модель V6 (assets/3.glb), анимация по оборотам
+//    6 — Медиа:       что играет в мультимедиа-центре (JSON по сети)
+//    7 — Двигатель:   3D-модель V6 (assets/3.glb), анимация по оборотам
+//
+//  Климата здесь больше нет: климат переехал на экран мультимедиа (Android),
+//  где для него есть тачскрин и место под управление заслонками. Кадр 0x510
+//  приборка по-прежнему разбирает — значения отдаются дальше по сети.
 //
 //  Данные берём из CanBackend и MediaBackend напрямую — это синглтоны
 //  этого же QML-модуля.
@@ -31,7 +34,7 @@ Item {
     // (с коэффициентом из настроек). Иначе модель крутилась бы при
     // «0» на приборе, если множитель обнулён.
     property real engineRpm: 0
-    readonly property int modeCount: 9
+    readonly property int modeCount: 8
 
     // ---- 6-й вид: пневмоподвеска ----
     signal suspensionUp()
@@ -449,12 +452,12 @@ Item {
         }
     }
 
-    // ======================= РЕЖИМ 8: ДВИГАТЕЛЬ =======================
+    // ======================= РЕЖИМ 7: ДВИГАТЕЛЬ =======================
     // 3D-модель V6 (assets/3.glb): анимация коленвала/поршней привязана к
     // оборотам — стоит мотор, стоит и модель; больше оборотов — быстрее.
     Item {
         anchors.fill: parent
-        visible: root.mode === 8
+        visible: root.mode === 7
 
         EngineView {
             anchors.fill: parent
@@ -462,161 +465,13 @@ Item {
         }
     }
 
-    // ======================= РЕЖИМ 6: КЛИМАТ =======================
-
-    // Родная панель климата управляет заслонками и вентилятором сама; блок
-    // сбора читает её состояние и отдаёт кадром 0x510 (протокол 1.3).
-    // Пока данных нет (адаптер климата ещё не сделан), виджет честно пишет
-    // «нет данных» — выдумывать уставку нельзя, водитель на неё смотрит.
-    Item {
-        id: climatePage
-        anchors.fill: parent
-        visible: root.mode === 6
-
-        // «Не влезло» считаем один раз, чтобы не дёргать форматирование
-        // в каждом привязанном свойстве.
-        readonly property bool haveData: CanBackend.climateValid
-        readonly property real setpoint: CanBackend.climateSetpoint
-
-        Text {
-            id: climateTitle
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 6
-            text: "КЛИМАТ"
-            color: root.labelColor
-            font.pixelSize: 18
-        }
-
-        // Уставка — главное число: крупно, как скорость в «Стандарте».
-        Text {
-            id: climateSetpointText
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 30
-            text: climatePage.haveData && !Number.isNaN(climatePage.setpoint)
-                  ? climatePage.setpoint.toFixed(1) + "°"
-                  : "—"
-            color: root.valueColor
-            font.pixelSize: 84
-            font.bold: true
-            font.family: "Kdam Thmor Pro"
-        }
-
-        // Направление потока и режимы — чипами под температурой.
-        Row {
-            id: climateChips
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 128
-            spacing: 10
-            visible: climatePage.haveData
-
-            Repeater {
-                model: [
-                    { label: "AC",    on: climatePage.haveData && CanBackend.climateAc },
-                    { label: "AUTO",  on: climatePage.haveData && CanBackend.climateAuto },
-                    { label: "⟳",     on: climatePage.haveData && CanBackend.climateRecirculation },
-                    { label: "≋",     on: climatePage.haveData && CanBackend.climateDefrost },
-                ]
-
-                Rectangle {
-                    required property var modelData
-                    width: 44
-                    height: 34
-                    radius: 6
-                    color: modelData.on ? "#33CC44" : "#1A1A1A"
-                    border.color: modelData.on ? "#33CC44" : "#4A4A4A"
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: parent.modelData.label
-                        color: parent.modelData.on ? "black" : root.labelColor
-                        font.pixelSize: 16
-                        font.bold: true
-                    }
-                }
-            }
-        }
-
-        // Направление потока словами (приходит строкой из CanBackend).
-        Text {
-            id: climateAirflowText
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 172
-            text: climatePage.haveData ? CanBackend.climateAirflow : ""
-            color: root.labelColor
-            font.pixelSize: 18
-            visible: text.length > 0
-        }
-
-        // Вентилятор — семь полосок, как на родной панели.
-        Row {
-            id: climateFan
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 204
-            spacing: 6
-            visible: climatePage.haveData
-
-            Repeater {
-                model: 7
-
-                Rectangle {
-                    required property int index
-                    width: 18
-                    height: 30
-                    radius: 3
-                    // Уровень 0…7; -1 значит «нет данных» — тогда полоски пустые
-                    color: index < CanBackend.climateFanLevel ? root.valueColor : "#333333"
-                }
-            }
-        }
-
-        Text {
-            id: climateFanLabel
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 240
-            text: CanBackend.climateFanAuto ? "вентилятор: авто" : "вентилятор"
-            color: root.labelColor
-            font.pixelSize: 15
-            visible: climatePage.haveData
-        }
-
-        // Температуры в салоне и на испарителе — мелко, внизу.
-        Text {
-            id: climateTempsText
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 268
-            text: {
-                if (!climatePage.haveData)
-                    return ""
-                var parts = []
-                if (!Number.isNaN(CanBackend.climateCabinTemp))
-                    parts.push("в салоне " + CanBackend.climateCabinTemp.toFixed(1) + " °C")
-                if (!Number.isNaN(CanBackend.climateEvaporatorTemp))
-                    parts.push("испаритель " + CanBackend.climateEvaporatorTemp.toFixed(0) + " °C")
-                return parts.join("   ")
-            }
-            color: root.labelColor
-            font.pixelSize: 16
-        }
-
-        // Нет данных — одна честная строка вместо выдуманных цифр.
-        Text {
-            anchors.centerIn: parent
-            anchors.verticalCenterOffset: 40
-            text: "климат — нет данных"
-            color: "#FF8800"
-            font.pixelSize: 20
-            visible: !climatePage.haveData
-        }
-    }
-
-    // ======================= РЕЖИМ 7: МЕДИА =======================
+    // ======================= РЕЖИМ 6: МЕДИА =======================
     // Что играет в мультимедиа-центре (Android). Данные идут не по CAN, а
     // маленьким JSON по сети — поэтому здесь MediaBackend, а не CanBackend.
     Item {
         id: mediaPage
         anchors.fill: parent
-        visible: root.mode === 7
+        visible: root.mode === 6
 
         readonly property bool haveData: MediaBackend.available
 

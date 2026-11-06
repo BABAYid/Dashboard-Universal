@@ -107,8 +107,11 @@ class CanBackend : public QObject
     // --- 0x510: климат (протокол 1.3) ---
     // Родная панель климата управляет заслонками и вентилятором сама, блок
     // сбора только читает её состояние. Если кадры не приходят, valid = false,
-    // и интерфейс пишет «нет данных», а не выдуманную уставку. Числа, которых
-    // нет, отдаём NaN (в QML это проверяется через Number.isNaN).
+    // а числа, которых нет, отдаём NaN (в QML это проверяется через Number.isNaN).
+    //
+    // Виджета климата в приборке больше нет (переехал на экран мультимедиа),
+    // но разбор остаётся: значения отдаются мультимедиа по сети, и приборка
+    // — единственный владелец автомобильных данных.
     Q_PROPERTY(bool climateValid READ climateValid NOTIFY climateValidChanged)
     Q_PROPERTY(bool climateAc READ climateAc NOTIFY climateAcChanged)
     Q_PROPERTY(bool climateAuto READ climateAuto NOTIFY climateAutoChanged)
