@@ -39,3 +39,6 @@ Thumbs.db
 # обновляется раз в сутки скриптом update_speedcam.sh, в git не нужна.
 /PocketGis.txt
 /PocketGis*.txt
+
+# sdkconfig joystick-модуля генерируется сборкой из sdkconfig.defaults
+firmware/joystick/sdkconfig
