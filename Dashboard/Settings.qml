@@ -57,6 +57,11 @@ Item {
     // Выключатель на случай, когда база сомнительная или не нужна.
     property bool cameraWarningEnabled: true
 
+    // «Контроль мёртвых зон» — видео с камер в колодцах спидометра и
+    // тахометра (пока промо-ролики, потом живые USB-камеры). Выключатель на
+    // случай, когда показ не нужен: колодцы тогда не перекрывают приборы.
+    property bool blindSpotEnabled: true
+
     // Калибровка шкал малых стрелок (поворот item, градусы):
     // топливо — при пустом (E) и полном (F) баке, температура — при 40 и 120 °C.
     property real fuelAngleE: -82
@@ -85,6 +90,7 @@ Item {
         property bool savedFunEnabled: true
         property bool savedWeatherEnabled: true
         property bool savedCameraWarningEnabled: true
+        property bool savedBlindSpotEnabled: true
         property bool savedNeedleTrailEnabled: true
         // Калибровка стрелок топлива/температуры (углы поворота)
         property real savedFuelAngleE: -82
@@ -102,6 +108,7 @@ Item {
         funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
         cameraWarningEnabled = appSettings.savedCameraWarningEnabled
+        blindSpotEnabled = appSettings.savedBlindSpotEnabled
         fuelAngleE = appSettings.savedFuelAngleE
         fuelAngleF = appSettings.savedFuelAngleF
         tempAngleStart = appSettings.savedTempAngleStart
@@ -162,6 +169,7 @@ Item {
         appSettings.savedFunEnabled = funEnabled
         appSettings.savedWeatherEnabled = weatherEnabled
         appSettings.savedCameraWarningEnabled = cameraWarningEnabled
+        appSettings.savedBlindSpotEnabled = blindSpotEnabled
 
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
 
@@ -190,6 +198,7 @@ Item {
         funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
         cameraWarningEnabled = appSettings.savedCameraWarningEnabled
+        blindSpotEnabled = appSettings.savedBlindSpotEnabled
         settingsApplied(speedFactor, rpmFactor, fuelFactor, tempFactor)
         updateInputs()
         visible = false
@@ -722,6 +731,58 @@ Item {
                     text: settingsOverlay.cameraWarningEnabled ? "включены" : "выключены"
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.cameraWarningEnabled ? "#3FBF57" : "#8A8A8A"
+                    font.pixelSize: 20
+                    font.family: settingsOverlay.uiFont
+                }
+            }
+            Item { width: 1; height: 8 }
+
+            // «Контроль мёртвых зон»: видео с камер в колодцах приборов.
+            Row {
+                spacing: 18
+                x: (parent.width - 736) / 2
+
+                Text {
+                    text: "Контроль мёртвых зон"
+                    width: 320
+                    horizontalAlignment: Text.AlignRight
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.labelColor
+                    font.pixelSize: 24
+                }
+
+                Switch {
+                    id: blindSpotSwitch
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: settingsOverlay.blindSpotEnabled
+                    onToggled: settingsOverlay.blindSpotEnabled = checked
+
+                    indicator: Rectangle {
+                        implicitWidth: 78
+                        implicitHeight: 36
+                        radius: 18
+                        color: blindSpotSwitch.checked ? "#2A7A3A" : "#3A3A3A"
+                        border.color: blindSpotSwitch.checked ? "#3FBF57" : "#5A5A5A"
+                        border.width: 2
+
+                        Rectangle {
+                            y: 4
+                            x: blindSpotSwitch.checked ? parent.width - width - 4 : 4
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: blindSpotSwitch.checked ? "#E8FFE8" : "#9A9A9A"
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+                    }
+
+                    contentItem: Item {}
+                }
+
+                Text {
+                    text: settingsOverlay.blindSpotEnabled ? "включен" : "выключен"
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: settingsOverlay.blindSpotEnabled ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
                     font.family: settingsOverlay.uiFont
                 }

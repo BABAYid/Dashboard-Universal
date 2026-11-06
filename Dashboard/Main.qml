@@ -78,6 +78,10 @@ Window {
     // Выключить можно в настройках: строка «Камеры» в разделе предупреждений.
     readonly property bool cameraWarningEnabled: calibration.cameraWarningEnabled
 
+    // Видео с камер в колодцах приборов (контроль мёртвых зон): включается
+    // в настройках, иначе колодцы остаются обычными приборами.
+    readonly property bool blindSpotEnabled: calibration.blindSpotEnabled
+
     // Запас хода (считает CanBackend по среднему расходу за 5 минут).
     // Пока расчёт недостоверен — в QML это «—», и предупреждение не горит:
     // ноль в rangeKm означает «неизвестно», а не «ноль километров».
@@ -526,7 +530,7 @@ Window {
                 fuelAngleF: calibration.fuelAngleF
                 startup: root.startup
                 nightMode: root.nightMode
-                cameraVisible: root.leftTurn
+                cameraVisible: root.leftTurn && root.blindSpotEnabled
                 cameraLabel: "L"
                 cameraVideoSource: root.promoVideoLeft
                 seatBeltWarning: root.lampSelfTest || root.seatBelt
@@ -568,7 +572,7 @@ Window {
                 showDigital: root.centerMode !== 0
                 rpm: root.rpmShown * root.rpmFactor
                 temp: root.temp * root.tempFactor
-                cameraVisible: root.rightTurn
+                cameraVisible: root.rightTurn && root.blindSpotEnabled
                 cameraLabel: "R"
                 cameraVideoSource: root.promoVideoRight
                 tempAngleStart: calibration.tempAngleStart
