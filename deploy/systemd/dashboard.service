@@ -1,0 +1,27 @@
+# Служба приборки: запуск прямо из systemd, без графического окружения.
+#
+# Специально нет After=network-online.target: приборка должна показывать
+# данные без сети. Карта, медиа и время подтягиваются позже, когда сеть
+# появится, — но приборы ждать её не имеют права.
+
+[Unit]
+Description=Audi Dashboard (Qt6/QML, EGLFS)
+After=local-fs.target
+Wants=local-fs.target
+# Если сеть нужна для карты — она поднимется сама, нам ждать нечего
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/dashboard/appDashboard --can can0
+Restart=always
+RestartSec=1
+# EGLFS: без X/Wayland, окно на весь экран, событий ввода с мыши нет
+Environment=QT_QPA_PLATFORM=eglfs
+# В релизе логи только ошибками: вывод в консоль тормозит запуск
+Environment=QT_LOGGING_RULES=*=false
+# Не перезапускаться бесконечно, если бинарника нет
+RestartPreventExitStatus=127
+
+[Install]
+WantedBy=multi-user.target
