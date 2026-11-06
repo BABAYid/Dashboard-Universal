@@ -158,23 +158,26 @@ int main(int argc, char *argv[])
     // up, down, left, right, press, next, prev.
     const QByteArray inputDemo = qgetenv("DASHBOARD_INPUT_DEMO");
     if (!inputDemo.isEmpty()) {
+        // Число в строке — пауза ПЕРЕД следующим событием, в 100 мс. Так можно
+        // сдвинуть проигрыш за стартовую заставку: "100,nav" = нажать NAV
+        // через 10 с, когда приборы уже проявились.
         struct Event { QByteArray name; int atMs; };
         QVector<Event> events;
         int atMs = 300;                 // первое событие — через 300 мс
-        int gapMs = 300;                // пауза между событиями по умолчанию
+        constexpr int kDefaultGapMs = 300;   // пауза между событиями по умолчанию
         const QList<QByteArray> parts = inputDemo.split(',');
         for (const QByteArray &raw : parts) {
             const QByteArray token = raw.trimmed();
             bool isNumber = false;
             const int units = token.toInt(&isNumber);
-            if (isNumber) {             // число = пауза до следующего события, ×100 мс
-                gapMs = units * 100;
+            if (isNumber) {
+                atMs += units * 100;
                 continue;
             }
             if (token.isEmpty())
                 continue;
             events.push_back({ token, atMs });
-            atMs += gapMs;
+            atMs += kDefaultGapMs;
         }
 
         // Имя действия → код кнопки протокола 1.4 (0 — энкодер).

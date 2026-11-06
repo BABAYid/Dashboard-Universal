@@ -1,0 +1,42 @@
+# ============================================================================
+#  sdkconfig.defaults — настройки модуля ввода по умолчанию (esp32, ESP-IDF 5.5).
+#  Применяются при первой сборке; дальше живут в sdkconfig.
+#  Отличий от блока сбора (firmware/sdkconfig.defaults) почти нет: та же
+#  платформа, только без I2C и без GPS на UART0.
+# ============================================================================
+
+# --- Целевой чип: классический ESP32 (DevKit V1) ---
+CONFIG_IDF_TARGET="esp32"
+
+# --- Кристалл и частота ---
+# 1000 тиков в секунду: heartbeat 100 мс и окно ожидания 10 мс должны быть
+# кратны тику, иначе период «плывёт» на целый тик (10 % у 100 мс).
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_FREERTOS_HZ=1000
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
+
+# --- Флеш-память: у модуля ESP32-WROOM-32 обычно 4 МБ ---
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
+
+# --- Консоль: UART0, 115200. UART0 у модуля ввода свободен: GPS здесь нет ---
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+
+# --- Логи: INFO даёт ровно то, что нужно на стенде — каждое событие
+#     джойстика и итоговый кадр 0x530 в одной строке ---
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_MAXIMUM_LEVEL_INFO=y
+
+# --- Сторожевой таймер задачи: если задача передачи или приёма зациклится,
+#     модуль перезапустится сам (на столе это лучше, чем «молчащая» ESP32) ---
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=5
+
+# --- Ни Wi-Fi, ни Bluetooth модулю ввода не нужны ---
+CONFIG_BT_ENABLED=n
+
+# --- Оптимизация по размеру: скорость обработки кадров измеряется
+#     микросекундами, зато прошивка влезает в любой раздел ---
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
