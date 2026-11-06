@@ -4,7 +4,7 @@ project(Dashboard VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick WebView Network Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Quick WebView Network Concurrent HttpServer WebSockets)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -17,7 +17,8 @@ qt_add_executable(appDashboard
 target_include_directories(appDashboard PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/can
     ${CMAKE_CURRENT_SOURCE_DIR}/media
-    ${CMAKE_CURRENT_SOURCE_DIR}/speedcam)
+    ${CMAKE_CURRENT_SOURCE_DIR}/speedcam
+    ${CMAKE_CURRENT_SOURCE_DIR}/network)
 
 # Все ресурсы (картинки, шрифт) кладутся в ресурсную систему по пути модуля:
 # qrc:/qt/qml/Dashboard/images/... — в QML на них ссылаемся относительными путями
@@ -33,6 +34,8 @@ qt_add_qml_module(appDashboard
         media/MediaBackend.cpp
         speedcam/SpeedCamManager.h
         speedcam/SpeedCamManager.cpp
+        network/NetworkServer.h
+        network/NetworkServer.cpp
         WeatherProvider.h
         WeatherProvider.cpp
     QML_FILES
@@ -48,9 +51,9 @@ qt_add_qml_module(appDashboard
         Tachometer.qml
         Settings.qml
         Indicators.qml
-        MapWebView.qml
         CameraWarning.qml
         InputController.qml
+        NavPanel.qml
     RESOURCES
         # Финальная модель от дизайнера (Toyota Ipsum, метры, 4.59 x 2.05 x 1.73):
         # кузов, 4 двери, задняя дверь, капот, колёса, фары/фонари/поворотники
@@ -112,6 +115,7 @@ set_target_properties(appDashboard PROPERTIES
 
 target_link_libraries(appDashboard
     PRIVATE Qt6::Quick Qt6::WebView Qt6::Network Qt6::Concurrent
+            Qt6::HttpServer Qt6::WebSockets
 )
 
 include(GNUInstallDirs)

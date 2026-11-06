@@ -142,6 +142,11 @@ Window {
     property bool navigationMode: false
     property real navigationAnimDuration: 400
 
+    // Вошли в навигацию — просим у Android кадры карты; вышли — перестаём.
+    // В обычном режиме канал не должен тратиться на картинку, которую никто
+    // не смотрит.
+    onNavigationModeChanged: NetworkServer.setNavigationActive(navigationMode)
+
     // --- Кинематографичный запуск с 3D-машиной (см. Car3DView.qml) ---
     // Приборка читает флаг командной строки сама: при --no-3d старт без
     // 3D-заставки (экономия на слабом железе). main.cpp объявляет тот же
@@ -532,12 +537,16 @@ Window {
         // ========== КАРТА: на весь экран, как в Audi ==========
         // Лежит под всем остальным (z = -10). Приборы в навигации уменьшаются
         // и уходят в нижние углы, поэтому карта под ними не мешает.
-        MapWebView {
-            id: navMap
+        // Навигационный режим: карта и подсказки приходят от Android по сети
+        // (docs/integration.md). Когда Android присылает кадры карты — карта
+        // на весь экран, приборы уезжают в углы. Когда не присылает (нет
+        // связи, маршрут не задан) — карточка манёвра в центре.
+        NavPanel {
+            id: navPanel
             anchors.fill: parent
+            active: root.navigationMode
             opacity: root.navigationMode ? 1.0 : 0.0
             visible: root.navigationMode || opacity > 0
-            active: root.navigationMode
             z: -10
 
             Behavior on opacity {

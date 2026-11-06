@@ -5,10 +5,12 @@
 #include <QFontDatabase>
 #include <QCommandLineParser>
 #include <QTimer>
+#include <QQuickImageProvider>
 #include <QDebug>
 #include <QVector>
 
 #include "can/CanBackend.h"
+#include "network/NetworkServer.h"
 #include "media/MediaBackend.h"
 #include "speedcam/SpeedCamManager.h"
 #include "WeatherProvider.h"
@@ -120,6 +122,16 @@ int main(int argc, char *argv[])
         &app,
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
+    // Сеть по контракту docs/integration.md: HTTP + WebSocket на одном порту.
+    // Поднимаем до загрузки QML, чтобы первые же кадры телеметрии ушли клиенту.
+    engine.addImageProvider(QStringLiteral("mapframe"),
+                            NetworkServer::createImageProvider());
+    const int netPort = NetworkServer::instance()->start();
+    if (netPort <= 0)
+        qWarning() << "Сеть: сервер не поднялся, интеграция с мультимедиа недоступна";
+    else
+        qInfo() << "Сеть: порт" << netPort;
+
     engine.loadFromModule("Dashboard", "Main");
 
     if (engine.rootObjects().isEmpty())
