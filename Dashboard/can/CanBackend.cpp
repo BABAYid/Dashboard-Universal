@@ -493,8 +493,39 @@ void CanBackend::handleGpsMotionFrame(const quint8 *d)
     set(m_gpsValid, (d[7] & 0x01) != 0, &CanBackend::gpsValidChanged);
 }
 
-// ------------------------------------------------------------------ контроль
+// 0x530: событие ввода с джойстика BMW iDrive (протокол 1.4).
+//
+// Отдельный кадр, а не биты в 0x200: ввод — событийный поток, которому нужны
+// счётчик переполнения и знаковая дельта энкодера. Свежести у него нет:
+// событие произошло и всё, повторять его приборка не должна. Поэтому никаких
+// таймаутов и valid-флагов, только сигналы.
+//
+// Коды кнопок и что они делают в интерфейсе — в docs/joystick.md.
+void CanBackend::handleInputFrame(const quint8 *d)
+{
+    const quint8 kind = d[0];
 
+    if (kind == kInputKindButton) {
+        const int code = static_cast<int>(d[1]);
+        if (code <= 0)
+            return;                       // код 0 — пустышка, игнорируем
+        const bool pressed = (d[2] & 0x01) != 0;
+        emit buttonEvent(code, pressed);
+        return;
+    }
+
+    if (kind == kInputKindEncoder) {
+        const int delta = static_cast<int>(static_cast<qint8>(d[2]));
+        if (delta == 0)
+            return;                       // энкодер стоит — событий не шлём
+        emit encoderTurned(delta);
+        return;
+    }
+
+    // Неизвестный вид события — задел на будущее, не ломаемся.
+}
+
+// ------------------------------------------------------------------ контроль
 // Пересчёт «идёт заправка». Условия из задачи:
 //   старт — машина стоит (speed < 1) и топливо растёт уже 3 секунды;
 //   стоп  — поехали (speed > 5) или 5 секунд без роста уровня.
