@@ -18,6 +18,12 @@
 
 static const char *TAG = "can";
 
+// Очередь кадров на отправку. Память под неё выделена статически, а не через
+// xQueueCreate(): очередь нужна на всё время работы прошивки, и её наличие не
+// должно зависеть от состояния кучи (фрагментация, нехватка памяти) — иначе
+// приём событий однажды молча перестанет работать.
+static StaticQueue_t s_tx_queue_struct;
+static uint8_t       s_tx_queue_storage[CAN_TX_QUEUE_LEN * sizeof(can_frame_t)];
 static QueueHandle_t s_tx_queue;      // очередь кадров на отправку
 static bool          s_installed;     // драйвер TWAI установлен
 static bool          s_recovering;    // мы сами отправили его в восстановление
@@ -49,11 +55,12 @@ static void fill_message(twai_message_t *msg, uint32_t id,
 esp_err_t can_bus_init(void)
 {
     // Очередь создаётся один раз: can_bus_init() вызывается повторно, когда
-    // шина не поднялась с первого раза, и второй xQueueCreate() утёк бы.
+    // шина не поднялась с первого раза, а создавать её второй раз незачем.
     if (s_tx_queue == NULL) {
-        s_tx_queue = xQueueCreate(CAN_TX_QUEUE_LEN, sizeof(can_frame_t));
+        s_tx_queue = xQueueCreateStatic(CAN_TX_QUEUE_LEN, sizeof(can_frame_t),
+                                        s_tx_queue_storage, &s_tx_queue_struct);
         if (s_tx_queue == NULL) {
-            ESP_LOGE(TAG, "не хватило памяти на очередь отправки (%d кадров)",
+            ESP_LOGE(TAG, "не удалось создать очередь отправки (%d кадров)",
                      CAN_TX_QUEUE_LEN);
             return ESP_ERR_NO_MEM;
         }
