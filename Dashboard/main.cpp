@@ -6,6 +6,7 @@
 #include <QCommandLineParser>
 #include <QTimer>
 #include <QDebug>
+#include <QVector>
 
 #include "can/CanBackend.h"
 #include "media/MediaBackend.h"
@@ -146,6 +147,75 @@ int main(int argc, char *argv[])
             if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_SUSP"))
                 root->setProperty("suspensionLevel", qEnvironmentVariableIntValue("DASHBOARD_DEMO_SUSP"));
         }
+    }
+
+    // DASHBOARD_INPUT_DEMO="nav,90,right,5" — проиграть события джойстика.
+    // Формат: имена действий через запятую; число после имени — пауза до
+    // СЛЕДУЮЩЕГО события, в 100 мс. События идут настоящим путём: собирается
+    // кадр 0x530 и уходит в CanBackend::feedFrame, то есть проверяется и
+    // разбор протокола, и слой ввода, а не отдельная демо-ветка в QML.
+    // Имена — как у InputController: nav, back, media, radio, menu, option,
+    // up, down, left, right, press, next, prev.
+    const QByteArray inputDemo = qgetenv("DASHBOARD_INPUT_DEMO");
+    if (!inputDemo.isEmpty()) {
+        struct Event { QByteArray name; int atMs; };
+        QVector<Event> events;
+        int atMs = 300;                 // первое событие — через 300 мс
+        int gapMs = 300;                // пауза между событиями по умолчанию
+        const QList<QByteArray> parts = inputDemo.split(',');
+        for (const QByteArray &raw : parts) {
+            const QByteArray token = raw.trimmed();
+            bool isNumber = false;
+            const int units = token.toInt(&isNumber);
+            if (isNumber) {             // число = пауза до следующего события, ×100 мс
+                gapMs = units * 100;
+                continue;
+            }
+            if (token.isEmpty())
+                continue;
+            events.push_back({ token, atMs });
+            atMs += gapMs;
+        }
+
+        // Имя действия → код кнопки протокола 1.4 (0 — энкодер).
+        const auto codeOf = [](const QByteArray &name) -> int {
+            if (name == "menu")   return 1;
+            if (name == "back")   return 2;
+            if (name == "option") return 3;
+            if (name == "radio")  return 4;
+            if (name == "media")  return 5;
+            if (name == "nav")    return 6;
+            if (name == "tel")    return 7;
+            if (name == "up")     return 8;
+            if (name == "down")   return 9;
+            if (name == "left")   return 10;
+            if (name == "right")  return 11;
+            if (name == "press")  return 12;
+            if (name == "next")   return -1;   // энкодер вперёд
+            if (name == "prev")   return -2;   // энкодер назад
+            return 0;
+        };
+
+        static quint8 inputCounter = 0;
+        for (const Event &ev : events) {
+            const int code = codeOf(ev.name);
+            if (code == 0) {
+                qWarning() << "DASHBOARD_INPUT_DEMO: неизвестное действие" << ev.name;
+                continue;
+            }
+            QTimer::singleShot(ev.atMs, &app, [code]() {
+                QByteArray frame(8, '\0');
+                frame[0] = static_cast<char>(code < 0 ? 0x02 : 0x01);
+                frame[1] = static_cast<char>(code < 0 ? 0 : code);
+                frame[2] = static_cast<char>(code == -1 ? 1
+                                          : code == -2 ? -1
+                                          : 1);   // кнопка нажата
+                frame[3] = static_cast<char>(inputCounter++);
+                qInfo() << "Ввод (демо): кадр 0x530" << frame.toHex(' ');
+                CanBackend::instance()->feedFrame(0x530, frame);
+            });
+        }
+        qInfo() << "DASHBOARD_INPUT_DEMO: событий в очереди" << events.size();
     }
 
     const QByteArray demoTurn = qgetenv("DASHBOARD_DEMO_TURN").toLower();

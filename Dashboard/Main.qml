@@ -190,6 +190,86 @@ Window {
         root.tempFactor = calibration.tempFactor
     }
 
+    // ======================= ВВОД (джойстик) =======================
+    // Тачскрина нет, поэтому интерфейсом управляет джойстик BMW iDrive через
+    // ESP32 и кадр 0x530 (протокол 1.4). InputController переводит код кнопки
+    // в имя действия, а что именно делать — решает root.applyInput ниже:
+    // состояние интерфейса (режимы, навигация, настройки) живёт здесь.
+    InputController {
+        id: input
+        onCommand: function(name) { root.applyInput(name) }
+    }
+
+    // Живой джойстик: кадры 0x530 → CanBackend → сигналы.
+    Connections {
+        target: CanBackend
+
+        // Кнопку обрабатываем по нажатию. Отпускание нужно позже, для длинных
+        // нажатий (сброс trip удержанием) — тогда оно же сюда придёт.
+        function onButtonEvent(code, pressed) {
+            if (pressed)
+                input.button(code)
+        }
+
+        function onEncoderTurned(delta) {
+            input.encoder(delta)
+        }
+    }
+
+    // Что делает действие. Пока открыты настройки — ввод уходит им: из
+    // джойстика доступны только «назад»/«опции» (закрыть без сохранения),
+    // остальное гасим, чтобы случайно не переключить режим под оверлеем.
+    function applyInput(name) {
+        if (calibration.visible) {
+            if (name === "back" || name === "option" || name === "menu")
+                calibration.revert()
+            return
+        }
+
+        switch (name) {
+        case "nav":
+            root.navigationMode = !root.navigationMode
+            break
+        case "back":
+            if (root.navigationMode)
+                root.navigationMode = false
+            break
+        case "media":
+            // Медиа-режим центральной панели (7). Карта при этом закрывается:
+            // это два разных «полноэкранных» вида, и вместе они не нужны.
+            root.navigationMode = false
+            root.centerMode = 7
+            break
+        case "radio":
+            root.navigationMode = false
+            root.centerMode = 6
+            break
+        case "option":
+        case "menu":
+            calibration.open()
+            break
+        case "left":
+            root.prevCenterMode()
+            break
+        case "right":
+        case "press":
+            root.nextCenterMode()
+            break
+        case "next":
+            lamps.cycleOdometer(1)
+            break
+        case "prev":
+            lamps.cycleOdometer(-1)
+            break
+        case "up":
+        case "down":
+            // Зарезервировано: зум карты и листание списков в навигации.
+            break
+        default:
+            console.log("Ввод: действие не назначено —", name)
+        }
+    }
+
     // Режим центральной зоны: 0 — стандарт, 1 — компьютер, 2 — диагностика,
     // 3 — напряжение. Переключается нажатием по центру или клавишами.
     //
@@ -672,6 +752,30 @@ Window {
                   } }
 
         Shortcut { sequence: "Space"; onActivated: root.nextCenterMode() }
+
+        // ---- ЭМУЛЯТОР ДЖОЙСТИКА (на столе, без железа) ----
+        // Клавиши повторяют кнопки BMW iDrive один в один и идут через тот же
+        // InputController, что и кадры 0x530: проверяем реальный код, а не
+        // отдельную «демо-ветку». В машине эти клавиши никто не нажимает.
+        //   F1 MENU   F2 BACK   F3 OPTION   F4 RADIO   F5 MEDIA   F6 NAV
+        //   F7 TEL    F9 UP     F10 DOWN    F11 LEFT    F12 RIGHT
+        //   Insert PRESS     «=» энкодер вперёд     «-» энкодер назад
+        Shortcut { sequence: "F1";  onActivated: input.button(1) }
+        Shortcut { sequence: "F2";  onActivated: input.button(2) }
+        Shortcut { sequence: "F3";  onActivated: input.button(3) }
+        Shortcut { sequence: "F4";  onActivated: input.button(4) }
+        Shortcut { sequence: "F5";  onActivated: input.button(5) }
+        Shortcut { sequence: "F6";  onActivated: input.button(6) }
+        Shortcut { sequence: "F7";  onActivated: input.button(7) }
+        Shortcut { sequence: "F9";  onActivated: input.button(8) }
+        Shortcut { sequence: "F10"; onActivated: input.button(9) }
+        Shortcut { sequence: "F11"; onActivated: input.button(10) }
+        Shortcut { sequence: "F12"; onActivated: input.button(11) }
+        Shortcut { sequence: "Insert"; onActivated: input.button(12) }
+        Shortcut { sequence: "="; onActivated: input.encoder(1) }
+        Shortcut { sequence: "+"; onActivated: input.encoder(1) }
+        Shortcut { sequence: "-"; onActivated: input.encoder(-1) }
+        Shortcut { sequence: "_"; onActivated: input.encoder(-1) }
         // ←/→ — демо-поворотники: нажал — включил, ещё раз — отключил
         Shortcut { sequence: "Left"; onActivated: { root.demoLeftTurn = !root.demoLeftTurn
                                                     console.log("DEMO: левый поворотник", root.demoLeftTurn ? "ВКЛ" : "выкл") } }
@@ -810,6 +914,7 @@ Window {
         }
 
         Indicators {
+            id: lamps
             // Индикаторы (стрелки поворотников и лампы) — НАД циферблатами:
             // у контейнеров приборов z: 1, и без этого стрелки прятались
             // под непрозрачной подложкой спидометра.

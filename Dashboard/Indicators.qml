@@ -143,6 +143,17 @@ Item {
     // предупреждение «ГОЛОЛЁД» в Main.qml.
 
 
+    // Переключение показания одометра по кругу: ODO → TRIP A → TRIP B → ODO.
+    // Вынесено из MouseArea, потому что теперь его дёргают двое: клик мышью
+    // (на столе) и энкодер джойстика (в машине). step = -1 листает назад —
+    // так поворот против часовой не «перескакивает» через два режима.
+    function cycleOdometer(step) {
+        const order = ["odo", "tripA", "tripB"]
+        const i = order.indexOf(root.displayMode)
+        const next = ((i < 0 ? 0 : i) + step + order.length) % order.length
+        root.displayMode = order[next]
+    }
+
     // === ОДОМЕТР/TRIP ===
     Text {
         id: displayText
@@ -162,11 +173,7 @@ Item {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                if (root.displayMode === "odo") root.displayMode = "tripA"
-                else if (root.displayMode === "tripA") root.displayMode = "tripB"
-                else if (root.displayMode === "tripB") root.displayMode = "odo"
-            }
+            onClicked: lamps.cycleOdometer(1)
             // Долгое нажатие — сброс текущего trip (одометр не сбрасывается)
             onPressAndHold: {
                 if (root.displayMode === "tripA") CanBackend.resetTripA()

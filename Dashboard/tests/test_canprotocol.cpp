@@ -1,5 +1,5 @@
 // ============================================================================
-//  Тест разбора CAN-протокола (can_protocol_v1.3.txt).
+//  Тест разбора CAN-протокола (can_protocol_v1.4.txt).
 //
 //  Проверяются примеры кадров прямо из документации плюс граничные случаи:
 //  определение передачи по проводам S1/S2, режимы АКПП, отрицательная
@@ -339,6 +339,47 @@ int main(int argc, char *argv[])
     check(can.gpsSpeed() == -1, "скорость по GPS — нет данных");
     check(qIsNaN(can.gpsCourse()), "курс — нет данных");
     check(can.gpsFixType() == 0, "тип фикса — нет фикса");
+
+    // ---- 0x530: событие ввода с джойстика (протокол 1.4) ----
+    qInfo() << "0x530 — событие ввода (новое в 1.4)";
+    int lastCode = 0;
+    bool lastPressed = false;
+    int buttonEvents = 0;
+    int lastDelta = 0;
+    int encoderEvents = 0;
+    QObject::connect(&can, &CanBackend::buttonEvent,
+                     [&](int code, bool pressed) { ++buttonEvents; lastCode = code; lastPressed = pressed; });
+    QObject::connect(&can, &CanBackend::encoderTurned,
+                     [&](int delta) { ++encoderEvents; lastDelta = delta; });
+
+    // Нажатие кнопки NAV (код 6), счётчик 0x0A — пример из документации.
+    can.feedFrame(0x530, frame({0x01, 0x06, 0x01, 0x0A}));
+    check(buttonEvents == 1, "кнопка: одно событие");
+    check(lastCode == 6, QStringLiteral("код кнопки 6 (NAV), получено %1").arg(lastCode));
+    check(lastPressed, "признак нажатия пришёл");
+
+    // Отпускание той же кнопки — тоже событие (нужно для будущих длинных нажатий).
+    can.feedFrame(0x530, frame({0x01, 0x06, 0x00, 0x0B}));
+    check(buttonEvents == 2, "отпускание тоже событие кнопки");
+    check(!lastPressed, "признак отпускания пришёл");
+
+    // Поворот энкодера на 2 щелчка вперёд и на 1 назад (проверяем знак).
+    can.feedFrame(0x530, frame({0x02, 0x00, 0x02, 0x0C}));
+    check(encoderEvents == 1, "энкодер: одно событие");
+    check(lastDelta == 2, QStringLiteral("дельта +2, получено %1").arg(lastDelta));
+
+    can.feedFrame(0x530, frame({0x02, 0x00, 0xFF, 0x0D}));   // 0xFF как int8 = -1
+    check(lastDelta == -1, QStringLiteral("дельта -1, получено %1").arg(lastDelta));
+
+    // Нулевая дельта и код 0 — не события.
+    can.feedFrame(0x530, frame({0x02, 0x00, 0x00, 0x0E}));
+    can.feedFrame(0x530, frame({0x01, 0x00, 0x01, 0x0F}));
+    check(encoderEvents == 2, "нулевая дельта энкодера игнорируется");
+    check(buttonEvents == 2, "код кнопки 0 игнорируется");
+
+    // Неизвестный вид события — тишина, а не падение.
+    can.feedFrame(0x530, frame({0x7F, 0x01, 0x01, 0x10}));
+    check(buttonEvents == 2 && encoderEvents == 2, "неизвестный вид события игнорируется");
 
     qInfo() << "Граничные случаи";
     can.feedFrame(0x100, frame({0xC8, 0x1F, 0x40}));   // 200 км/ч, 8000 об/мин

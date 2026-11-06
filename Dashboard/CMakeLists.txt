@@ -50,6 +50,7 @@ qt_add_qml_module(appDashboard
         Indicators.qml
         MapWebView.qml
         CameraWarning.qml
+        InputController.qml
     RESOURCES
         # Финальная модель от дизайнера (Toyota Ipsum, метры, 4.59 x 2.05 x 1.73):
         # кузов, 4 двери, задняя дверь, капот, колёса, фары/фонари/поворотники
