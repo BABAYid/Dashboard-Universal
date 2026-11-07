@@ -151,6 +151,17 @@ int main(int argc, char *argv[])
             root->setProperty("debugLowBeam", true);
     }
 
+    // DASHBOARD_SKIN=genesis — запустить со вторым скином (docs/skin.md).
+    // Нужно для снимков и приёмки: скины переключаются клавишей F8, а для
+    // автоматической проверки нужен способ задать его при старте.
+    if (qEnvironmentVariableIsSet("DASHBOARD_SKIN")) {
+        if (auto *root = engine.rootObjects().constFirst()) {
+            const QString skin = QString::fromLocal8Bit(qgetenv("DASHBOARD_SKIN"));
+            if (skin == QStringLiteral("genesis") || skin == QStringLiteral("classic"))
+                root->setProperty("skin", skin);
+        }
+    }
+
     // DASHBOARD_DEMO_MODE=5 и DASHBOARD_DEMO_SUSP=1|-1 — открыть 6-й вид
     // (подвеска) и сразу поднять/опустить кузов: удобно для снимков.
     if (qEnvironmentVariableIsSet("DASHBOARD_DEMO_MODE")) {

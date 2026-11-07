@@ -142,6 +142,11 @@ Window {
     property bool navigationMode: false
     property real navigationAnimDuration: 400
 
+    // Второй скин (docs/design/genesis.jpg): тёмно-синий фон, приборы
+    // примитивами, светлая полоса внизу. Классический скин — classic.
+    // Переключается клавишей F8 и переменной DASHBOARD_SKIN при запуске.
+    property string skin: "classic"
+
     // Вошли в навигацию — просим у Android кадры карты; вышли — перестаём.
     // В обычном режиме канал не должен тратиться на картинку, которую никто
     // не смотрит.
@@ -465,6 +470,25 @@ Window {
         x: (root.width - width * scale) / 2
         y: (root.height - height * scale) / 2
 
+        // ============ ВТОРОЙ СКИН «GENESIS» ============
+        // Рисуется своими примитивами и, когда включён, закрывает классическую
+        // раскладку плотным фоном. Данные — те же свойства root, поэтому оба
+        // скина показывают одно и то же.
+        GenesisSkin {
+            anchors.fill: parent
+            z: 50
+            visible: root.skin === "genesis"
+            speed: root.speed
+            rpm: root.rpmShown
+            gear: root.gearMode
+            fuel: root.fuelLevel
+            temp: root.temp
+            clock: root.timeString
+            tripKm: root.journeyKm
+            rangeKm: root.rangeKmValid ? root.rangeKm : 0
+            nightMode: root.nightMode
+        }
+
         // ============ 3D-МАШИНА: 5-й вид центральной зоны (714,154,492×404) ============
         // Машина живёт только в пятом режиме панели: там нет никаких данных —
         // ни чисел, ни режимных подписей. В остальных режимах её нет вовсе,
@@ -773,6 +797,12 @@ Window {
                           SpeedCamManager.simulateCameraAhead(60, 420)
                           console.log("DEMO: камера в 420 м впереди, ограничение 60")
                       }
+                  } }
+
+        // F8 — переключить скин (классический ↔ Genesis): приёмка на столе
+        Shortcut { sequence: "F8"; onActivated: {
+                      root.skin = root.skin === "genesis" ? "classic" : "genesis"
+                      console.log("Скин:", root.skin)
                   } }
 
         Shortcut { sequence: "Space"; onActivated: root.nextCenterMode() }
