@@ -7,6 +7,15 @@
 ESP32 (сбор сигналов)  ──CAN 500 кбит/с──►  nanoPC-T6 (SocketCAN)  ──►  Qt6/QML приборка
 ```
 
+## Скриншоты
+
+Панель 1920×720 на реальном разрешении макета (снято на столе, программный OpenGL):
+
+| | |
+|---|---|
+| ![Главный экран](docs/screenshots/dashboard-1.png) | ![Экран приборки](docs/screenshots/dashboard-2.png) |
+| ![Экран приборки](docs/screenshots/dashboard-3.png) | ![Экран приборки](docs/screenshots/dashboard-4.jpg) |
+
 ## Структура
 
 | Путь | Что это |
