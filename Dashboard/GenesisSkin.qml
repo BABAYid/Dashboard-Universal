@@ -114,6 +114,13 @@ Item {
         Shape {
             anchors.fill: parent
 
+            // ВАЖНО: PathAngleArc считает углы иначе, чем Item.rotation —
+            // ноль градусов у него на востоке, положительное направление
+            // против часовой. Деления шкалы стоят при поворотах -135…+135
+            // (0 — вверх), это соответствует дуге от -45° (юго-восток) через
+            // восток, север, запад до 225° (юго-запад). Отсюда startAngle -45
+            // и размах 270: раньше стояло -135, и кольцо было повёрнуто на
+            // 90° относительно шкалы.
             ShapePath {
                 strokeColor: root.mid1
                 strokeWidth: 2
@@ -123,7 +130,7 @@ Item {
                     centerY: dial.height / 2
                     radiusX: dial.height / 2 - 30
                     radiusY: dial.height / 2 - 30
-                    startAngle: -135
+                    startAngle: -45
                     sweepAngle: 270
                 }
             }
@@ -136,7 +143,7 @@ Item {
                     centerY: dial.height / 2
                     radiusX: dial.height / 2 - 92
                     radiusY: dial.height / 2 - 92
-                    startAngle: -135
+                    startAngle: -45
                     sweepAngle: 270
                 }
             }
