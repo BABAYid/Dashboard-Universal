@@ -3,133 +3,156 @@ import QtQuick
 import QtQuick.Shapes
 
 // ==========================================================================
-//  ВТОРОЙ СКИН «GENESIS» (по эскизу docs/design/genesis.jpg)
+//  ВТОРОЙ СКИН «GENESIS»
 // ==========================================================================
 //
-//  Палитра снята с эскиза: тёмный сине-чёрный фон (градиент от #02060E),
-//  приборы в сине-сером (#101A24 с кольцом #2A3644), шкалы и цифры светлые
-//  (#A6B4BE / #C9D6E0), снизу — широкая светлая полоса (#A6B4BE) с тёмными
-//  цифрами, как на эскизе.
+//  Геометрия и палитра сняты с макета дизайнера
+//  («Genesis · цифровая приборная панель · 1920×720.svg»), а не на глаз:
 //
-//  Скин ничего не читает из CAN сам: все значения приходят свойствами из
-//  Main.qml — так оба скина живут на одних данных и не дублируют логику.
+//    диски      666.6 × 597.9  в (84.2, 21.5) и (1168.0, 21.5)
+//               → центры (417, 320) и (1501, 320)
+//    стрелки     23 × 353.2    в (413.2, 13.4) и (1489.6, 13.4)
+//               → ось вращения на 306.6 px от верха картинки (в макете
+//                 хвост стрелки уходит ниже центра диска)
 //
-//  Рисуется примитивами (Shape/Repeater), а не картинками: эскиз — это
-//  настроение и палитра, а не готовый арт. Когда дизайнер отдаст настоящие
-//  диски, достаточно заменить фоновые элементы на Image — геометрия ниже
-//  совпадает с макетом 1920×720.
+//    палитра: фон #070D13, светлые #E8F4F0 / #B8D4D5 / #BCEAF1 / #D1F3F5,
+//    средние #587286 / #45627D / #5B7187 / #405A72 / #40556A
+//
+//  Из макета взяты две растровые части (они лежат в SVG встроенными PNG):
+//  свечение диска и белая стрелка. Кольца, деления и цифры рисуются кодом:
+//  так они остаются векторными и чёткими, а фильтры Figma (размытия и тени)
+//  Qt не умеет — их «мягкость» уже зашита в картинку свечения и стрелку.
 Item {
     id: root
 
-    // ---- данные (те же свойства, что и у классического скина) ----
-    property real speed: 0            // км/ч
-    property real rpm: 0              // об/мин
+    // ---- данные (те же свойства, что у классического скина) ----
+    property real speed: 0           // км/ч
+    property real rpm: 0             // об/мин
     property string gear: "P"
-    property real fuel: 0             // %
-    property real temp: 0             // °C
+    property real fuel: 0            // %
+    property real temp: 0            // °C
     property string clock: "--:--"
     property real tripKm: 0
     property real rangeKm: 0
     property bool nightMode: false
 
-    // ---- палитра ----
-    readonly property color bgTop: "#02060E"
-    readonly property color bgBottom: "#0B151C"
-    readonly property color dialFill: "#0E1822"
-    readonly property color dialRing: "#2A3644"
-    readonly property color tickMinor: "#3E4C5E"
-    readonly property color tickMajor: "#8FA0B2"
-    readonly property color labelGrey: "#A6B4BE"
-    readonly property color textMain: "#D6E2EC"
-    readonly property color accent: "#7FD4FF"
-    readonly property color strip: "#A6B4BE"
-    readonly property color stripInk: "#0A1018"
+    // ---- палитра из макета ----
+    readonly property color bg: "#070D13"
+    readonly property color light: "#E8F4F0"
+    readonly property color light2: "#B8D4D5"
+    readonly property color glow1: "#BCEAF1"
+    readonly property color mid1: "#587286"
+    readonly property color mid2: "#45627D"
+    readonly property color mid3: "#5B7187"
+    readonly property color deep: "#40556A"
 
-    // ---- геометрия (макет 1920×720) ----
-    readonly property int dialDiameter: 460
-    readonly property int dialLeftX: 360      // центр левого прибора
-    readonly property int dialRightX: 1560    // центр правого
-    readonly property int dialY: 300          // центр по вертикали
-    readonly property int stripHeight: 132
+    // ---- геометрия из макета ----
+    readonly property int dialW: 666
+    readonly property int dialH: 598
+    readonly property int dialY: 21
+    readonly property int dialCx1: 417
+    readonly property int dialCx2: 1501
+    readonly property int dialCy: 320
+    readonly property int needleW: 23
+    readonly property int needleH: 353
+    readonly property real needlePivotFromTop: 306.6
 
-    // Углы шкалы: 0 — вверх (как у Item.rotation), размах 270°.
-    function needleAngle(value, max, min) {
-        const v = Math.max(min, Math.min(max, value))
-        return -135 + 270 * (v - min) / (max - min)
+    // Размах шкалы 270°, 0 — вверх (как у Item.rotation).
+    function needleAngle(value, max) {
+        const v = Math.max(0, Math.min(max, value))
+        return -135 + 270 * v / max
     }
 
     // ======================= ФОН =======================
     Rectangle {
         anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: root.bgTop }
-            GradientStop { position: 0.55; color: "#071018" }
-            GradientStop { position: 1.0; color: root.bgBottom }
-        }
+        color: root.bg
     }
 
-    // Мягкое свечение за приборами — на эскизе приборы светлее фона
+    // Мягкое подсвеченное пятно в центре экрана (в макете — радиальный градиент)
     Rectangle {
-        width: root.dialDiameter * 1.9
-        height: width
+        anchors.centerIn: parent
+        width: 1500
+        height: 900
         radius: width / 2
-        x: root.dialLeftX - width / 2
-        y: root.dialY - height / 2
-        color: "#0A1622"
-        opacity: 0.55
-    }
-    Rectangle {
-        width: root.dialDiameter * 1.9
-        height: width
-        radius: width / 2
-        x: root.dialRightX - width / 2
-        y: root.dialY - height / 2
-        color: "#0A1622"
-        opacity: 0.55
+        opacity: 0.5
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#0E1A22" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
     // ======================= ПРИБОР =======================
-    // Один компонент на два прибора: отличается только шкалой и подписью.
     component Dial: Item {
         id: dial
         required property int cx
-        required property int cy
         required property real value
         required property real valueMax
+        required property int majorStep
         required property string caption
         required property string unit
-        required property int majorStep
 
-        width: root.dialDiameter
-        height: root.dialDiameter
+        width: root.dialW
+        height: root.dialH
         x: cx - width / 2
-        y: cy - height / 2
+        y: root.dialY
 
-        // тело прибора
-        Rectangle {
+        // 1. свечение диска — растровый слой из макета (в нём уже размытия,
+        //    которые Qt сам нарисовать не может)
+        Image {
             anchors.fill: parent
-            radius: width / 2
-            color: root.dialFill
-            border.color: root.dialRing
-            border.width: 3
+            source: "images/genesis/dial_glow.png"
+            fillMode: Image.PreserveAspectFit
+            cache: true
         }
 
-        // деления: 37 штук по 7.5°, каждое пятое — длинное
+        // 2. кольца шкалы — вектор, остаётся чётким на любом разрешении
+        Shape {
+            anchors.fill: parent
+
+            ShapePath {
+                strokeColor: root.mid1
+                strokeWidth: 2
+                fillColor: "transparent"
+                PathAngleArc {
+                    centerX: dial.width / 2
+                    centerY: dial.height / 2
+                    radiusX: dial.height / 2 - 30
+                    radiusY: dial.height / 2 - 30
+                    startAngle: -135
+                    sweepAngle: 270
+                }
+            }
+            ShapePath {
+                strokeColor: root.deep
+                strokeWidth: 1
+                fillColor: "transparent"
+                PathAngleArc {
+                    centerX: dial.width / 2
+                    centerY: dial.height / 2
+                    radiusX: dial.height / 2 - 92
+                    radiusY: dial.height / 2 - 92
+                    startAngle: -135
+                    sweepAngle: 270
+                }
+            }
+        }
+
+        // деления: 37 штук по 7.5°, каждое пятое длинное и светлое
         Repeater {
             model: 37
             Item {
                 required property int index
                 width: dial.width
                 height: dial.height
-                anchors.centerIn: parent
                 rotation: -135 + index * 7.5
 
                 Rectangle {
-                    width: index % 5 === 0 ? 4 : 2
-                    height: index % 5 === 0 ? 26 : 14
+                    width: index % 5 === 0 ? 3 : 1.5
+                    height: index % 5 === 0 ? 22 : 11
                     x: dial.width / 2 - width / 2
-                    y: 10
-                    color: index % 5 === 0 ? root.tickMajor : root.tickMinor
+                    y: 28
+                    color: index % 5 === 0 ? root.light : root.mid1
                     antialiasing: true
                 }
             }
@@ -137,88 +160,83 @@ Item {
 
         // цифры у крупных делений
         Repeater {
-            model: Math.floor((dial.valueMax) / dial.majorStep) + 1
+            model: Math.floor(dial.valueMax / dial.majorStep) + 1
             Item {
                 required property int index
                 width: dial.width
                 height: dial.height
-                anchors.centerIn: parent
                 rotation: -135 + index * (270 / (dial.valueMax / dial.majorStep))
 
                 Text {
                     x: dial.width / 2 - width / 2
-                    y: 46
+                    y: 58
                     text: index * dial.majorStep
-                    color: root.labelGrey
-                    font.pixelSize: 24
+                    color: root.light2
+                    font.pixelSize: 22
                     font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
                 }
             }
         }
 
-        // стрелка: вращается вокруг центра, 0° — вверх
-        Rectangle {
-            width: 4
-            height: dial.width / 2 - 40
-            radius: 2
+        // 3. стрелка — картинка из макета, вращается вокруг оси из макета
+        Image {
+            width: root.needleW
+            height: root.needleH
             x: dial.width / 2 - width / 2
-            y: dial.height / 2 - height
-            color: root.accent
-            antialiasing: true
-            transformOrigin: Item.Bottom
-            rotation: root.needleAngle(dial.value, dial.valueMax, 0)
-            Behavior on rotation {
-                SpringAnimation { spring: 2.6; damping: 0.22; epsilon: 0.15 }
+            y: dial.height / 2 - root.needlePivotFromTop
+            source: "images/genesis/needle.png"
+            cache: true
+            transform: Rotation {
+                origin.x: root.needleW / 2
+                origin.y: root.needlePivotFromTop
+                angle: root.needleAngle(dial.value, dial.valueMax)
+                Behavior on angle {
+                    SpringAnimation { spring: 2.6; damping: 0.22; epsilon: 0.15 }
+                }
             }
         }
 
         // ступица
         Rectangle {
-            width: 26; height: 26; radius: 13
+            width: 30; height: 30; radius: 15
             anchors.centerIn: parent
-            color: root.accent
-        }
-        Rectangle {
-            width: 12; height: 12; radius: 6
-            anchors.centerIn: parent
-            color: root.dialFill
+            color: root.mid2
+            border.color: root.mid1
+            border.width: 1
         }
 
         // цифровое значение и подпись
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: dial.height * 0.62
-            spacing: 2
+            y: dial.height * 0.56
+            spacing: 0
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: Math.round(dial.value)
-                color: root.textMain
-                font.pixelSize: 62
+                color: root.light
+                font.pixelSize: 58
                 font.bold: true
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: dial.unit
-                color: root.labelGrey
-                font.pixelSize: 20
+                color: root.mid3
+                font.pixelSize: 17
                 font.letterSpacing: 2
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: dial.caption
-                color: root.labelGrey
-                font.pixelSize: 16
+                color: root.mid1
+                font.pixelSize: 15
                 font.letterSpacing: 3
-                opacity: 0.75
             }
         }
     }
 
     Dial {
-        cx: root.dialLeftX
-        cy: root.dialY
+        cx: root.dialCx1
         value: root.speed
         valueMax: 200
         majorStep: 20
@@ -227,8 +245,7 @@ Item {
     }
 
     Dial {
-        cx: root.dialRightX
-        cy: root.dialY
+        cx: root.dialCx2
         value: root.rpm / 1000.0
         valueMax: 8
         majorStep: 1
@@ -238,28 +255,25 @@ Item {
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
     Item {
-        id: center
         x: 714
         y: 120
         width: 492
         height: 380
 
-        // передача — крупно
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.gear
-            color: root.textMain
-            font.pixelSize: 128
+            color: root.light
+            font.pixelSize: 118
             font.bold: true
         }
 
-        // топливо и температура — две горизонтальные шкалы
         Column {
             anchors.top: parent.top
-            anchors.topMargin: 150
+            anchors.topMargin: 145
             anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 18
-            width: parent.width - 40
+            spacing: 16
+            width: parent.width - 60
 
             Repeater {
                 model: [
@@ -268,85 +282,85 @@ Item {
                 ]
                 Row {
                     required property var modelData
-                    spacing: 12
+                    spacing: 10
                     width: parent.width
 
                     Text {
                         text: modelData.label
-                        color: root.labelGrey
-                        font.pixelSize: 16
+                        color: root.mid1
+                        font.pixelSize: 15
                         font.letterSpacing: 2
-                        width: 130
+                        width: 125
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Rectangle {
-                        width: 220; height: 10; radius: 5
-                        color: "#16222E"
+                        width: 205; height: 8; radius: 4
+                        color: root.deep
                         anchors.verticalCenter: parent.verticalCenter
 
                         Rectangle {
                             width: parent.width * Math.max(0, Math.min(1, modelData.value / modelData.max))
                             height: parent.height
                             radius: parent.radius
-                            color: root.accent
+                            color: root.glow1
                             Behavior on width { NumberAnimation { duration: 300 } }
                         }
                     }
                     Text {
                         text: Math.round(modelData.value) + " " + modelData.unit
-                        color: root.textMain
-                        font.pixelSize: 18
+                        color: root.light2
+                        font.pixelSize: 17
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
             }
 
-            // поездка и запас хода
             Row {
                 width: parent.width
-                spacing: 24
+                spacing: 20
                 Text {
                     text: "ПОЕЗДКА " + root.tripKm.toFixed(1) + " КМ"
-                    color: root.labelGrey
-                    font.pixelSize: 16
+                    color: root.deep
+                    font.pixelSize: 15
                 }
                 Text {
                     text: root.rangeKm > 0 ? "ЗАПАС " + Math.round(root.rangeKm) + " КМ" : ""
-                    color: root.labelGrey
-                    font.pixelSize: 16
+                    color: root.deep
+                    font.pixelSize: 15
                 }
             }
         }
     }
 
-    // ======================= НИЖНЯЯ СВЕТЛАЯ ПОЛОСА =======================
-    Rectangle {
-        y: parent.height - root.stripHeight
-        width: parent.width
-        height: root.stripHeight
-        color: root.strip
+    // ======================= НИЖНЯЯ ПАНЕЛЬ =======================
+    // В макете внизу три небольшие плашки (143.4×48, 99×48, 120×48) —
+    // скорость, часы и передача цифрами.
+    Row {
+        y: parent.height - 96
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: 28
 
-        Row {
-            anchors.centerIn: parent
-            spacing: 120
+        Repeater {
+            model: [
+                { text: Math.round(root.speed) + "  КМ/Ч", w: 210 },
+                { text: root.clock, w: 150 },
+                { text: root.gear, w: 120 }
+            ]
+            Rectangle {
+                required property var modelData
+                width: modelData.w; height: 56
+                radius: 8
+                color: "#12212B"
+                border.color: root.mid2
+                border.width: 1
 
-            Text {
-                text: Math.round(root.speed) + "  КМ/Ч"
-                color: root.stripInk
-                font.pixelSize: 44
-                font.bold: true
-            }
-            Text {
-                text: root.clock
-                color: root.stripInk
-                font.pixelSize: 44
-                font.bold: true
-            }
-            Text {
-                text: root.gear
-                color: root.stripInk
-                font.pixelSize: 44
-                font.bold: true
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData.text
+                    color: root.light
+                    font.pixelSize: 30
+                    font.bold: true
+                }
             }
         }
     }
