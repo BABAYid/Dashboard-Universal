@@ -58,9 +58,12 @@ Item {
     readonly property real needlePivotFromTop: 306.6
 
     // Размах шкалы 270°, 0 — вверх (как у Item.rotation).
-    function needleAngle(value, max) {
+    // У тахометра шкала ЗЕРКАЛЬНАЯ: ноль справа, максимум слева, стрелка
+    // идёт против часовой. Так же сделано и в классическом скине — это
+    // стандарт для приборок, а не прихоть: правое поле зеркально левому.
+    function needleAngle(value, max, mirrored) {
         const v = Math.max(0, Math.min(max, value))
-        return -135 + 270 * v / max
+        return mirrored ? 135 - 270 * v / max : -135 + 270 * v / max
     }
 
     // ======================= ФОН =======================
@@ -91,6 +94,7 @@ Item {
         required property int majorStep
         required property string caption
         required property string unit
+        property bool mirrored: false
 
         width: root.dialW
         height: root.dialH
@@ -145,7 +149,7 @@ Item {
                 required property int index
                 width: dial.width
                 height: dial.height
-                rotation: -135 + index * 7.5
+                rotation: dial.mirrored ? 135 - index * 7.5 : -135 + index * 7.5
 
                 Rectangle {
                     width: index % 5 === 0 ? 3 : 1.5
@@ -165,7 +169,9 @@ Item {
                 required property int index
                 width: dial.width
                 height: dial.height
-                rotation: -135 + index * (270 / (dial.valueMax / dial.majorStep))
+                rotation: dial.mirrored
+                          ? 135 - index * (270 / (dial.valueMax / dial.majorStep))
+                          : -135 + index * (270 / (dial.valueMax / dial.majorStep))
 
                 Text {
                     x: dial.width / 2 - width / 2
@@ -174,6 +180,9 @@ Item {
                     color: root.light2
                     font.pixelSize: 22
                     font.bold: true
+                    // компенсируем поворот родителя: цифры шкалы должны
+                    // читаться прямо, а не вверх ногами у нижних делений
+                    rotation: -parent.rotation
                 }
             }
         }
@@ -182,7 +191,7 @@ Item {
         // Угол отдельным свойством: Behavior внутри Rotation не работает
         // (проверено — стрелка рисовалась, но не поворачивалась), поэтому
         // пружина висит на свойстве, а Rotation лишь читает его.
-        property real shownAngle: root.needleAngle(dial.value, dial.valueMax)
+        property real shownAngle: root.needleAngle(dial.value, dial.valueMax, dial.mirrored)
         Behavior on shownAngle {
             SpringAnimation { spring: 2.6; damping: 0.22; epsilon: 0.15 }
         }
@@ -256,6 +265,7 @@ Item {
         majorStep: 1
         caption: "ТАХОМЕТР"
         unit: "x1000 ОБ/МИН"
+        mirrored: true      // шкала зеркальна спидометру, стрелка против часовой
     }
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
