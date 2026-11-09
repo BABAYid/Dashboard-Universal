@@ -103,6 +103,8 @@ qt_add_qml_module(appDashboard
         images/tuman.png
         # Мягкое свечение поворотников (радиальный градиент с плавным краем)
         images/turn_glow.png
+        images/genesis/dial_glow.png
+        images/genesis/needle.png
         # Значки типов камер от дизайнера (для предупреждений Smart Driver)
         images/speedcam/type_102.png
 )
