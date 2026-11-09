@@ -178,7 +178,15 @@ Item {
             }
         }
 
-        // 3. стрелка — картинка из макета, вращается вокруг оси из макета
+        // 3. стрелка — картинка из макета, вращается вокруг оси из макета.
+        // Угол отдельным свойством: Behavior внутри Rotation не работает
+        // (проверено — стрелка рисовалась, но не поворачивалась), поэтому
+        // пружина висит на свойстве, а Rotation лишь читает его.
+        property real shownAngle: root.needleAngle(dial.value, dial.valueMax)
+        Behavior on shownAngle {
+            SpringAnimation { spring: 2.6; damping: 0.22; epsilon: 0.15 }
+        }
+
         Image {
             width: root.needleW
             height: root.needleH
@@ -189,10 +197,7 @@ Item {
             transform: Rotation {
                 origin.x: root.needleW / 2
                 origin.y: root.needlePivotFromTop
-                angle: root.needleAngle(dial.value, dial.valueMax)
-                Behavior on angle {
-                    SpringAnimation { spring: 2.6; damping: 0.22; epsilon: 0.15 }
-                }
+                angle: dial.shownAngle
             }
         }
 
