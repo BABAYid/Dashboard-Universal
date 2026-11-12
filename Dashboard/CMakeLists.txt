@@ -104,7 +104,48 @@ qt_add_qml_module(appDashboard
         # Мягкое свечение поворотников (радиальный градиент с плавным краем)
         images/turn_glow.png
         images/genesis/dial_glow.png
+        images/genesis/dial_speed.png
+        images/genesis/dial_tach.png
+        images/genesis/footer.png
+        images/genesis/icon_clock.png
+        images/genesis/icon_coolant.png
+        images/genesis/icon_fuel.png
+        images/genesis/icon_snow.png
+        images/genesis/ind_driving_mode.png
+        images/genesis/ind_gear.png
+        images/genesis/ind_speed_limit.png
         images/genesis/needle.png
+        images/genesis/odometer.png
+        images/genesis/range.png
+        images/genesis/rim_left.png
+        images/genesis/rim_right.png
+        images/genesis/warn_abs.png
+        images/genesis/warn_attention_red.png
+        images/genesis/warn_attention_yellow.png
+        images/genesis/warn_battery.png
+        images/genesis/warn_brake_red.png
+        images/genesis/warn_brake_yellow.png
+        images/genesis/warn_car_arrow_down.png
+        images/genesis/warn_car_arrows.png
+        images/genesis/warn_car_slope.png
+        images/genesis/warn_car_terrain.png
+        images/genesis/warn_car_triangle.png
+        images/genesis/warn_check_engine.png
+        images/genesis/warn_cruise.png
+        images/genesis/warn_fog_front.png
+        images/genesis/warn_fog_rear.png
+        images/genesis/warn_glow_plugs.png
+        images/genesis/warn_hand_brake.png
+        images/genesis/warn_headlight_level.png
+        images/genesis/warn_high_beam.png
+        images/genesis/warn_low_range.png
+        images/genesis/warn_oil_pressure.png
+        images/genesis/warn_position_lights.png
+        images/genesis/warn_seat_belt.png
+        images/genesis/warn_snowflake.png
+        images/genesis/warn_stability_esc.png
+        images/genesis/warn_stability_off.png
+        images/genesis/warn_tire_pressure.png
         # Значки типов камер от дизайнера (для предупреждений Smart Driver)
         images/speedcam/type_102.png
 )
