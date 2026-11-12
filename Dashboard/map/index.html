@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Dashboard map</title>
+  <link rel="stylesheet" href="maplibre-gl.css">
+  <script src="maplibre-gl.js"></script>
+  <style>
+    html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #070D13; }
+    .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo { display: none !important; }
+    #car {
+      position: absolute; left: 50%; top: 50%; width: 26px; height: 26px;
+      margin: -13px 0 0 -13px; border-radius: 50%;
+      background: #BCEAF1; box-shadow: 0 0 14px #7FD4FF, 0 0 4px #fff;
+    }
+    #car::after {
+      content: ""; position: absolute; left: 50%; top: -18px; margin-left: -7px;
+      border-left: 7px solid transparent; border-right: 7px solid transparent;
+      border-bottom: 16px solid #BCEAF1;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="car"></div>
+  <script>
+    // Карта по курсу: автомобиль всегда в центре, карта вращается.
+    var map = new maplibregl.Map({
+      container: 'map',
+      style: 'style.json',
+      center: [37.6173, 55.7558],
+      zoom: 13,
+      pitch: 0,
+      bearing: 0,
+      attributionControl: false,
+      interactive: false,
+      fadeDuration: 0
+    });
+
+    // Вызывается из QML: setPose(lon, lat, courseDeg, zoom)
+    window.setPose = function(lon, lat, course, zoom) {
+      map.jumpTo({ center: [lon, lat], bearing: course || 0, zoom: zoom || map.getZoom() });
+      document.getElementById('car').style.display = 'block';
+    };
+    // Вызывается из QML: показать маршрут [{lon,lat}, ...]
+    window.setRoute = function(points) {
+      var data = { type: 'Feature', geometry: { type: 'LineString', coordinates: points } };
+      if (map.getSource('route')) { map.getSource('route').setData(data); return; }
+      map.addSource('route', { type: 'geojson', data: data });
+      map.addLayer({ id: 'route-casing', type: 'line', source: 'route',
+        paint: { 'line-color': '#123', 'line-width': 12, 'line-opacity': 0.8 } });
+      map.addLayer({ id: 'route', type: 'line', source: 'route',
+        paint: { 'line-color': '#BCEAF1', 'line-width': 7 } });
+    };
+    map.on('error', function(e) { console.log('map error: ' + (e.error && e.error.message)); });
+  </script>
+</body>
+</html>
