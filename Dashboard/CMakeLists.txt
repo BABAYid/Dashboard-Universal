@@ -115,6 +115,8 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
+        images/genesis/scale_temp.png
+        images/genesis/scale_fuel.png
         images/genesis/odometer.png
         images/genesis/range.png
         images/genesis/rim_left.png

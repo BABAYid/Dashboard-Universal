@@ -50,11 +50,12 @@ Item {
     readonly property int dialCx1: 417
     readonly property int dialCx2: 1501
     readonly property int dialCy: 320
-    // Картинка диска на экране. Видимый диск занимает ~53% от холста арта,
-    // поэтому 1245 даёт диск ≈ 660 px — как в макете (84..750 и 1168..1834).
-    readonly property int artSize: 1245
-    // Холст стрелки: ось в центре холста, кончик достаёт до ~85% радиуса.
-    readonly property int needleCanvas: 566
+    // Картинка диска на экране (по просьбе заказчика меньше: было 1245).
+    // Видимый диск ≈ 53% от холста арта → при 900 это ~477 px.
+    readonly property int artSize: 900
+    // Холст стрелки: ось в центре холста, кончик почти достаёт до шкалы
+    // (было 0.45 от диска — заказчик попросил длиннее).
+    readonly property int needleCanvas: artSize * 0.52
 
     // Угол стрелки. Зеркальный прибор идёт против часовой.
     function needleAngle(value, max, mirrored) {
@@ -88,18 +89,21 @@ Item {
         required property real valueMax
         property bool mirrored: false
 
-        // Вспомогательная шкала внизу диска: топливо слева, температура справа.
-        // startAngle/sweep — в тех же градусах, что у Item.rotation
-        // (0 — вверх, положительное — по часовой).
+        // Вспомогательная шкала: картинка дизайнера (scale_fuel / scale_temp)
+        // плюс мини-стрелка, которая ездит по этой дуге.
+        // Картинка — холст 167x1440-подобный, дуга нарисована у его края,
+        // поэтому положение задаётся сдвигом от центра диска в долях размера.
         property bool hasAux: false
         property real auxValue: 0
         property real auxMin: 0
         property real auxMax: 100
-        property real auxStart: 40      // откуда начинается дуга (0 = вверх)
-        property real auxSweep: 100     // размах дуги
-        property string auxIcon: ""
+        property real auxStart: 40      // углы дуги в градусах Item.rotation
+        property real auxSweep: 100
+        property string auxArt: ""
         property string auxUnit: ""
-        property bool auxRight: false
+        property real auxScale: 0.42    // ширина картинки как доля диска
+        property real auxOffsetX: 0     // сдвиг от центра диска, в долях размера
+        property real auxOffsetY: 0.26
 
         width: root.artSize
         height: root.artSize
@@ -136,56 +140,27 @@ Item {
             }
         }
 
-        // ---- вспомогательная шкала (топливо / температура) ----
+        // ---- вспомогательная шкала: картинка дизайнера + мини-стрелка ----
         Item {
             id: aux
             visible: dial.hasAux
-            // ставим в нижнюю часть диска: слева или справа от центра
-            width: dial.width * 0.42
-            height: width
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.horizontalCenterOffset: dial.width * (dial.auxRight ? 0.17 : -0.17)
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: dial.height * 0.17
+            width: dial.width * dial.auxScale
+            height: width * 0.86          // холст шкалы чуть шире, чем выше
+            x: dial.width / 2 - width / 2 + dial.width * dial.auxOffsetX
+            y: dial.height / 2 - height / 2 + dial.height * dial.auxOffsetY
 
-            readonly property real radius: width * 0.40
-
-            Shape {
+            Image {
                 anchors.fill: parent
-                ShapePath {
-                    strokeColor: root.deep
-                    strokeWidth: 3
-                    fillColor: "transparent"
-                    PathAngleArc {
-                        centerX: aux.width / 2; centerY: aux.height / 2
-                        radiusX: aux.radius; radiusY: aux.radius
-                        // PathAngleArc: 0 — на восток против часовой.
-                        // Переводим: rotation r → угол 90 − r
-                        startAngle: 90 - dial.auxStart
-                        sweepAngle: -dial.auxSweep
-                    }
-                }
-                ShapePath {
-                    strokeColor: root.glow1
-                    strokeWidth: 3
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    PathAngleArc {
-                        centerX: aux.width / 2; centerY: aux.height / 2
-                        radiusX: aux.radius; radiusY: aux.radius
-                        startAngle: 90 - dial.auxStart
-                        sweepAngle: -dial.auxSweep
-                                   * Math.max(0, Math.min(1,
-                                       (dial.auxValue - dial.auxMin) / (dial.auxMax - dial.auxMin)))
-                    }
-                }
+                source: dial.auxArt
+                fillMode: Image.PreserveAspectFit
+                cache: true
             }
 
-            // мини-стрелка
+            // мини-стрелка вдоль дуги
             Rectangle {
-                width: 2
-                height: aux.radius - 4
-                radius: 1
+                width: 3
+                height: aux.width * 0.34
+                radius: 1.5
                 x: aux.width / 2 - width / 2
                 y: aux.height / 2 - height
                 color: root.light
@@ -197,26 +172,12 @@ Item {
                 Behavior on rotation { NumberAnimation { duration: 250 } }
             }
 
-            // ступица
-            Rectangle {
-                width: 8; height: 8; radius: 4
-                anchors.centerIn: parent
-                color: root.mid1
-            }
-
-            // значок и подпись
-            Image {
-                source: dial.auxIcon
-                width: 26; height: 22
-                x: aux.width / 2 - width / 2
-                y: aux.height / 2 + aux.radius - 30
-            }
             Text {
-                x: (aux.width - width) / 2
-                y: aux.height / 2 + aux.radius - 2
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: parent.height - 4
                 text: dial.auxUnit
                 color: root.mid3
-                font.pixelSize: 13
+                font.pixelSize: 12
             }
         }
 
@@ -243,8 +204,10 @@ Item {
         auxMax: 100
         auxStart: 40
         auxSweep: 100
-        auxIcon: "images/genesis/icon_fuel.png"
+        auxArt: "images/genesis/scale_fuel.png"
         auxUnit: "ТОПЛИВО"
+        auxOffsetX: -0.22
+        auxOffsetY: 0.24
     }
 
     Dial {
@@ -255,14 +218,15 @@ Item {
         mirrored: true
 
         hasAux: true
-        auxRight: true
         auxValue: root.temp
         auxMin: 40
         auxMax: 120
         auxStart: 40
         auxSweep: 100
-        auxIcon: "images/genesis/icon_coolant.png"
+        auxArt: "images/genesis/scale_temp.png"
         auxUnit: "ТЕМП."
+        auxOffsetX: 0.22
+        auxOffsetY: 0.24
     }
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
