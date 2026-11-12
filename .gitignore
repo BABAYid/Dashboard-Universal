@@ -42,3 +42,6 @@ Thumbs.db
 
 # sdkconfig joystick-модуля генерируется сборкой из sdkconfig.defaults
 firmware/joystick/sdkconfig
+
+# Офлайн-карты и данные навигации (сотни МБ - гигабайты, не для git)
+maps/

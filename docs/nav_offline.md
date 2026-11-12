@@ -58,6 +58,29 @@ bbox: 54.855 .. 56.657 N,  36.016 .. 39.218 E   (~200 × 200 км)
 
 Скрипты положим в `tools/nav/` — по мере готовности.
 
+## Готовые скрипты (в проекте)
+
+| Скрипт | Что делает |
+|---|---|
+| `tools/nav-fetch.sh moscow\|district` | качает выгрузку OSM в `maps/` (BBBike для города, Geofabrik для округа) |
+| `tools/nav-clip.py` | режет выгрузку по нашему bbox на pyosmium (замена `osmium extract`, ставится без root) |
+
+Проверено 13.11.2026:
+- BBBike отдаёт городской экстракт медленно (>5 минут на 80 МБ, таймаут),
+  Geofabrik — на 4.3 МБ/с, поэтому основным источником берём его
+  (`central-fed-district`, ~1.5 ГБ, внутри Москва + ~300 км);
+- `maps/` добавлен в `.gitignore` — это данные, не исходники;
+- pyosmium ставится в проект: `pip install --target build/pylibs osmium`.
+
+Что нужно доустановить на машину (нужен root, поэтому делается вручную):
+
+    sudo apt install libboost-dev libprotobuf-dev protobuf-compiler \
+                     liblua5.1-dev libsqlite3-dev libshp-dev cmake
+
+Дальше `tilemaker` и `valhalla` собираются из исходников (или берутся
+готовые пакеты платы). Без них тайлы и маршруты не собрать — это следующий
+шаг после выгрузки данных.
+
 ## Слои приборки
 
 1. `GpsBackend` (C++): подписка на `gpsd`, отдаёт в QML позицию, курс,
