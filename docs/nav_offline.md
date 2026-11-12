@@ -126,3 +126,22 @@ bbox: 54.855 .. 56.657 N,  36.016 .. 39.218 E   (~200 × 200 км)
    Логично на приборке: навигация должна работать, даже если Android выключен.
 4. Как обновлять карты: раз в N месяцев копировать новый `.mbtiles`
    и пересобирать Valhalla (процесс на ПК, 1–2 часа).
+
+## Инструмент сборки тайлов: Planetiler (вместо tilemaker)
+
+13.11.2026: tilemaker 2.4.0 не собрался на текущем тулчейне — `Boost::system`
+стал header-only, rapidjson 1.1.0 не компилируется GCC 15, с master-rapidjson
+вылезает конфликт `namespace boost::sort` с Boost 1.90. Патчить не стали.
+
+Берём **Planetiler** (Java, без сборки, тот же `.mbtiles`):
+
+```bash
+# нужен JDK 21: build/toolchain/jdk21
+build/toolchain/jdk21/bin/java -Xmx3g -jar build/toolchain/planetiler.jar \
+  --osm-path=maps/district.osm.pbf --output=maps/tiles.mbtiles \
+  --bounds=36.016,54.855,39.218,56.657 --minzoom=8 --maxzoom=15 \
+  --download --force --tmpdir=build/tmp --download_dir=build/toolchain/sources
+```
+
+Свои источники (~1.4 ГБ: lake centerlines 80 МБ, natural earth 434 МБ, water
+polygons 933 МБ) качает один раз в `build/toolchain/sources/`.
