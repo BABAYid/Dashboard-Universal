@@ -33,11 +33,10 @@ import Dashboard
 //                    прижаты справа к x=1061, единицы — от x=1074;
 //                    строки на y=303, 379, 457 (шаг 78).
 //
-//  Масштаб картинок дисков. У dial_speed.png контент занимает 1817 px из
-//  2104 (замер по самому файлу), доля 0.8636. Чтобы видимый диск был 652 px,
-//  картинку надо рисовать в 652 / 0.8636 = 755 px. Отсюда artSize.
-//  Если захочется вернуть прежний, более крупный вид — менять одну строку
-//  dialDiameter ниже (при 778 диск вылезает за верх экрана, это и было ошибкой).
+//  Масштаб картинок дисков. В dial_speed.png кольцо шкалы лежит на радиусе
+//  645 px из 2104 (замер по самому файлу), а в макете кольцо — радиус 326.
+//  Значит картинку надо рисовать в 2104 × 326 / 645 = 1064 px — это artSize.
+//  Размер приборов меняется одной строкой dialDiameter ниже.
 //
 //  Тахометр зеркальный: ноль справа, стрелка идёт против часовой. Данные
 //  приходят свойствами из Main.qml, лампы читаются из CanBackend напрямую:
@@ -52,25 +51,33 @@ Item {
     property real fuel: 0
     property real temp: 0
     property string clock: "--:--"
-    property real odometer: 0
+    // Пробег за поездку (Main.qml передаёт journeyKm). Полный одометр в этом
+    // скине пока не выводится: в макете под него нет отдельного поля.
+    property real tripKm: 0
     property real rangeKm: 0
     property bool nightMode: false
 
-    // ---- палитра из макета (светлая часть; ночной режим — приглушённая) ----
+    // ---- палитра из макета ----
+    // Ночной режим НЕ гасит панель: в машине он включён всегда, когда горят
+    // габариты (Main.qml: nightMode = positionLights), то есть всю ночную езду.
+    // Поэтому меняется только фоновое свечение и чуть-чуть яркость арта,
+    // а цифры и значения остаются читаемыми.
     readonly property color bg: "#070D13"
-    readonly property color light: nightMode ? "#8FA6A4" : "#E8F4F0"
-    readonly property color light2: nightMode ? "#6C8280" : "#B8D4D5"
-    readonly property color glow1: nightMode ? "#5E8A93" : "#BCEAF1"
-    readonly property color mid1: nightMode ? "#31424F" : "#587286"
-    readonly property color mid3: nightMode ? "#33424F" : "#5B7187"
-    readonly property color deep: nightMode ? "#26333F" : "#40556A"
+    readonly property color light: "#E8F4F0"
+    readonly property color light2: nightMode ? "#A6C0C2" : "#B8D4D5"
+    readonly property color glow1: nightMode ? "#9CCAD2" : "#BCEAF1"
+    readonly property color mid1: nightMode ? "#44596B" : "#587286"
+    readonly property color mid3: nightMode ? "#44566B" : "#5B7187"
+    readonly property color deep: nightMode ? "#32424F" : "#40556A"
+    // Яркость арта: днём 1.0, ночью 0.88 — заметно мягче, но всё видно.
+    readonly property real artLevel: nightMode ? 0.88 : 1.0
 
     // Цвета ламп. В палитре макета их нет (она монохромная, циан + белый),
     // поэтому взяты стандартные автомобильные: информация — светлая, внимание —
     // янтарный, авария — красный. Меняются здесь, в одном месте.
-    readonly property color lampInfo: nightMode ? "#7FA6AC" : "#BCEAF1"
-    readonly property color lampWarn: nightMode ? "#8A6A32" : "#F2C14E"
-    readonly property color lampAlarm: nightMode ? "#8E3A3A" : "#FF5252"
+    readonly property color lampInfo: nightMode ? "#A8D2D8" : "#BCEAF1"
+    readonly property color lampWarn: nightMode ? "#D9AE55" : "#F2C14E"
+    readonly property color lampAlarm: nightMode ? "#E06A6A" : "#FF5252"
     readonly property color lampIdle: "#00000000"
 
     // ==================== ГЕОМЕТРИЯ (из макета) ====================
@@ -80,9 +87,14 @@ Item {
     readonly property int dialCy2: 358
     // Диаметр видимого диска, px (макет: радиус 326).
     readonly property int dialDiameter: 652
-    // Доля контента в картинке диска (1817 из 2104) — замер по файлу.
-    readonly property real dialArtRatio: 0.8636
-    readonly property int artSize: Math.round(dialDiameter / dialArtRatio)
+    // Масштаб картинки диска. У dial_speed.png яркое кольцо шкалы лежит на
+    // радиусе 645 из 2104 px (замер по файлу: пик медианой яркости по
+    // окружностям), то есть кольцо занимает 0.3066 полухолста. В макете
+    // кольцо — радиус 326, отсюда artSize = 326 / 0.3066 = 1064.
+    // Раньше здесь стояло 900 «на глаз»: кольцо получалось 276 px вместо 326,
+    // а до этого 1245 (кольцо 382) — отсюда и просьба «сделать меньше».
+    readonly property real dialArtRingRatio: 0.3066
+    readonly property int artSize: Math.round((dialDiameter / 2) / dialArtRingRatio)
     // Холст стрелки: ось в центре холста, кончик достаёт до 344 px от оси
     // (макет: кончик на y=12.8 при оси y=357).
     readonly property real needleLength: dialDiameter * 0.528
@@ -191,7 +203,7 @@ Item {
         width: 1500
         height: 900
         radius: width / 2
-        opacity: nightMode ? 0.3 : 0.5
+        opacity: nightMode ? 0.28 : 0.5
         gradient: Gradient {
             GradientStop { position: 0.0; color: "#0E1A22" }
             GradientStop { position: 1.0; color: "transparent" }
@@ -228,7 +240,7 @@ Item {
             fillMode: Image.PreserveAspectFit
             cache: true
             asynchronous: true
-            opacity: root.nightMode ? 0.72 : 1.0
+            opacity: root.artLevel
         }
 
         // стрелка: холст квадратный, ось вращения — в центре холста,
@@ -245,7 +257,7 @@ Item {
             y: dial.height / 2 - height / 2
             source: "images/genesis/needle.png"
             cache: true
-            opacity: root.nightMode ? 0.75 : 1.0
+            opacity: root.artLevel
             transform: Rotation {
                 origin.x: root.needleCanvas / 2
                 origin.y: root.needleCanvas / 2
@@ -372,7 +384,7 @@ Item {
             height: 34
             source: row.icon
             fillMode: Image.PreserveAspectFit
-            opacity: root.nightMode ? 0.75 : 0.95
+            opacity: root.nightMode ? 0.8 : 0.95
         }
 
         Text {
@@ -420,15 +432,14 @@ Item {
         unit: root.rangeKm > 0 ? Math.round(root.rangeKm) + " км" : "—"
     }
 
-    // Строка пробега и запаса хода: в макете широкая надпись (785…1132, y=193).
+    // Строка пробега за поездку: в макете на этом месте широкая надпись
+    // (785…1132, y=193).
     Text {
         x: 785
         width: 348
         y: 189
         horizontalAlignment: Text.AlignHCenter
-        text: root.odometer > 0
-              ? Math.round(root.odometer) + " км"
-              : Math.round(root.fuel) + " %"
+        text: root.tripKm.toFixed(1) + " км"
         color: root.light2
         font.pixelSize: 34
     }
@@ -508,7 +519,7 @@ Item {
         visible: root.speedLimit > 0
         source: "images/genesis/ind_speed_limit.png"
         fillMode: Image.PreserveAspectFit
-        opacity: root.nightMode ? 0.75 : 1.0
+        opacity: root.artLevel
 
         Text {
             anchors.centerIn: parent
@@ -529,7 +540,7 @@ Item {
         visible: root.drivingMode.length > 0
         source: "images/genesis/ind_driving_mode.png"
         fillMode: Image.PreserveAspectFit
-        opacity: root.nightMode ? 0.7 : 0.9
+        opacity: root.nightMode ? 0.8 : 0.9
     }
 
     // ======================= НИЖНЯЯ ПАНЕЛЬ =======================
@@ -542,7 +553,7 @@ Item {
         height: 204
         source: "images/genesis/footer.png"
         fillMode: Image.PreserveAspectFit
-        opacity: root.nightMode ? 0.55 : 1.0
+        opacity: root.nightMode ? 0.8 : 1.0
     }
 
     Row {
@@ -555,14 +566,14 @@ Item {
             height: 55
             source: "images/genesis/odometer.png"
             fillMode: Image.PreserveAspectFit
-            opacity: root.nightMode ? 0.6 : 0.9
+            opacity: root.nightMode ? 0.75 : 0.9
         }
         Image {
             width: 205
             height: 55
             source: "images/genesis/range.png"
             fillMode: Image.PreserveAspectFit
-            opacity: root.nightMode ? 0.6 : 0.9
+            opacity: root.nightMode ? 0.75 : 0.9
         }
     }
 }
