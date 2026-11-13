@@ -150,13 +150,15 @@ Item {
     readonly property bool coldRoad: CanBackend.outsideTemp <= 3 && CanBackend.outsideTemp > -40
 
     // Верхняя группа: то, что видно постоянно и чаще всего (указатели поворота
-    // по краям, как на любой машине).
+    // по краям, как на любой машине). Стрелки поворота в комплекте дизайнера
+    // не нарисованы — белые силуэты `turn_left/turn_right.png` сделаны из
+    // старых стрелок классического скина (альфа та же, цвет задаётся кодом).
     readonly property var topLamps: [
-        { art: "",             on: root.selfTest || (root.leftTurn && root.blinkOn),  color: root.lampInfo,  draw: "turnLeft" },
-        { art: "warn_high_beam.png", on: root.selfTest || root.highBeamOn,   color: root.lampInfo },
-        { art: "warn_position_lights.png", on: root.selfTest || root.positionOn, color: root.lampInfo },
-        { art: "warn_fog_front.png", on: root.selfTest || root.fogOn,        color: root.lampInfo },
-        { art: "",             on: root.selfTest || (root.rightTurn && root.blinkOn), color: root.lampInfo, draw: "turnRight" }
+        { art: "turn_left.png",             on: root.selfTest || (root.leftTurn && root.blinkOn),   color: root.lampInfo },
+        { art: "warn_high_beam.png",        on: root.selfTest || root.highBeamOn,                    color: root.lampInfo },
+        { art: "warn_position_lights.png",  on: root.selfTest || root.positionOn,                    color: root.lampInfo },
+        { art: "warn_fog_front.png",        on: root.selfTest || root.fogOn,                         color: root.lampInfo },
+        { art: "turn_right.png",            on: root.selfTest || (root.rightTurn && root.blinkOn),   color: root.lampInfo }
     ]
 
     // Нижняя группа: предупреждения и аварии.
