@@ -68,9 +68,16 @@ class Handler(BaseHTTPRequestHandler):
             data = tile(z, x, y)
             if data is None:
                 return self._send(204, b"", "application/x-protobuf")
+            # В MBTiles тайлы обычно лежат уже сжатыми gzip. MapLibre ждёт
+            # либо чистый protobuf, либо сжатый с заголовком Content-Encoding.
+            # Заголовок мы не ставили, и карта молча не рисовалась — поэтому
+            # распаковываем и отдаём чистый protobuf.
             if data[:2] == b"\x1f\x8b":
-                return self._send(200, data, "application/x-protobuf")
-            return self._send(200, gzip.compress(data), "application/x-protobuf")
+                try:
+                    data = gzip.decompress(data)
+                except OSError:
+                    pass
+            return self._send(200, data, "application/x-protobuf")
 
         if path in ("/style.json", "/style"):
             with open(os.path.join(MAP_DIR, "style.json"), "rb") as f:
