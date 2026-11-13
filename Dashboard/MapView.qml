@@ -32,9 +32,17 @@ Item {
     // Готовность страницы (после неё можно вызывать setPose)
     property bool ready: false
 
+    // Обновляем карту всякий раз, когда меняется позиция или курс:
+    // раньше setPose вызывался только один раз при загрузке страницы,
+    // поэтому карта не поворачивалась и машина не двигалась.
+    onLatitudeChanged: updatePose()
+    onLongitudeChanged: updatePose()
+    onCourseChanged: updatePose()
+    onMapZoomChanged: updatePose()
+
     // Показать/обновить позицию машины и курс
     function updatePose() {
-        if (!view.loadProgress === 1)
+        if (!root.ready)
             return
         view.runJavaScript(
             "window.setPose && window.setPose("

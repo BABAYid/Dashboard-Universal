@@ -4,30 +4,172 @@
   "sources": {
     "osm": {
       "type": "vector",
-      "tiles": ["http://127.0.0.1:8090/tiles/{z}/{x}/{y}"],
+      "tiles": [
+        "http://127.0.0.1:8090/tiles/{z}/{x}/{y}"
+      ],
       "minzoom": 8,
-      "maxzoom": 15
+      "maxzoom": 13
     }
   },
   "layers": [
-    { "id": "bg", "type": "background",
-      "paint": { "background-color": "#070D13" } },
-    { "id": "water", "type": "fill", "source": "osm", "source-layer": "water",
-      "paint": { "fill-color": "#0D2230" } },
-    { "id": "landuse", "type": "fill", "source": "osm", "source-layer": "landuse",
-      "paint": { "fill-color": "#0B1820", "fill-opacity": 0.8 } },
-    { "id": "park", "type": "fill", "source": "osm", "source-layer": "park",
-      "paint": { "fill-color": "#0E2019" } },
-    { "id": "roads-casing", "type": "line", "source": "osm", "source-layer": "transportation",
-      "filter": ["in", ["get", "class"], ["literal", ["motorway", "trunk", "primary", "secondary", "tertiary", "minor", "service", "residential"]]],
-      "paint": { "line-color": "#1C2A36", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 15, 7] } },
-    { "id": "roads", "type": "line", "source": "osm", "source-layer": "transportation",
-      "filter": ["in", ["get", "class"], ["literal", ["motorway", "trunk", "primary", "secondary", "tertiary", "minor", "service", "residential"]]],
-      "paint": { "line-color": "#7E8F9C", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.6, 15, 3] } },
-    { "id": "motorway", "type": "line", "source": "osm", "source-layer": "transportation",
-      "filter": ["==", ["get", "class"], "motorway"],
-      "paint": { "line-color": "#BCEAF1", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.2, 15, 4] } },
-    { "id": "buildings", "type": "fill", "source": "osm", "source-layer": "building",
-      "paint": { "fill-color": "#132430", "fill-opacity": 0.9 } }
+    {
+      "id": "bg",
+      "type": "background",
+      "paint": {
+        "background-color": "#070D13"
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "osm",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": "#0D2230"
+      }
+    },
+    {
+      "id": "landuse",
+      "type": "fill",
+      "source": "osm",
+      "source-layer": "landuse",
+      "paint": {
+        "fill-color": "#0B1820",
+        "fill-opacity": 0.8
+      }
+    },
+    {
+      "id": "park",
+      "type": "fill",
+      "source": "osm",
+      "source-layer": "park",
+      "paint": {
+        "fill-color": "#0E2019"
+      }
+    },
+    {
+      "id": "roads-casing",
+      "type": "line",
+      "source": "osm",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "motorway",
+            "trunk",
+            "primary",
+            "secondary",
+            "tertiary",
+            "minor",
+            "service",
+            "residential"
+          ]
+        ]
+      ],
+      "paint": {
+        "line-color": "#1C2A36",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          1.5,
+          15,
+          7
+        ]
+      }
+    },
+    {
+      "id": "roads",
+      "type": "line",
+      "source": "osm",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "motorway",
+            "trunk",
+            "primary",
+            "secondary",
+            "tertiary",
+            "minor",
+            "service",
+            "residential"
+          ]
+        ]
+      ],
+      "paint": {
+        "line-color": "#7E8F9C",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0.6,
+          15,
+          3
+        ]
+      }
+    },
+    {
+      "id": "motorway",
+      "type": "line",
+      "source": "osm",
+      "source-layer": "transportation",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "paint": {
+        "line-color": "#BCEAF1",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          1.2,
+          15,
+          4
+        ]
+      }
+    },
+    {
+      "id": "buildings",
+      "type": "fill",
+      "source": "osm",
+      "source-layer": "building",
+      "paint": {
+        "fill-color": "#132430",
+        "fill-opacity": 0.9
+      }
+    }
   ]
 }

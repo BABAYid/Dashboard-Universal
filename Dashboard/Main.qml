@@ -573,7 +573,7 @@ Window {
             latitude: root.gpsLat
             longitude: root.gpsLon
             course: root.gpsCourse
-            mapZoom: 14
+            mapZoom: 13
         }
 
         // ============ ВТОРОЙ СКИН «GENESIS» ============
