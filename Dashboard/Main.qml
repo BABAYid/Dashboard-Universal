@@ -146,6 +146,20 @@ Window {
     readonly property real mapZoomMin: 8
     readonly property real mapZoomMax: 15
 
+    // ---- выбор точки назначения без тачскрина ----
+    // Избранное: энкодер листает список, PRESS строит маршрут к выбранной
+    // точке. «По карте»: ◀/▶ сдвигают вид, в центре появляется
+    // перекрестие, PRESS строит маршрут «сюда».
+    property var favorites: [
+        { name: "Дом",    lat: 55.7600, lon: 37.6250 },
+        { name: "Работа", lat: 55.7560, lon: 37.6120 },
+        { name: "АЗС",    lat: 55.7630, lon: 37.6330 },
+        { name: "Мойка",  lat: 55.7500, lon: 37.6180 }
+    ]
+    property int favoriteIndex: 0
+    // Вид оторван от машины: джойстик двигает карту, в центре перекрестие.
+    property bool mapDetached: false
+
     // Второй скин (docs/design/genesis.jpg): тёмно-синий фон, приборы
     // примитивами, светлая полоса внизу. Классический скин — classic.
     // Переключается клавишей F8 и переменной DASHBOARD_SKIN при запуске.
@@ -262,8 +276,15 @@ Window {
         // вошли в навигацию с офлайн-картой — строим маршрут и едем по нему
         if (root.navigationMode && root.offlineMap) {
             root.routeProgress = 0
+            const fav = root.favorites[root.favoriteIndex]
+            if (fav) {
+                root.navDestLat = fav.lat
+                root.navDestLon = fav.lon
+            }
             route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
         }
+        if (!root.navigationMode)
+            root.mapDetached = false
     }
 
     Connections {
@@ -381,17 +402,60 @@ Window {
             calibration.open()
             break
         case "left":
-            root.prevCenterMode()
-            break
         case "right":
+            // На карте ◀/▶ двигают вид: так выбирается точка «по карте».
+            // Вне навигации — как раньше, листают режимы центральной панели.
+            if (root.navigationMode && root.offlineMap) {
+                root.mapDetached = true
+                offlineMapView.panBy(name === "left" ? -90 : 90, 0)
+            } else {
+                if (name === "left")
+                    root.prevCenterMode()
+                else
+                    root.nextCenterMode()
+            }
+            break
         case "press":
-            root.nextCenterMode()
+            if (root.navigationMode && root.offlineMap) {
+                if (root.mapDetached) {
+                    // «Сюда»: точка под перекрестием становится пунктом назначения
+                    offlineMapView.centerCoords(function(c) {
+                        if (!c || c.length < 2)
+                            return
+                        root.navDestLon = c[0]
+                        root.navDestLat = c[1]
+                        root.mapDetached = false
+                        root.routeProgress = 0
+                        route.buildRoute(root.gpsLat, root.gpsLon,
+                                         root.navDestLat, root.navDestLon)
+                        offlineMapView.attachToCar()
+                    })
+                } else {
+                    // Маршрут к выбранному избранному
+                    const fav = root.favorites[root.favoriteIndex]
+                    if (fav) {
+                        root.navDestLat = fav.lat
+                        root.navDestLon = fav.lon
+                        root.routeProgress = 0
+                        route.buildRoute(root.gpsLat, root.gpsLon,
+                                         root.navDestLat, root.navDestLon)
+                    }
+                }
+            } else {
+                root.nextCenterMode()
+            }
             break
         case "next":
-            lamps.cycleOdometer(1)
-            break
         case "prev":
-            lamps.cycleOdometer(-1)
+            if (root.navigationMode && root.offlineMap) {
+                // Энкодер в навигации листает избранное
+                const n = root.favorites.length
+                if (n > 0)
+                    root.favoriteIndex = (root.favoriteIndex + (name === "next" ? 1 : -1) + n) % n
+                console.log("Ввод: избранное", root.favorites[root.favoriteIndex].name)
+            } else {
+                lamps.cycleOdometer(name === "next" ? 1 : -1)
+            }
             break
         case "up":
         case "down":
@@ -603,6 +667,56 @@ Window {
             longitude: root.gpsLon
             course: root.gpsCourse
             mapZoom: root.mapZoom
+        }
+
+        // ============ ИЗБРАННОЕ НА КАРТЕ ============
+        // В навигации слева сверху: энкодер листает список, PRESS строит
+        // маршрут к выбранной точке; ◀/▶ сдвигают вид карты — тогда в
+        // центре перекрестие, и PRESS означает «сюда».
+        Item {
+            id: favoritesPanel
+            x: root.navMargin
+            y: 12
+            width: 190
+            height: favoriteCol.height + 22
+            z: 5
+            visible: root.navigationMode && root.offlineMap
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 8
+                color: "#0B141CCC"
+                border.color: "#24343F"
+            }
+            Column {
+                id: favoriteCol
+                x: 10
+                y: 8
+                spacing: 2
+                Text {
+                    text: root.mapDetached ? "ПЕРЕКРЕСТИЕ" : "ИЗБРАННОЕ"
+                    color: "#5D7484"
+                    font.pixelSize: 10
+                    font.letterSpacing: 2
+                }
+                Repeater {
+                    model: root.favorites
+                    delegate: Text {
+                        required property int index
+                        required property var modelData
+                        text: modelData.name
+                        color: root.mapDetached ? "#3A4A57"
+                             : (index === root.favoriteIndex ? "#BCEAF1" : "#7A8B99")
+                        font.pixelSize: 15
+                        font.bold: index === root.favoriteIndex && !root.mapDetached
+                    }
+                }
+                Text {
+                    text: root.mapDetached ? "PRESS — сюда" : "PRESS — маршрут"
+                    color: "#40556A"
+                    font.pixelSize: 10
+                }
+            }
         }
 
         // ============ ВТОРОЙ СКИН «GENESIS» ============

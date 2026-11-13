@@ -19,11 +19,23 @@
       border-left: 7px solid transparent; border-right: 7px solid transparent;
       border-bottom: 16px solid #BCEAF1;
     }
+    /* Перекрестие «выбора точки на карте»: появляется, когда карта
+       оторвана от машины (джойстик сдвигает вид). */
+    #cross {
+      position: absolute; left: 50%; top: 50%; width: 46px; height: 46px;
+      margin: -23px 0 0 -23px; display: none; pointer-events: none;
+    }
+    #cross::before, #cross::after {
+      content: ""; position: absolute; background: #BCEAF1; opacity: 0.9;
+    }
+    #cross::before { left: 50%; top: 0; width: 2px; height: 100%; margin-left: -1px; }
+    #cross::after  { top: 50%; left: 0; width: 100%; height: 2px; margin-top: -1px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div id="car"></div>
+  <div id="cross"></div>
   <script>
     // Карта по курсу: автомобиль всегда в центре, карта вращается.
     //
@@ -50,13 +62,51 @@
       transformRequest: resolveUrl
     });
 
+    // Режим вида: follow = карта следует за машиной (по курсу); иначе —
+    // карта оторвана, в центре перекрестие, джойстик её сдвигает.
+    var follow = true;
+
+    function applyFollow(lon, lat, course, zoom) {
+      if (follow) {
+        map.jumpTo({ center: [lon, lat], bearing: course || 0, zoom: zoom || map.getZoom() });
+      }
+    }
+    function showCross(on) {
+      document.getElementById('cross').style.display = on ? 'block' : 'none';
+      document.getElementById('car').style.display = on ? 'none' : 'block';
+    }
+
     // Вызывается из QML: setPose(lon, lat, courseDeg, zoom)
     window.setPose = function(lon, lat, course, zoom) {
-      map.jumpTo({ center: [lon, lat], bearing: course || 0, zoom: zoom || map.getZoom() });
+      applyFollow(lon, lat, course, zoom);
       document.getElementById('car').style.display = 'block';
     };
-    // Вызывается из QML: показать маршрут [{lon,lat}, ...]
-    window.setRoute = function(points) {
+
+    // --- выбор точки на карте (избранное / «по карте») ---
+    window.navDetach = function() {
+      follow = false;
+      showCross(true);
+    };
+    window.navAttach = function() {
+      follow = true;
+      showCross(false);
+      document.getElementById('car').style.display = 'block';
+    };
+    window.navIsDetached = function() { return follow === false; };
+    // Сдвиг вида джойстиком, в пикселях экрана.
+    window.navPan = function(dx, dy) {
+      follow = false;
+      showCross(true);
+      map.panBy([dx, dy], { animate: false });
+    };
+    // Центр экрана (то, что под перекрестием), JSON-строкой.
+    window.navCenter = function() {
+      var c = map.getCenter();
+      return JSON.stringify([c.lng, c.lat]);
+    };
+    // Маршрут можно прислать раньше, чем догрузится стиль (MapLibre тогда
+    // бросает "Style is not done loading") — откладываем до события load.
+    function applyRoute(points) {
       var data = { type: 'Feature', geometry: { type: 'LineString', coordinates: points } };
       if (map.getSource('route')) { map.getSource('route').setData(data); return; }
       map.addSource('route', { type: 'geojson', data: data });
@@ -64,6 +114,14 @@
         paint: { 'line-color': '#123', 'line-width': 12, 'line-opacity': 0.8 } });
       map.addLayer({ id: 'route', type: 'line', source: 'route',
         paint: { 'line-color': '#BCEAF1', 'line-width': 7 } });
+    }
+    // Вызывается из QML: показать маршрут [{lon,lat}, ...]
+    window.setRoute = function(points) {
+      if (!map.isStyleLoaded()) {
+        map.once('load', function() { applyRoute(points); });
+      } else {
+        applyRoute(points);
+      }
     };
     map.on('error', function(e) { console.log('map error: ' + (e.error && e.error.message)); });
   </script>

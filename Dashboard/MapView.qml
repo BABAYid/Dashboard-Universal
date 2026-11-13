@@ -40,6 +40,36 @@ Item {
     onCourseChanged: updatePose()
     onMapZoomChanged: updatePose()
 
+    // ---- выбор точки на карте (избранное / «по карте») ----
+
+    // Сдвинуть вид джойстиком; карта при этом отрывается от машины и
+    // в центре появляется перекрестие.
+    function panBy(dx, dy) {
+        if (!root.ready)
+            return
+        view.runJavaScript("window.navPan && window.navPan(" + dx + "," + dy + ")")
+    }
+    // Вернуть вид к машине (следование по курсу, перекрестие скрыть).
+    function attachToCar() {
+        if (!root.ready)
+            return
+        view.runJavaScript("window.navAttach && window.navAttach()")
+        root.updatePose()
+    }
+    // Координаты центра экрана (то, что под перекрестием): [lon, lat] или null.
+    function centerCoords(cb) {
+        if (!root.ready) {
+            cb(null)
+            return
+        }
+        view.runJavaScript("window.navCenter ? window.navCenter() : 'null'",
+                           function(res) {
+                               var v = null
+                               try { v = JSON.parse(res) } catch (e) {}
+                               cb(v)
+                           })
+    }
+
     // Показать/обновить позицию машины и курс
     function updatePose() {
         if (!root.ready)
@@ -50,8 +80,15 @@ Item {
             + root.course + "," + root.mapZoom + ")")
     }
 
+    // Последний построенный маршрут — чтобы дослать его, когда страница
+    // доедет (маршрут строится раньше, чем WebView успевает загрузить map.html).
+    property var pendingRoute: []
+
     // Показать маршрут: список пар [[lon,lat], ...]
     function setRoute(points) {
+        root.pendingRoute = points
+        if (!root.ready)
+            return
         view.runJavaScript("window.setRoute && window.setRoute(" + JSON.stringify(points) + ")")
     }
 
@@ -62,9 +99,21 @@ Item {
         url: root.active ? root.mapUrl : "about:blank"
 
         onLoadingChanged: function(request) {
-            if (request.status === WebView.LoadSucceededStatus) {
-                root.ready = true
-                root.updatePose()
+            // Готовность только для страницы карты: загрузка about:blank
+            // (когда карта не нужна) не должна включать ready — иначе
+            // setPose/setRoute уходят в пустую страницу и молча теряются.
+            // request.url приходит как QUrl — сравниваем строкой
+            if ((request.url + "") === root.mapUrl) {
+                if (request.status === WebView.LoadSucceededStatus) {
+                    root.ready = true
+                    root.updatePose()
+                    if (root.pendingRoute && root.pendingRoute.length)
+                        root.setRoute(root.pendingRoute)
+                } else {
+                    root.ready = false
+                }
+            } else {
+                root.ready = false
             }
         }
     }
