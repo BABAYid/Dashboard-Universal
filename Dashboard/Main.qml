@@ -175,19 +175,56 @@ Window {
         return (Math.atan2(y, x) / toRad + 360) % 360
     }
 
+    // В навигации строим маршрут от текущей точки до «пункта назначения»
+    // и едем по нему: позиция берётся из геометрии маршрута, курс — по
+    // следующему сегменту. Так проверяем и маршрут, и карту, и подсказки.
+    property real routeProgress: 0          // метры от старта
+    readonly property real routeSpeed: 18   // м/с, чтобы не ждать минут
+
+    property real navDestLat: 55.7700
+    property real navDestLon: 37.6400
+
     Timer {
         interval: 250
         repeat: true
-        running: root.fakeGps && root.navigationMode
+        running: root.fakeGps && root.navigationMode && route.ready
         onTriggered: {
-            const t = root.demoTrack
-            const i = root.gpsTrackIndex
-            const next = t[(i + 1) % t.length]
-            root.gpsCourse = root.bearing(root.gpsLat, root.gpsLon, next[0], next[1])
-            root.gpsLat = next[0]
-            root.gpsLon = next[1]
-            root.gpsTrackIndex = (i + 1) % t.length
+            root.routeProgress += root.routeSpeed * 0.25
+            route.setTraveled(root.routeProgress)
+
+            // положение на маршруте по пройденному расстоянию
+            const pts = route.points
+            if (!pts || pts.length < 2)
+                return
+            // грубая интерполяция по длине полилинии
+            let total = 0
+            const seg = []
+            for (let i = 1; i < pts.length; i++) {
+                const a = pts[i-1], b = pts[i]
+                const d = root.distanceM(a[1], a[0], b[1], b[0])
+                seg.push(d); total += d
+            }
+            const target = Math.min(root.routeProgress, total)
+            let acc = 0, k = 1
+            for (; k < seg.length; k++) {
+                if (acc + seg[k-1] >= target) break
+                acc += seg[k-1]
+            }
+            const a = pts[k-1], b = pts[Math.min(k, pts.length-1)]
+            const f = seg[k-1] ? (target - acc) / seg[k-1] : 0
+            root.gpsLat = a[1] + (b[1]-a[1]) * f
+            root.gpsLon = a[0] + (b[0]-a[0]) * f
+            root.gpsCourse = root.bearing(a[1], a[0], b[1], b[0])
         }
+    }
+
+    // расстояние между двумя точками на сфере (метры)
+    function distanceM(lat1, lon1, lat2, lon2) {
+        const R = 6371000, rad = Math.PI / 180
+        const dLat = (lat2-lat1)*rad, dLon = (lon2-lon1)*rad
+        const x = Math.sin(dLat/2)*Math.sin(dLat/2)
+                + Math.cos(lat1*rad)*Math.cos(lat2*rad)*Math.sin(dLon/2)*Math.sin(dLon/2)
+        return 2*R*Math.atan2(Math.sqrt(x), Math.sqrt(1-x))
     }
 
     // Вошли в навигацию — просим у Android кадры карты; вышли — перестаём.
@@ -200,6 +237,12 @@ Window {
     function syncInputRouting() {
         NetworkServer.setNavigationActive(root.navigationMode)
         NetworkServer.setInputForwarding(!root.navigationMode && !calibration.visible)
+
+        // вошли в навигацию с офлайн-картой — строим маршрут и едем по нему
+        if (root.navigationMode && root.offlineMap) {
+            root.routeProgress = 0
+            route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
+        }
     }
 
     Connections {
@@ -512,6 +555,12 @@ Window {
         scale: root.canvasScale
         x: (root.width - width * scale) / 2
         y: (root.height - height * scale) / 2
+
+        // ============ МАРШРУТЫ (офлайн GraphHopper) ============
+        RouteService {
+            id: route
+            onRouteReady: function(coords) { offlineMapView.setRoute(coords) }
+        }
 
         // ============ ОФЛАЙН-КАРТА (навигация) ============
         // Живёт под приборами: когда включается навигация, приборы уезжают
