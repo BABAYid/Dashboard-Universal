@@ -26,6 +26,17 @@
   <div id="car"></div>
   <script>
     // Карта по курсу: автомобиль всегда в центре, карта вращается.
+    //
+    // ВАЖНО (13.11.2026): MapLibre v4 не резолвит относительные URL сами —
+    // style.json пишет "/tiles/{z}/{x}/{y}", и это значение уходило бы в
+    // воркер как есть, где `new Request('/tiles/...')` падает
+    // ("Failed to parse URL from /tiles/..."), и подложка остаётся пустой.
+    // Поэтому transformRequest ниже абсолютизирует любой относительный URL
+    // от document.baseURI: работает и в браузере, и в QtWebEngine (WebView),
+    // и не зависит от того, на каком порту/адресе открыт сервер тайлов.
+    function resolveUrl(url) {
+      return { url: new URL(url, document.baseURI).href }
+    }
     var map = new maplibregl.Map({
       container: 'map',
       style: 'style.json',
@@ -35,7 +46,8 @@
       bearing: 0,
       attributionControl: false,
       interactive: false,
-      fadeDuration: 0
+      fadeDuration: 0,
+      transformRequest: resolveUrl
     });
 
     // Вызывается из QML: setPose(lon, lat, courseDeg, zoom)
