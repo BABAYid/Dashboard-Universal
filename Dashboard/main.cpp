@@ -10,6 +10,7 @@
 #include <QVector>
 
 #include "can/CanBackend.h"
+#include "gps/GpsBackend.h"
 #include "network/NetworkServer.h"
 #include "media/MediaBackend.h"
 #include "speedcam/SpeedCamManager.h"
@@ -83,6 +84,12 @@ int main(int argc, char *argv[])
     can->setMockMode(parser.isSet(mockOption));
     can->start();
 
+    // GPS от gpsd (TCP 2947). Приёмника ещё нет — на столе тот же протокол
+    // отдаёт tools/gps_test_server.py; при появлении железа достаточно
+    // поднять gpsd на плате, код не меняется.
+    GpsBackend *gps = GpsBackend::instance();
+    gps->start();
+
     // Погода за окном: Open-Meteo раз в 10 минут; в --mock — демо-цикл
     // дождь → снег → ясно, чтобы эффект было видно без сети.
     WeatherProvider *weather = WeatherProvider::instance();
@@ -120,6 +127,12 @@ int main(int argc, char *argv[])
     }
 
     QObject::connect(can, &CanBackend::gpsPositionUpdated, speedcam,
+                     [speedcam](double lat, double lon, double course, double speedKmh) {
+                         speedcam->checkPosition(lat, lon, course, speedKmh);
+                     });
+    // Основной источник координат для камер — gpsd (резерв по CAN выше
+    // остаётся для совместимости, в обычной сборке кадры 0x520/0x521 не идут).
+    QObject::connect(gps, &GpsBackend::positionUpdated, speedcam,
                      [speedcam](double lat, double lon, double course, double speedKmh) {
                          speedcam->checkPosition(lat, lon, course, speedKmh);
                      });

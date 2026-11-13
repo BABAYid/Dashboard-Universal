@@ -1,6 +1,7 @@
 #include "NetworkServer.h"
 
 #include "can/CanBackend.h"
+#include "gps/GpsBackend.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -384,12 +385,27 @@ QJsonObject NetworkServer::carJson() const
 
     root.insert(QStringLiteral("odometer_km"), num(can->odometer()));
 
+    // GPS: основной источник — gpsd (приёмник на приборке, 10 Гц).
+    // Резерв по CAN (0x520/0x521) остаётся для совместимости — в обычной
+    // сборке эти кадры не приходят, но разбор жив.
+    const auto *gpsd = GpsBackend::instance();
     QJsonObject gps;
-    gps.insert(QStringLiteral("valid"), can->gpsValid());
-    gps.insert(QStringLiteral("lat"), num(can->gpsLatitude(), can->gpsValid()));
-    gps.insert(QStringLiteral("lon"), num(can->gpsLongitude(), can->gpsValid()));
-    gps.insert(QStringLiteral("course_deg"), num(can->gpsCourse(), can->gpsValid()));
-    gps.insert(QStringLiteral("speed_kmh"), can->gpsSpeed() >= 0 ? can->gpsSpeed() : -1);
+    if (gpsd->valid()) {
+        gps.insert(QStringLiteral("valid"), true);
+        gps.insert(QStringLiteral("lat"), num(gpsd->latitude()));
+        gps.insert(QStringLiteral("lon"), num(gpsd->longitude()));
+        gps.insert(QStringLiteral("course_deg"), num(gpsd->course()));
+        gps.insert(QStringLiteral("speed_kmh"), gpsd->speedKmh() >= 0
+                        ? static_cast<int>(qRound(gpsd->speedKmh())) : -1);
+        gps.insert(QStringLiteral("age_ms"), gpsd->ageMs());
+    } else {
+        gps.insert(QStringLiteral("valid"), can->gpsValid());
+        gps.insert(QStringLiteral("lat"), num(can->gpsLatitude(), can->gpsValid()));
+        gps.insert(QStringLiteral("lon"), num(can->gpsLongitude(), can->gpsValid()));
+        gps.insert(QStringLiteral("course_deg"), num(can->gpsCourse(), can->gpsValid()));
+        gps.insert(QStringLiteral("speed_kmh"), can->gpsSpeed() >= 0 ? can->gpsSpeed() : -1);
+        gps.insert(QStringLiteral("age_ms"), QJsonValue());
+    }
     root.insert(QStringLiteral("gps"), gps);
 
     QJsonObject device;

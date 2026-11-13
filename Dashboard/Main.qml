@@ -152,10 +152,15 @@ Window {
     // Пока нет GPS — играем записанный трек по Москве, чтобы проверить
     // поведение карты: следование за машиной, поворот по курсу, зум.
     property bool offlineMap: true
+    // Демо-трек включается, только когда реального GPS нет. Своего приёмника
+    // пока нет — на столе данные отдаёт tools/gps_test_server.py (gpsd по
+    // TCP), на плате — настоящий gpsd.
     property bool fakeGps: true
+    readonly property bool realGps: GpsBackend.valid
     property real gpsLat: 55.7558
     property real gpsLon: 37.6173
     property real gpsCourse: 0
+    property real gpsSpeedKmh: -1
     property int gpsTrackIndex: 0
 
     // Трек для проверки: небольшой маршрут по центру Москвы
@@ -187,7 +192,7 @@ Window {
     Timer {
         interval: 250
         repeat: true
-        running: root.fakeGps && root.navigationMode && route.ready
+        running: root.fakeGps && !root.realGps && root.navigationMode && route.ready
         onTriggered: {
             root.routeProgress += root.routeSpeed * 0.25
             route.setTraveled(root.routeProgress)
@@ -215,6 +220,18 @@ Window {
             root.gpsLat = a[1] + (b[1]-a[1]) * f
             root.gpsLon = a[0] + (b[0]-a[0]) * f
             root.gpsCourse = root.bearing(a[1], a[0], b[1], b[0])
+        }
+    }
+
+    // Реальный GPS (gpsd) важнее демо-трека: пока есть фикс, позиция и курс
+    // приходят от приёмника, и карта едет за ним.
+    Connections {
+        target: GpsBackend
+        function onPositionUpdated(lat, lon, course, speedKmh) {
+            root.gpsLat = lat
+            root.gpsLon = lon
+            root.gpsCourse = course
+            root.gpsSpeedKmh = speedKmh
         }
     }
 
