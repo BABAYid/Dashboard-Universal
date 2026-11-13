@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 pkill -f planetiler.jar 2>/dev/null && sleep 2 || true
 rm -f maps/tiles.mbtiles
 
-echo "Собираю тайлы (Москва + 100 км, z8-15). Это займёт 1-2 часа, окно не закрывать."
+echo "Собираю тайлы (Москва + 100 км, z8-15). Это займёт 20-40 минут, окно не закрывать."
 echo
 build/toolchain/jdk21/bin/java -Xmx3g -jar build/toolchain/planetiler.jar \
   --osm-path=maps/district.osm.pbf --output=maps/tiles.mbtiles \
