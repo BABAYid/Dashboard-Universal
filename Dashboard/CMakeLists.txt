@@ -125,6 +125,27 @@ qt_add_qml_module(appDashboard
         images/genesis/turn_left.png
         images/genesis/turn_right.png
         images/genesis/scale_temp.png
+        # Цветные варианты ламп: цвет в QML задаётся только шейдерным
+        # MultiEffect, а он не работает на программном рендерере.
+        # Файлы делает tools/tint_genesis_icons.py из белых исходников.
+        images/genesis/turn_left_cyan.png
+        images/genesis/turn_right_cyan.png
+        images/genesis/warn_abs_amber.png
+        images/genesis/warn_attention_yellow_amber.png
+        images/genesis/warn_battery_red.png
+        images/genesis/warn_brake_red_red.png
+        images/genesis/warn_car_triangle_red.png
+        images/genesis/warn_check_engine_amber.png
+        images/genesis/warn_fog_front_cyan.png
+        images/genesis/warn_fog_rear_cyan.png
+        images/genesis/warn_hand_brake_red.png
+        images/genesis/warn_high_beam_cyan.png
+        images/genesis/warn_oil_pressure_red.png
+        images/genesis/warn_position_lights_cyan.png
+        images/genesis/warn_seat_belt_red.png
+        images/genesis/warn_snowflake_cyan.png
+        images/genesis/warn_stability_esc_amber.png
+        images/genesis/warn_tire_pressure_amber.png
         images/genesis/scale_fuel.png
         images/genesis/odometer.png
         images/genesis/range.png

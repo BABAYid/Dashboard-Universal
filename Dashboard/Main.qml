@@ -619,7 +619,7 @@ Window {
             fuel: root.fuelLevel
             temp: root.temp
             clock: root.timeString
-            tripKm: root.journeyKm
+            tripKm: CanBackend.journeyKm
             rangeKm: root.rangeKmValid ? root.rangeKm : 0
             nightMode: root.nightMode
         }

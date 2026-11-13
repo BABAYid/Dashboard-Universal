@@ -1,6 +1,5 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Effects
 import Dashboard
 
 // ==========================================================================
@@ -74,10 +73,12 @@ Item {
 
     // Цвета ламп. В палитре макета их нет (она монохромная, циан + белый),
     // поэтому взяты стандартные автомобильные: информация — светлая, внимание —
-    // янтарный, авария — красный. Меняются здесь, в одном месте.
-    readonly property color lampInfo: nightMode ? "#A8D2D8" : "#BCEAF1"
-    readonly property color lampWarn: nightMode ? "#D9AE55" : "#F2C14E"
-    readonly property color lampAlarm: nightMode ? "#E06A6A" : "#FF5252"
+    // янтарный, авария — красный. Эти же значения зашиты в
+    // tools/tint_genesis_icons.py, которым красятся файлы иконок: меняете
+    // цвет здесь — прогоняете скрипт, иначе файлы останутся прежнего цвета.
+    readonly property color lampInfo: "#BCEAF1"
+    readonly property color lampWarn: "#F2C14E"
+    readonly property color lampAlarm: "#FF5252"
     readonly property color lampIdle: "#00000000"
 
     // ==================== ГЕОМЕТРИЯ (из макета) ====================
@@ -163,27 +164,32 @@ Item {
 
     // Верхняя группа: то, что видно постоянно и чаще всего (указатели поворота
     // по краям, как на любой машине). Стрелки поворота в комплекте дизайнера
-    // не нарисованы — белые силуэты `turn_left/turn_right.png` сделаны из
-    // старых стрелок классического скина (альфа та же, цвет задаётся кодом).
+    // не нарисованы — силуэты `turn_left/turn_right` сделаны из старых стрелок
+    // классического скина (альфа та же).
+    //
+    // Иконки берутся уже покрашенными (суффикс _cyan/_amber/_red): цвет в QML
+    // задаётся только шейдерным MultiEffect, а на программном рендерере он не
+    // работает и лампы пропадают совсем. Красит `tools/tint_genesis_icons.py`
+    // из тех же белых исходников дизайнера.
     readonly property var topLamps: [
-        { art: "turn_left.png",             on: root.selfTest || (root.leftTurn && root.blinkOn),   color: root.lampInfo },
-        { art: "warn_high_beam.png",        on: root.selfTest || root.highBeamOn,                    color: root.lampInfo },
-        { art: "warn_position_lights.png",  on: root.selfTest || root.positionOn,                    color: root.lampInfo },
-        { art: "warn_fog_front.png",        on: root.selfTest || root.fogOn,                         color: root.lampInfo },
-        { art: "turn_right.png",            on: root.selfTest || (root.rightTurn && root.blinkOn),   color: root.lampInfo }
+        { art: "turn_left_cyan.png",            on: root.selfTest || (root.leftTurn && root.blinkOn) },
+        { art: "warn_high_beam_cyan.png",       on: root.selfTest || root.highBeamOn },
+        { art: "warn_position_lights_cyan.png", on: root.selfTest || root.positionOn },
+        { art: "warn_fog_front_cyan.png",       on: root.selfTest || root.fogOn },
+        { art: "turn_right_cyan.png",           on: root.selfTest || (root.rightTurn && root.blinkOn) }
     ]
 
     // Нижняя группа: предупреждения и аварии.
     readonly property var bottomLamps: [
-        { art: "warn_oil_pressure.png",  on: root.selfTest || root.oilOn,       color: root.lampAlarm },
-        { art: "warn_brake_red.png",     on: root.selfTest || root.handBrakeOn, color: root.lampAlarm },
-        { art: "warn_seat_belt.png",     on: root.selfTest || root.beltOn,      color: root.lampAlarm },
-        { art: "warn_battery.png",       on: root.selfTest || root.batteryOn,   color: root.lampAlarm },
-        { art: "warn_check_engine.png",  on: root.selfTest || root.checkOn,     color: root.lampWarn },
-        { art: "warn_abs.png",           on: root.selfTest || root.absOn,       color: root.lampWarn },
-        { art: "warn_car_triangle.png",  on: root.selfTest || root.overheat,    color: root.lampAlarm },
-        { art: "warn_attention_yellow.png", on: root.selfTest || root.fuelLow, color: root.lampWarn },
-        { art: "warn_snowflake.png",     on: root.selfTest || root.coldRoad,    color: root.lampInfo }
+        { art: "warn_oil_pressure_red.png",      on: root.selfTest || root.oilOn },
+        { art: "warn_brake_red_red.png",         on: root.selfTest || root.handBrakeOn },
+        { art: "warn_seat_belt_red.png",         on: root.selfTest || root.beltOn },
+        { art: "warn_battery_red.png",           on: root.selfTest || root.batteryOn },
+        { art: "warn_check_engine_amber.png",    on: root.selfTest || root.checkOn },
+        { art: "warn_abs_amber.png",             on: root.selfTest || root.absOn },
+        { art: "warn_car_triangle_red.png",      on: root.selfTest || root.overheat },
+        { art: "warn_attention_yellow_amber.png", on: root.selfTest || root.fuelLow },
+        { art: "warn_snowflake_cyan.png",        on: root.selfTest || root.coldRoad }
     ]
 
     // Угол стрелки в градусах поворота холста. Зеркальный прибор идёт
@@ -445,42 +451,31 @@ Item {
     }
 
     // ======================= ЛАМПЫ =======================
-    // Одна лампа: белая иконка дизайнера, цвет задаётся тонированием
-    // (MultiEffect.colorization), поэтому из 27 иконок не нужен ни один
-    // цветной вариант файла.
+    // Одна лампа: картинка дизайнера в нужном цвете, без эффектов.
     component Lamp: Item {
         id: lamp
         required property string art
         required property bool isOn
-        required property color tone
         property real lampSize: root.bottomLampSize
 
         width: lampSize
         height: lampSize
-        opacity: lamp.isOn ? 1.0 : 0.0
+        opacity: lamp.isOn ? (root.nightMode ? 0.85 : 1.0) : 0.0
         visible: opacity > 0
 
         Image {
             anchors.fill: parent
             source: lamp.art
             fillMode: Image.PreserveAspectFit
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                colorization: 1.0
-                colorizationColor: lamp.tone
-            }
+            cache: true
         }
     }
 
     // Верхняя полоса между приборами: поворотники по краям, между ними свет.
     Row {
-        id: topRow
         x: (root.width - width) / 2
         y: root.topLampY
         spacing: root.topLampSpacing
-        Component.onCompleted: console.log("DEBUG topRow x=", x, "width=", width, "y=", y,
-                                          "детей=", children.length,
-                                          "модель=", JSON.stringify(root.topLamps.map(function(l){return l.art+":"+l.on})))
 
         Repeater {
             model: root.topLamps
@@ -489,18 +484,15 @@ Item {
                 lampSize: root.topLampSize
                 art: "images/genesis/" + modelData.art
                 isOn: modelData.on
-                tone: modelData.color
             }
         }
     }
 
     // Нижняя кромка: предупреждения и аварии.
     Row {
-        id: bottomRow
         x: (root.width - width) / 2
         y: root.bottomLampY
         spacing: root.bottomLampSpacing
-        Component.onCompleted: console.log("DEBUG bottomRow x=", x, "width=", width, "y=", y, "детей=", children.length)
 
         Repeater {
             model: root.bottomLamps
@@ -508,15 +500,18 @@ Item {
                 required property var modelData
                 art: "images/genesis/" + modelData.art
                 isOn: modelData.on
-                tone: modelData.color
             }
         }
     }
 
     // ======================= ИНДИКАТОРЫ =======================
     // Знак ограничения скорости (кружок дизайнера) — в свободном поле
-    // над тахометром: в макете там пусто.
-    property int speedLimit: 0
+    // над тахометром: в макете там пусто. Берётся из базы камер
+    // (SpeedCamManager — QML-синглтон модуля): показываем ограничение той
+    // камеры, что впереди по курсу. Нет камеры — знак скрыт.
+    readonly property int speedLimit:
+        SpeedCamManager.cameraAhead && SpeedCamManager.cameraIsSpeedControl
+        ? SpeedCamManager.cameraSpeedLimit : 0
     Image {
         x: 1258
         y: 40
