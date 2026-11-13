@@ -4,7 +4,7 @@
   "sources": {
     "osm": {
       "type": "vector",
-      "tiles": ["/tiles/{z}/{x}/{y}"],
+      "tiles": ["http://127.0.0.1:8090/tiles/{z}/{x}/{y}"],
       "minzoom": 9,
       "maxzoom": 13
     }
