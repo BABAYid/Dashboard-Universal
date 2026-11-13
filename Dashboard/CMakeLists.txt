@@ -16,6 +16,7 @@ qt_add_executable(appDashboard
 # <MediaBackend.h> по имени файла
 target_include_directories(appDashboard PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/can
+    ${CMAKE_CURRENT_SOURCE_DIR}/gps
     ${CMAKE_CURRENT_SOURCE_DIR}/media
     ${CMAKE_CURRENT_SOURCE_DIR}/speedcam
     ${CMAKE_CURRENT_SOURCE_DIR}/network)
@@ -30,6 +31,8 @@ qt_add_qml_module(appDashboard
     SOURCES
         can/CanBackend.h
         can/CanBackend.cpp
+        gps/GpsBackend.h
+        gps/GpsBackend.cpp
         media/MediaBackend.h
         media/MediaBackend.cpp
         speedcam/SpeedCamManager.h
