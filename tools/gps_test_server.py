@@ -143,8 +143,7 @@ class Handler(socketserver.BaseRequestHandler):
         except (BrokenPipeError, ConnectionResetError, OSError):
             pass
 
-    @staticmethod
-    def _send(text):
+    def _send(self, text):
         self.request.sendall((text + "\n").encode("utf-8"))
 
 

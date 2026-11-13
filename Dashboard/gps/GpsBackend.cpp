@@ -162,10 +162,9 @@ void GpsBackend::parseLine(const QByteArray &line)
 
 void GpsBackend::applyTpv(const QJsonObject &tpv)
 {
-    bool ok = false;
-    const int mode = tpv.value(QStringLiteral("mode")).toInt(&ok);
-    if (!ok && !tpv.contains(QStringLiteral("lat")))
-        return;
+    // QJsonValue::toInt() принимает только значение по умолчанию; если
+    // поля "mode" нет — считаем, что фикса нет.
+    const int mode = tpv.value(QStringLiteral("mode")).toInt(0);
 
     // 0 — нет данных, 1 — нет фикса, 2 — 2D, 3 — 3D. Координаты без фикса
     // отдавать нельзя: навигатор уведёт машину по пустому полю.
