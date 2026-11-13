@@ -138,6 +138,189 @@
       }
     },
     {
+      "id": "poi",
+      "type": "symbol",
+      "source": "osm",
+      "source-layer": "poi",
+      "minzoom": 15,
+      "filter": [
+        "match",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "cafe",
+          "restaurant",
+          "fast_food",
+          "food",
+          "ice_cream",
+          "bar",
+          "pub",
+          "fuel",
+          "shop",
+          "pharmacy",
+          "hospital",
+          "clinic",
+          "dentist",
+          "doctor",
+          "atm",
+          "bank",
+          "bureau_de_change",
+          "bus",
+          "railway",
+          "tram",
+          "subway",
+          "taxi",
+          "parking",
+          "lodging",
+          "attraction",
+          "museum",
+          "art_gallery",
+          "viewpoint",
+          "theatre",
+          "cinema",
+          "monument",
+          "toilets",
+          "post",
+          "post_box",
+          "stadium",
+          "playground",
+          "fitness_centre",
+          "ice_rink",
+          "theme_park",
+          "dog_park"
+        ],
+        true,
+        false
+      ],
+      "layout": {
+        "icon-image": [
+          "match",
+          [
+            "get",
+            "class"
+          ],
+          [
+            "cafe",
+            "restaurant",
+            "fast_food",
+            "food",
+            "ice_cream",
+            "bar",
+            "pub"
+          ],
+          "food",
+          [
+            "fuel"
+          ],
+          "fuel",
+          [
+            "shop"
+          ],
+          "shop",
+          [
+            "pharmacy",
+            "hospital",
+            "clinic",
+            "dentist",
+            "doctor"
+          ],
+          "medical",
+          [
+            "atm",
+            "bank",
+            "bureau_de_change"
+          ],
+          "bank",
+          [
+            "bus",
+            "railway",
+            "tram",
+            "subway",
+            "taxi"
+          ],
+          "transport",
+          [
+            "parking"
+          ],
+          "parking",
+          [
+            "lodging"
+          ],
+          "lodging",
+          [
+            "attraction",
+            "museum",
+            "art_gallery",
+            "viewpoint",
+            "theatre",
+            "cinema",
+            "monument"
+          ],
+          "attraction",
+          [
+            "toilets"
+          ],
+          "toilets",
+          [
+            "post",
+            "post_box"
+          ],
+          "post",
+          "other"
+        ],
+        "icon-size": 0.8,
+        "icon-allow-overlap": false,
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name"
+          ],
+          ""
+        ],
+        "text-font": [
+          "Lato"
+        ],
+        "text-size": 10,
+        "text-offset": [
+          1.2,
+          0
+        ],
+        "text-anchor": "left",
+        "text-padding": 2
+      },
+      "paint": {
+        "text-color": "#C7D3DC",
+        "text-halo-color": "#070D13",
+        "text-halo-width": 1.1
+      }
+    },
+    {
+      "id": "housenumbers",
+      "type": "symbol",
+      "source": "osm",
+      "source-layer": "housenumber",
+      "minzoom": 15,
+      "layout": {
+        "text-field": [
+          "get",
+          "housenumber"
+        ],
+        "text-font": [
+          "Lato"
+        ],
+        "text-size": 9,
+        "text-padding": 2
+      },
+      "paint": {
+        "text-color": "#77889A",
+        "text-halo-color": "#070D13",
+        "text-halo-width": 1
+      }
+    },
+    {
       "id": "street-names",
       "type": "symbol",
       "source": "osm",
@@ -189,5 +372,6 @@
       }
     }
   ],
-  "glyphs": "/fonts/{fontstack}/{range}.pbf"
+  "glyphs": "/fonts/{fontstack}/{range}.pbf",
+  "sprite": "/sprite"
 }
