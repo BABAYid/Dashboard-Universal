@@ -44,23 +44,23 @@ z12 1 444, z13 5 476, z14 21 462, z15 85 509), bounds ровно наш bbox.
 | Слой | Выбор | Почему |
 |---|---|---|
 | Приёмник | `gpsd` (TCP 2947, JSON) | разбирает NMEA, держит фикс, настраивает частоту; есть на любой плате |
-| Тайлы | `tilemaker` → MBTiles (z8…15) | из официальной выгрузки OSM, ~300–400 МБ на нашу область |
+| Тайлы | **Planetiler** → MBTiles (z8…15) | собрано 13.11.2026: 448 МБ на весь bbox «Москва + 100 км» |
 | Рисование карты | MapLibre GL JS в `WebView` | умеет локальные тайлы, маршрут линией, поворот по курсу; Qt-рендерер вектора писать не надо |
-| Сервер тайлов | уже есть `QHttpServer` (порт 8080) | отдаёт `/tiles/{z}/{x}/{y}` из MBTiles |
-| Маршруты | **Valhalla** (офлайн, C++) | `valhalla_build_tiles` из той же выгрузки, HTTP на localhost; даёт и манёвры, и ETA |
+| Сервер тайлов | уже есть `QHttpServer` (порт 8080) | отдаёт `/tiles/{z}/{x}/{y}` из MBTiles (пока — прототип `tile-server.py` на :8090) |
+| Маршруты | **GraphHopper 9.1** (Java, офлайн) | в коде уже GraphHopper: `build/gh/config.yml`, порт 8989, граф в `maps/graph-cache`; даёт геометрию, инструкции и ETA. Valhalla — запасной вариант, если GraphHopper не хватит |
 | Поиск адреса | этап 2: SQLite FTS по `addr:*` из выгрузки | компактно (~100 МБ), без сервера; Nominatim/Photon — если качества не хватит |
 
-Суммарно на диске: тайлы ~0.4 ГБ + Valhalla ~1.0–1.5 ГБ + данные поиска
+Суммарно на диске: тайлы 0.45 ГБ + граф маршрутов 0.4 ГБ + данные поиска
 ~0.1 ГБ. Для платы с 100+ ГБ это нормально.
 
 ## Пайплайн подготовки данных (на ПК, один раз)
 
 1. Выгрузка OSM под наш bbox: BBBike (свой прямоугольник) или Geofabrik.
    Файл `.osm.pbf`, ожидаемо 1–2 ГБ.
-2. Тайлы: `tilemaker --input region.pbf --output tiles.mbtiles
-   --config config.json --process process.lua` (z8…15).
-3. Маршруты: `valhalla_build_config` → `valhalla_build_admins` →
-   `valhalla_build_tiles -c valhalla.json region.pbf` → `valhalla_service`.
+2. Тайлы: `tools/nav-build-tiles.sh` (Planetiler, z8…15).
+3. Маршруты: GraphHopper сам строит граф из `maps/district.osm.pbf`
+   в `maps/graph-cache` при первом запуске `tools/nav-route.sh`
+   (конфиг — `build/gh/config.yml`, профиль `car`).
 4. Результат копируется на плату в `/opt/dashboard/maps/`.
 
 Скрипты положим в `tools/nav/` — по мере готовности.
@@ -74,6 +74,7 @@ z12 1 444, z13 5 476, z14 21 462, z15 85 509), bounds ровно наш bbox.
 | `tools/nav-build-tiles.sh` | собирает `maps/tiles.mbtiles` из `maps/district.osm.pbf` через Planetiler (10–20 минут) |
 | `tools/tile-server.py` | отдаёт `/tiles/…`, `/style.json`, `/map.html` из `Dashboard/map/`; логирует пустые тайлы |
 | `tools/nav-serve.sh` | запускает сервер тайлов на :8090 и открывает карту в браузере |
+| `tools/nav-route.sh` | запускает GraphHopper на :8989 (граф — `maps/graph-cache`, конфиг — `build/gh/config.yml`) |
 
 Проверено 13.11.2026:
 - BBBike отдаёт городской экстракт медленно (>5 минут на 80 МБ, таймаут),
@@ -127,7 +128,9 @@ z12 1 444, z13 5 476, z14 21 462, z15 85 509), bounds ровно наш bbox.
       поворот по курсу; подложка рисуется в приложении (13.11.2026), данные
       пока фейковые — «проигрыватель трека» по демо-маршруту.
 - [ ] `GpsBackend` через `gpsd` (когда приедет приёмник; до этого — эмулятор).
-- [ ] Valhalla: построение маршрута, линия, подсказки, ETA.
+- [x] Маршруты: построение, линия на карте, подсказки — **GraphHopper**
+      (порт 8989, `tools/nav-route.sh`). Движение по маршруту — демо-таймер
+      в `Main.qml`; проверено: карта едет и поворачивает по курсу.
 - [ ] Избранное и «по карте» (джойстик).
 - [ ] Поиск адреса из SQLite FTS (этап 2, если понадобится).
 
