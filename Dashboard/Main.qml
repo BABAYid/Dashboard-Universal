@@ -142,7 +142,7 @@ Window {
     property bool navigationMode: false
     property real navigationAnimDuration: 400
     // Зум офлайн-карты: джойстик ▲/▼ в навигации. Тайлы собраны до z15.
-    property real mapZoom: 13
+    property real mapZoom: 14
     readonly property real mapZoomMin: 8
     readonly property real mapZoomMax: 15
 

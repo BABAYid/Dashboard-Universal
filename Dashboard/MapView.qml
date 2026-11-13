@@ -23,7 +23,7 @@ Item {
     property real latitude: 55.7558
     property real longitude: 37.6173
     property real course: 0          // градусы, 0 — на север
-    property real mapZoom: 13
+    property real mapZoom: 14
     property bool active: false      // карта нужна только в навигации
 
     // Адрес страницы карты: по умолчанию наш локальный сервер тайлов
