@@ -24,6 +24,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+TILE_LOG = {"served": 0, "empty": 0}
 DB = None
 LOCK = threading.Lock()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +68,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, b"bad tile", "text/plain")
             data = tile(z, x, y)
             if data is None:
+                TILE_LOG["empty"] += 1
+                if TILE_LOG["empty"] == 1:
+                    print(f"нет тайла {z}/{x}/{y} (первые запросы: {TILE_LOG})")
                 return self._send(204, b"", "application/x-protobuf")
             # В MBTiles тайлы обычно лежат уже сжатыми gzip. MapLibre ждёт
             # либо чистый protobuf, либо сжатый с заголовком Content-Encoding.
