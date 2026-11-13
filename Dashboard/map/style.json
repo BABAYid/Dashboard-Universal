@@ -5,8 +5,8 @@
     "osm": {
       "type": "vector",
       "tiles": ["/tiles/{z}/{x}/{y}"],
-      "minzoom": 9,
-      "maxzoom": 13
+      "minzoom": 8,
+      "maxzoom": 15
     }
   },
   "layers": [
