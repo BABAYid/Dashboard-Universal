@@ -141,6 +141,10 @@ Window {
     property real brightness: 1.0
     property bool navigationMode: false
     property real navigationAnimDuration: 400
+    // Зум офлайн-карты: джойстик ▲/▼ в навигации. Тайлы собраны до z15.
+    property real mapZoom: 13
+    readonly property real mapZoomMin: 8
+    readonly property real mapZoomMax: 15
 
     // Второй скин (docs/design/genesis.jpg): тёмно-синий фон, приборы
     // примитивами, светлая полоса внизу. Классический скин — classic.
@@ -391,7 +395,15 @@ Window {
             break
         case "up":
         case "down":
-            // Зарезервировано: зум карты и листание списков в навигации.
+            // В навигации ▲/▼ — зум карты; вне её остаются резервом под
+            // списки (избранное, пункты меню).
+            if (root.navigationMode) {
+                const step = name === "up" ? 1 : -1
+                root.mapZoom = Math.max(root.mapZoomMin,
+                                        Math.min(root.mapZoomMax,
+                                                 root.mapZoom + step))
+                console.log("Ввод: зум карты", root.mapZoom)
+            }
             break
         default:
             console.log("Ввод: действие не назначено —", name)
@@ -590,7 +602,7 @@ Window {
             latitude: root.gpsLat
             longitude: root.gpsLon
             course: root.gpsCourse
-            mapZoom: 13
+            mapZoom: root.mapZoom
         }
 
         // ============ ВТОРОЙ СКИН «GENESIS» ============
