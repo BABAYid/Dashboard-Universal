@@ -25,6 +25,26 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName(QStringLiteral("Dashboard"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.2"));
 
+    // ---- WebGL в QtWebEngine (карта MapLibre) ----
+    // MapLibre GL JS без WebGL не рисует ничего: карта есть, а вместо воды,
+    // дорог и домов — пустой фон. Chromium по умолчанию блокирует WebGL на
+    // программном рендерере (llvmpipe/Mesa) и на «подозрительных» GPU:
+    // в консоли видно "ContextResult::kFatalFailure: WebGL1 blocklisted",
+    // и MapLibre падает с "Failed to initialize WebGL".
+    // Поэтому разрешаем WebGL на блокированных устройствах. Флаг задаётся
+    // здесь, а не только в run.sh: приборка на плате стартует из systemd,
+    // где run.sh не участвует. Если QTWEBENGINE_CHROMIUM_FLAGS уже задан
+    // пользователем — дописываем флаг к нему, не затирая.
+    {
+        QByteArray flags = qgetenv("QTWEBENGINE_CHROMIUM_FLAGS");
+        if (!flags.contains("--ignore-gpu-blocklist")) {
+            if (!flags.isEmpty())
+                flags += ' ';
+            flags += "--ignore-gpu-blocklist";
+            qputenv("QTWEBENGINE_CHROMIUM_FLAGS", flags);
+        }
+    }
+
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("Приборная панель Audi (Qt6/QML)"));
     parser.addHelpOption();
