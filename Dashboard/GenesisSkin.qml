@@ -442,14 +442,14 @@ Item {
         required property string art
         required property bool isOn
         required property color tone
+        property real lampSize: root.bottomLampSize
 
-        width: root.bottomLampSize
-        height: root.bottomLampSize
+        width: lampSize
+        height: lampSize
         opacity: lamp.isOn ? 1.0 : 0.0
         visible: opacity > 0
 
         Image {
-            id: lampArt
             anchors.fill: parent
             source: lamp.art
             fillMode: Image.PreserveAspectFit
@@ -469,41 +469,12 @@ Item {
 
         Repeater {
             model: root.topLamps
-            delegate: Item {
+            delegate: Lamp {
                 required property var modelData
-                width: root.topLampSize
-                height: root.topLampSize
-
-                // Поворотники рисуются кодом (в комплекте дизайнера их нет):
-                // стрелка-треугольник в цвете ламп.
-                Shape {
-                    visible: modelData.draw !== undefined
-                    anchors.fill: parent
-                    opacity: modelData.on ? 1.0 : 0.0
-                    ShapePath {
-                        strokeWidth: 0
-                        fillColor: modelData.color
-                        scale: Qt.size(parent.width / 40, parent.height / 40)
-                        startX: modelData.draw === "turnLeft" ? 34 : 6
-                        startY: 4
-                        PathLine { x: modelData.draw === "turnLeft" ? 6 : 34; y: 20 }
-                        PathLine { x: modelData.draw === "turnLeft" ? 34 : 6; y: 36 }
-                        PathLine { x: modelData.draw === "turnLeft" ? 34 : 6; y: 4 }
-                    }
-                }
-
-                Image {
-                    anchors.fill: parent
-                    visible: modelData.draw === undefined
-                    source: modelData.draw === undefined ? "images/genesis/" + modelData.art : ""
-                    fillMode: Image.PreserveAspectFit
-                    opacity: modelData.on ? 1.0 : 0.0
-                    layer.enabled: opacity > 0
-                    layer.effect: MultiEffect {
-                        colorization: 1.0
-                        colorizationColor: modelData.color
-                    }
-                }
+                lampSize: root.topLampSize
+                art: "images/genesis/" + modelData.art
+                isOn: modelData.on
+                tone: modelData.color
             }
         }
     }

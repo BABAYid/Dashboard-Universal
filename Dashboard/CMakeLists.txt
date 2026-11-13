@@ -120,6 +120,10 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
+        # Белые силуэты указателей поворота: в комплекте дизайнера их нет,
+        # альфа взята у стрелок классического скина, цвет задаётся в QML.
+        images/genesis/turn_left.png
+        images/genesis/turn_right.png
         images/genesis/scale_temp.png
         images/genesis/scale_fuel.png
         images/genesis/odometer.png
