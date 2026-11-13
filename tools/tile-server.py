@@ -87,13 +87,18 @@ class Handler(BaseHTTPRequestHandler):
             with open(os.path.join(MAP_DIR, "index.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
 
-        if path.startswith("/vendor/"):
-            name = os.path.basename(path)
-            full = os.path.join(MAP_DIR, name)
-            if os.path.exists(full):
-                ctype = "application/javascript" if name.endswith(".js") else "text/css"
-                with open(full, "rb") as f:
-                    return self._send(200, f.read(), ctype)
+        # статика карты: maplibre-gl.js/.css и всё, что лежит рядом с map.html
+        name = os.path.basename(path)
+        full = os.path.join(MAP_DIR, name)
+        if name and os.path.isfile(full):
+            ctype = {
+                ".js": "application/javascript; charset=utf-8",
+                ".css": "text/css; charset=utf-8",
+                ".json": "application/json",
+                ".html": "text/html; charset=utf-8",
+            }.get(os.path.splitext(name)[1], "application/octet-stream")
+            with open(full, "rb") as f:
+                return self._send(200, f.read(), ctype)
 
         self._send(404, b"not found", "text/plain")
 
