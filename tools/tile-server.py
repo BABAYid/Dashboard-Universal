@@ -83,6 +83,17 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             return self._send(200, data, "application/x-protobuf")
 
+        # Шрифты для подписей улиц: MapLibre просит /fonts/<fontstack>/<range>.pbf
+        if path.startswith("/fonts/"):
+            parts = path[len("/fonts/"):].split("/")
+            if len(parts) == 2 and parts[0] and parts[1].endswith(".pbf"):
+                name = os.path.basename(parts[1])
+                full = os.path.join(MAP_DIR, "fonts", parts[0], name)
+                if os.path.isfile(full):
+                    with open(full, "rb") as f:
+                        return self._send(200, f.read(), "application/x-protobuf")
+            return self._send(404, b"no glyphs", "text/plain")
+
         if path in ("/style.json", "/style"):
             with open(os.path.join(MAP_DIR, "style.json"), "rb") as f:
                 return self._send(200, f.read(), "application/json")

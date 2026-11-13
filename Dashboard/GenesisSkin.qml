@@ -474,9 +474,13 @@ Item {
 
     // Верхняя полоса между приборами: поворотники по краям, между ними свет.
     Row {
+        id: topRow
         x: (root.width - width) / 2
         y: root.topLampY
         spacing: root.topLampSpacing
+        Component.onCompleted: console.log("DEBUG topRow x=", x, "width=", width, "y=", y,
+                                          "детей=", children.length,
+                                          "модель=", JSON.stringify(root.topLamps.map(function(l){return l.art+":"+l.on})))
 
         Repeater {
             model: root.topLamps
@@ -492,9 +496,11 @@ Item {
 
     // Нижняя кромка: предупреждения и аварии.
     Row {
+        id: bottomRow
         x: (root.width - width) / 2
         y: root.bottomLampY
         spacing: root.bottomLampSpacing
+        Component.onCompleted: console.log("DEBUG bottomRow x=", x, "width=", width, "y=", y, "детей=", children.length)
 
         Repeater {
             model: root.bottomLamps
