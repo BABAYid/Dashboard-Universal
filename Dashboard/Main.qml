@@ -147,6 +147,49 @@ Window {
     // Переключается клавишей F8 и переменной DASHBOARD_SKIN при запуске.
     property string skin: "classic"
 
+    // ---- офлайн-карта в навигационном режиме ----
+    // Карта рисуется на месте (MapLibre + локальные тайлы), интернет не нужен.
+    // Пока нет GPS — играем записанный трек по Москве, чтобы проверить
+    // поведение карты: следование за машиной, поворот по курсу, зум.
+    property bool offlineMap: true
+    property bool fakeGps: true
+    property real gpsLat: 55.7558
+    property real gpsLon: 37.6173
+    property real gpsCourse: 0
+    property int gpsTrackIndex: 0
+
+    // Трек для проверки: небольшой маршрут по центру Москвы
+    readonly property var demoTrack: [
+        [55.7558, 37.6173], [55.7570, 37.6185], [55.7583, 37.6198],
+        [55.7596, 37.6212], [55.7608, 37.6228], [55.7619, 37.6245],
+        [55.7628, 37.6263], [55.7636, 37.6281], [55.7643, 37.6300],
+        [55.7649, 37.6319]
+    ]
+
+    function bearing(lat1, lon1, lat2, lon2) {
+        const toRad = Math.PI / 180
+        const dLon = (lon2 - lon1) * toRad
+        const y = Math.sin(dLon) * Math.cos(lat2 * toRad)
+        const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad)
+                - Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon)
+        return (Math.atan2(y, x) / toRad + 360) % 360
+    }
+
+    Timer {
+        interval: 250
+        repeat: true
+        running: root.fakeGps && root.navigationMode
+        onTriggered: {
+            const t = root.demoTrack
+            const i = root.gpsTrackIndex
+            const next = t[(i + 1) % t.length]
+            root.gpsCourse = root.bearing(root.gpsLat, root.gpsLon, next[0], next[1])
+            root.gpsLat = next[0]
+            root.gpsLon = next[1]
+            root.gpsTrackIndex = (i + 1) % t.length
+        }
+    }
+
     // Вошли в навигацию — просим у Android кадры карты; вышли — перестаём.
     // В обычном режиме канал не должен тратиться на картинку, которую никто
     // не смотрит.
@@ -470,6 +513,20 @@ Window {
         x: (root.width - width * scale) / 2
         y: (root.height - height * scale) / 2
 
+        // ============ ОФЛАЙН-КАРТА (навигация) ============
+        // Живёт под приборами: когда включается навигация, приборы уезжают
+        // в углы, а тут остаётся карта. Тайлы отдаёт локальный сервер.
+        MapView {
+            id: offlineMapView
+            anchors.fill: parent
+            z: -20
+            active: root.navigationMode && root.offlineMap
+            latitude: root.gpsLat
+            longitude: root.gpsLon
+            course: root.gpsCourse
+            mapZoom: 14
+        }
+
         // ============ ВТОРОЙ СКИН «GENESIS» ============
         // Рисуется своими примитивами и, когда включён, закрывает классическую
         // раскладку плотным фоном. Данные — те же свойства root, поэтому оба
@@ -580,7 +637,7 @@ Window {
         NavPanel {
             id: navPanel
             anchors.fill: parent
-            active: root.navigationMode
+            active: root.navigationMode && !root.offlineMap
             opacity: root.navigationMode ? 1.0 : 0.0
             visible: root.navigationMode || opacity > 0
             z: -10
