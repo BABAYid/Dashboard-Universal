@@ -366,10 +366,11 @@ Item {
     // картинка обрезается по радиусу visibleFrom, наружу торчит только кончик
     // на шкале. Шлейф — три копии стрелки с запаздыванием по углу: пока стрелка
     // едет, за ней тянется хвост, в покое копии сливаются и хвост исчезает.
-    // Один слой стрелки. Картинка — только видимый кончик (120×5, толщина
-    // постоянная 5 px), поэтому
-    // основание от оси диска не рисуется: стрелка как будто уходит под
-    // циферблат, наружу торчит кончик на шкале топлива/температуры.
+    // Один слой стрелки. Берём ту же картинку, что у основной стрелки
+    // спидометра (needle.png, холст 1360×1360, остриё вверху, ось в центре) —
+    // она высокого разрешения, поэтому поворот выходит гладким, без ступенек.
+    // Внутри диска стрелку не видно: окно обрезки начинается с радиуса
+    // startRadius, наружу торчит только кончик на шкале.
     component NeedleLayer: Item {
         id: layer
         required property real angle
@@ -380,20 +381,30 @@ Item {
 
         width: 0
         height: 0
-        rotation: layer.angle
+        // в картинке стрелка смотрит вверх, поэтому к углу шкалы +90°
+        rotation: layer.angle + 90
         opacity: layer.alpha
         Behavior on rotation {
             NumberAnimation { duration: layer.lag; easing.type: Easing.OutCubic }
         }
 
-        // толщина постоянная — 5 px, как у обычной стрелки указателя
-        Image {
-            x: layer.startRadius
-            y: -2.5
-            width: layer.needleLength - layer.startRadius
-            height: 5
-            source: "images/genesis/band_needle.png"
-            fillMode: Image.Stretch
+        Item {
+            // окно видимости: от оси (0,0) до кончика по направлению стрелки
+            x: -layer.needleLength
+            y: -layer.needleLength
+            width: 2 * layer.needleLength
+            height: layer.needleLength - layer.startRadius
+            clip: true
+
+            Image {
+                width: layer.needleLength * 2
+                height: layer.needleLength * 2
+                source: "images/genesis/needle.png"
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+                cache: true
+            }
         }
     }
 
