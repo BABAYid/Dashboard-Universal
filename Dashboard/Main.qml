@@ -825,6 +825,10 @@ Window {
             tripKm: CanBackend.journeyKm
             rangeKm: root.rangeKmValid ? root.rangeKm : 0
             nightMode: root.nightMode
+            // камеры слепых зон в колодцах приборов
+            blindSpotEnabled: root.blindSpotEnabled
+            promoVideoLeft: root.promoVideoLeft
+            promoVideoRight: root.promoVideoRight
         }
 
         // ============ 3D-МАШИНА: 5-й вид центральной зоны (714,154,492×404) ============

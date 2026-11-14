@@ -1,5 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Effects
+import QtMultimedia
 import Dashboard
 
 // ==========================================================================
@@ -66,6 +68,12 @@ Item {
     // Цифры набираем шрифтом приборки (он только для цифр и латиницы).
     readonly property string numericFont: "Kdam Thmor Pro"
     property bool nightMode: false
+
+    // Камеры слепых зон в колодцах приборов (как в классическом скине).
+    // Main.qml передаёт эти три свойства; поворотники скин берёт из CanBackend.
+    property bool blindSpotEnabled: true
+    property string promoVideoLeft: ""
+    property string promoVideoRight: ""
 
     // ---- палитра из макета ----
     // Ночной режим НЕ гасит панель: в машине он включён всегда, когда горят
@@ -274,6 +282,11 @@ Item {
         required property real valueMax
         property bool mirrored: false
 
+        // Камера в колодце: показывается по поворотнику своей стороны.
+        property bool cameraVisible: false
+        property string cameraVideoSource: ""
+        property string cameraLabel: ""
+
         width: root.artSize
         height: root.artSize
         x: cx - width / 2
@@ -308,6 +321,85 @@ Item {
                 origin.x: root.needleCanvas / 2
                 origin.y: root.needleCanvas / 2
                 angle: dial.shownAngle
+            }
+        }
+
+        // ================== КАМЕРА В КОЛОДЦЕ ==================
+        // Круг прибора целиком: по поворотнику вместо циферблата показываем
+        // видео камеры (зеркально, как в зеркалах). Круглая маска — тем же
+        // способом, что в классическом скине (MultiEffect + круглая маска).
+        Item {
+            id: cameraWell
+            anchors.centerIn: parent
+            width: root.dialDiameter - 12      // чуть меньше кольца шкалы
+            height: width
+            visible: dial.cameraVisible
+            z: 5
+
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: "#0E1218"
+                border.color: "#4A505A"
+                border.width: 3
+            }
+
+            // круглая маска: видео обрезаем по кругу, иначе углы кадра
+            // закрывают квадратом весь циферблат
+            Item {
+                id: cameraMask
+                anchors.fill: parent
+                layer.enabled: true
+                visible: false
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: "white"
+                    antialiasing: true
+                }
+            }
+
+            Video {
+                id: cameraVideo
+                anchors.fill: parent
+                visible: false
+                source: dial.cameraVideoSource
+                fillMode: VideoOutput.PreserveAspectCrop
+                loops: MediaPlayer.Infinite
+                autoPlay: true
+                muted: true
+                scale: -1                  // зеркально, как в зеркалах
+            }
+
+            // ролик крутится только пока колодец на экране: декодер не должен
+            // работать впустую, когда поворотник выключен
+            Connections {
+                target: dial
+                function onCameraVisibleChanged() {
+                    if (dial.cameraVisible && dial.cameraVideoSource.length > 0)
+                        cameraVideo.play()
+                    else
+                        cameraVideo.pause()
+                }
+            }
+
+            MultiEffect {
+                anchors.fill: parent
+                visible: dial.cameraVideoSource.length > 0
+                source: cameraVideo
+                maskEnabled: true
+                maskSource: cameraMask
+                maskThresholdMin: 0.5
+                maskSpreadAtMin: 0.15
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: dial.cameraVideoSource.length === 0
+                text: "КАМЕРА " + dial.cameraLabel
+                color: root.light2
+                font.pixelSize: parent.width * 0.09
+                font.bold: true
             }
         }
 
@@ -346,6 +438,10 @@ Item {
         art: "images/genesis/dial_speed.png"
         value: root.speed
         valueMax: 200
+
+        cameraVisible: root.blindSpotEnabled && root.leftTurn
+        cameraVideoSource: root.promoVideoLeft
+        cameraLabel: "L"
     }
 
     Dial {
@@ -355,6 +451,10 @@ Item {
         value: root.rpm / 1000.0
         valueMax: 8
         mirrored: true
+
+        cameraVisible: root.blindSpotEnabled && root.rightTurn
+        cameraVideoSource: root.promoVideoRight
+        cameraLabel: "R"
     }
 
 
