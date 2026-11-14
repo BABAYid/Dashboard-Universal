@@ -133,6 +133,14 @@ Item {
     property bool fuelReverse: false
     property bool tempReverse: false
 
+    // Угол касательной в точке полосы (куда «смотрит» стрелка).
+    function bandAngle(band, t) {
+        const k = Math.max(0, Math.min(1, t))
+        const dx = 2 * (1 - k) * (band[1].x - band[0].x) + 2 * k * (band[2].x - band[1].x)
+        const dy = 2 * (1 - k) * (band[1].y - band[0].y) + 2 * k * (band[2].y - band[1].y)
+        return Math.atan2(dy, dx) * 180 / Math.PI
+    }
+
     // Точка на полосе: квадратичная кривая через три опорные точки.
     function bandPoint(band, t) {
         const k = Math.max(0, Math.min(1, t))
@@ -341,40 +349,67 @@ Item {
     }
 
 
-    // Указатели шкал: светящаяся точка на полосе. Ход — по квадратичной
-    // кривой через три опорные точки полосы (посчитаны по самим картинкам).
+    // Указатели шкал: стрелка-клин с градиентом и тающий шлейф за ней.
+    // Картинки рисует tools/genesis_band_needle.py (band_needle.png,
+    // band_trail.png) — шейдерных эффектов в проекте нет, поэтому и градиент,
+    // и шлейф запечены в PNG.
+    //
+    // Шлейф ведёт себя как описано в docs/needle_trail.md: пока стрелка
+    // движется — горит ярко, встала — гаснет за 0.4 с (слабое свечение
+    // остаётся, чтобы след читался и в покое).
     component BandPointer: Item {
         id: ptr
         required property var band
         required property real t
         readonly property point spot: root.bandPoint(ptr.band, ptr.t)
+        readonly property real angle: root.bandAngle(ptr.band, ptr.t)
 
-        width: 26
-        height: 26
-        x: spot.x - width / 2
-        y: spot.y - height / 2
-        Behavior on t { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+        // «стрелка движется»: ловим изменение t (у него есть Behavior, поэтому
+        // сигнал идёт и во время анимации)
+        property real prevT: ptr.t
+        property bool moving: false
+        onTChanged: {
+            if (Math.abs(ptr.t - ptr.prevT) > 0.002)
+                ptr.moving = true
+            ptr.prevT = ptr.t
+            settleTimer.restart()
+        }
+        Timer {
+            id: settleTimer
+            interval: 100
+            onTriggered: ptr.moving = false
+        }
 
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            color: root.glow1
-            opacity: 0.18
-        }
-        Rectangle {
-            anchors.centerIn: parent
-            width: 16
-            height: 16
-            radius: 8
-            color: root.glow1
-            opacity: 0.45
-        }
-        Rectangle {
-            anchors.centerIn: parent
-            width: 8
-            height: 8
-            radius: 4
-            color: root.light
+        x: spot.x
+        y: spot.y
+        width: 0
+        height: 0
+
+        // контейнер поворота: вращается вокруг самой точки (0,0)
+        Item {
+            rotation: ptr.angle
+
+            // шлейф: тянется назад от хвоста стрелки
+            Image {
+                source: "images/genesis/band_trail.png"
+                width: 104
+                height: 26
+                x: -4 - width
+                y: -height / 2
+                opacity: ptr.moving ? 1.0 : 0.5
+                Behavior on opacity {
+                    NumberAnimation { duration: 400; easing.type: Easing.OutQuad }
+                }
+            }
+
+            // стрелка: хвост на 26 px позади точки, остриё — на 44 вперёд
+            Image {
+                source: "images/genesis/band_needle.png"
+                width: 70
+                height: 16
+                x: -26
+                y: -height / 2
+            }
         }
     }
 

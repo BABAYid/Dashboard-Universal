@@ -33,6 +33,7 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
 | `Indicator/*.png` | `ind_gear.png`, `ind_speed_limit.png`, `ind_driving_mode.png` |
 | `Иконки ошибок/*.png` (27) | `warn_*.png` (латиница, без пробелов) |
 | — | `turn_left/turn_right.png` — белые силуэты поворотников (см. ниже) |
+| — | `band_needle.png`, `band_trail.png` — стрелка и шлейф шкал (см. ниже) |
 | — | `*_cyan/_amber/_red.png` — те же лампы в цвете (см. «Лампы») |
 | `Genesis · цифровая приборная панель · 1920×720.svg` | не подключается: из него взяты только числа (геометрия и палитра) |
 
