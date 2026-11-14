@@ -581,6 +581,17 @@ void NetworkServer::onTextMessage(const QString &text)
         return;
     }
 
+    if (type == QLatin1String("address")) {
+        // Телефон прислал адрес: "Москва, ул. Ленина 5". Поиск и маршрут —
+        // на приборке (база адресов SQLite FTS на устройстве).
+        const QString text = object.value(QStringLiteral("text")).toString().trimmed();
+        if (!text.isEmpty()) {
+            qInfo() << "Сеть: адрес от клиента" << text;
+            emit addressReceived(text);
+        }
+        return;
+    }
+
     // Неизвестные типы игнорируем: так старый клиент не ломает новый сервер.
 }
 

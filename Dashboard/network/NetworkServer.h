@@ -106,6 +106,9 @@ signals:
     void clientChanged();
     void navChanged();
     void mapFrameChanged();
+    // Адрес от телефона («Куда едем?»): приборка ищет его в базе адресов
+    // и строит маршрут (см. Main.qml, searchAddress).
+    void addressReceived(const QString &text);
 
 private slots:
     void onTextMessage(const QString &text);

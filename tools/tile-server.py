@@ -26,6 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 TILE_LOG = {"served": 0, "empty": 0}
 DB = None
+ADDR = None          # база адресов (SQLite FTS), может отсутствовать
 LOCK = threading.Lock()
 HERE = os.path.dirname(os.path.abspath(__file__))
 MAP_DIR = os.path.join(HERE, "..", "Dashboard", "map")
@@ -37,6 +38,35 @@ def open_db(path):
     meta = dict(DB.execute("select name, value from metadata").fetchall())
     print(f"MBTiles: {meta.get('name','?')} | формат {meta.get('format','?')} | "
           f"bounds {meta.get('bounds','?')} | зумы {meta.get('minzoom','?')}–{meta.get('maxzoom','?')}")
+
+
+def open_addr_db(path):
+    """Открыть базу адресов (FTS5) рядом с тайлами, если она собрана."""
+    global ADDR
+    if not os.path.exists(path):
+        print(f"нет базы адресов {path} — поиск отключён "
+              f"(соберите tools/nav-search.py build)")
+        return
+    ADDR = sqlite3.connect(path, check_same_thread=False)
+    n = ADDR.execute("select count(*) from addr").fetchone()[0]
+    print(f"База адресов: {n} записей")
+
+
+def search_address(q, limit=5):
+    if ADDR is None or not q:
+        return []
+    import re
+    toks = re.findall(r"[^\W_]+", q.lower(), re.UNICODE)
+    if not toks:
+        return []
+    match = " ".join('\"%s\"*' % t for t in toks)
+    rows = ADDR.execute(
+        "select a.name, a.street, a.housenumber, a.kind, a.lat, a.lon "
+        "from addr a where a.rowid in "
+        "(select rowid from addr_fts where addr_fts match ?) limit ?",
+        (match, limit)).fetchall()
+    return [{"name": r[0], "street": r[1], "housenumber": r[2],
+             "kind": r[3], "lat": r[4], "lon": r[5]} for r in rows]
 
 
 def tile(z, x, y):
@@ -94,6 +124,18 @@ class Handler(BaseHTTPRequestHandler):
                         return self._send(200, f.read(), "application/x-protobuf")
             return self._send(404, b"no glyphs", "text/plain")
 
+        if path.startswith("/search"):
+            from urllib.parse import parse_qs, urlparse
+            qs = parse_qs(urlparse(self.path).query)
+            text = (qs.get("q") or [""])[0]
+            try:
+                limit = max(1, min(20, int((qs.get("limit") or ["5"])[0])))
+            except ValueError:
+                limit = 5
+            result = search_address(text, limit)
+            body = json.dumps({"query": text, "results": result}).encode("utf-8")
+            return self._send(200, body, "application/json")
+
         if path in ("/style.json", "/style"):
             with open(os.path.join(MAP_DIR, "style.json"), "rb") as f:
                 return self._send(200, f.read(), "application/json")
@@ -126,6 +168,7 @@ def main():
     if not os.path.exists(args.mbtiles):
         sys.exit(f"нет файла {args.mbtiles} — сначала соберите тайлы")
     open_db(args.mbtiles)
+    open_addr_db(os.path.join(os.path.dirname(args.mbtiles) or ".", "addresses.sqlite"))
     srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"сервер тайлов: http://127.0.0.1:{args.port}/map.html")
     srv.serve_forever()

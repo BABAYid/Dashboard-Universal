@@ -55,6 +55,9 @@ Item {
     // скине пока не выводится: в макете под него нет отдельного поля.
     property real tripKm: 0
     property real rangeKm: 0
+    // Общий пробег. Main.qml его скину не передаёт (в классике одометр живёт
+    // в Indicators.qml), поэтому берём прямо из CanBackend — как и лампы.
+    property real odometer: CanBackend.odometer
     property bool nightMode: false
 
     // ---- палитра из макета ----
@@ -376,6 +379,11 @@ Item {
 
     // Строка данных: значок 40×33 слева, значение справа (прижато к x=1061),
     // единица измерения — от x=1074, как в макете.
+    // Строка данных по макету: значок 48×40 (файл 96×80 рисуется вдвое
+    // меньше), значение прижато справа к x=1061, единица — от x=1074.
+    // Положение значка в макете сверено поиском картинок по рендеру SVG
+    // (tools/genesis_geom.py + шаблонный поиск): Clock — (787, 455),
+    // Fuel — (787, 376), верхний значок — (787, 298).
     component InfoRow: Item {
         id: row
         required property string icon
@@ -388,17 +396,16 @@ Item {
         Image {
             x: 0
             anchors.verticalCenter: parent.verticalCenter
-            width: 40
-            height: 34
+            width: 48
+            height: 40
             source: row.icon
             fillMode: Image.PreserveAspectFit
             opacity: root.nightMode ? 0.8 : 0.95
         }
 
         Text {
-            id: valueText
-            x: 0
-            width: 269
+            x: 60
+            width: 214
             anchors.verticalCenter: parent.verticalCenter
             horizontalAlignment: Text.AlignRight
             text: row.value
@@ -408,7 +415,7 @@ Item {
         }
 
         Text {
-            x: 282
+            x: 287
             anchors.verticalCenter: parent.verticalCenter
             text: row.unit
             color: root.light2
@@ -416,25 +423,28 @@ Item {
         }
     }
 
+    // Порядок строк — как в макете: по нему из четырёх значков комплекта
+    // точно опознаны два (топливо во второй строке, часы в третьей), поэтому
+    // температура стоит сверху, топливо — в середине.
     InfoRow {
-        x: 792
-        y: 303
-        icon: "images/genesis/icon_fuel.png"
-        value: Math.round(root.fuel)
-        unit: "%"
-    }
-
-    InfoRow {
-        x: 792
-        y: 379
+        x: 787
+        y: 298
         icon: "images/genesis/icon_coolant.png"
         value: Math.round(root.temp)
         unit: "°C"
     }
 
     InfoRow {
-        x: 792
-        y: 457
+        x: 787
+        y: 376
+        icon: "images/genesis/icon_fuel.png"
+        value: Math.round(root.fuel)
+        unit: "%"
+    }
+
+    InfoRow {
+        x: 787
+        y: 455
         icon: "images/genesis/icon_clock.png"
         value: root.clock
         unit: root.rangeKm > 0 ? Math.round(root.rangeKm) + " км" : "—"
@@ -450,6 +460,18 @@ Item {
         text: root.tripKm.toFixed(1) + " км"
         color: root.light2
         font.pixelSize: 34
+    }
+
+    // Общий пробег: в макете в нижней полосе широкая надпись (742…1182,
+    // y≈625). Сам одометр — подпись-картинка справа от полосы, число пишем здесь.
+    Text {
+        x: 742
+        width: 440
+        y: 620
+        horizontalAlignment: Text.AlignHCenter
+        text: root.odometer > 0 ? Math.round(root.odometer) + " км" : "—"
+        color: root.light2
+        font.pixelSize: 30
     }
 
     // ======================= ЛАМПЫ =======================
@@ -515,8 +537,8 @@ Item {
         SpeedCamManager.cameraAhead && SpeedCamManager.cameraIsSpeedControl
         ? SpeedCamManager.cameraSpeedLimit : 0
     Image {
-        x: 1258
-        y: 40
+        x: 644
+        y: 364
         width: 84
         height: 84
         visible: root.speedLimit > 0
@@ -524,11 +546,12 @@ Item {
         fillMode: Image.PreserveAspectFit
         opacity: root.artLevel
 
+        // Цифры в макете нарисованы тёмными (#142128) прямо на светлом круге.
         Text {
             anchors.centerIn: parent
             text: root.speedLimit
-            color: root.bg
-            font.pixelSize: 34
+            color: "#142128"
+            font.pixelSize: 36
             font.bold: true
         }
     }
@@ -536,22 +559,38 @@ Item {
     // Режим движения (надпись дизайнера) — под строкой пробега.
     property string drivingMode: ""
     Image {
-        x: 960 - width / 2
-        y: 236
-        width: 200
-        height: 96
+        x: 1418
+        y: 635
+        width: 100
+        height: 48
         visible: root.drivingMode.length > 0
         source: "images/genesis/ind_driving_mode.png"
         fillMode: Image.PreserveAspectFit
         opacity: root.nightMode ? 0.8 : 0.9
     }
 
+    // Снежинка «холодная дорога»: в макете стоит внизу слева, на левом конце
+    // нижней полосы — (553, 628), файл 96×80 рисуется 34×28.
+    Image {
+        x: 553
+        y: 628
+        width: 34
+        height: 28
+        visible: root.coldRoad
+        source: "images/genesis/icon_snow.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: root.nightMode ? 0.75 : 0.9
+    }
+
     // ======================= НИЖНЯЯ ПАНЕЛЬ =======================
     // footer.png 1640×408 ставится 2× (820×204) — как в макете: полоса
     // по центру низа, поверх неё пробег и запас хода.
+    // Полоса: в макете она стоит не у самого низа, а на (551, 477) в половину
+    // натурального размера (820×204). Положение получено поиском картинки
+    // footer.png по рендеру макета: совпадение 0.69 при масштабе 0.50.
     Image {
-        x: (parent.width - width) / 2
-        y: parent.height - height
+        x: 551
+        y: 477
         width: 820
         height: 204
         source: "images/genesis/footer.png"
@@ -559,24 +598,34 @@ Item {
         opacity: root.nightMode ? 0.8 : 1.0
     }
 
-    Row {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height - 120
-        spacing: 120
+    // Запас хода — внизу слева (216, 637), файл 410×110 рисуется 205×55.
+    // Сама картинка — подпись с иконкой, число пишем справа от неё.
+    Image {
+        x: 216
+        y: 637
+        width: 205
+        height: 55
+        source: "images/genesis/range.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: root.nightMode ? 0.75 : 0.95
+    }
 
-        Image {
-            width: 180
-            height: 55
-            source: "images/genesis/odometer.png"
-            fillMode: Image.PreserveAspectFit
-            opacity: root.nightMode ? 0.75 : 0.9
-        }
-        Image {
-            width: 205
-            height: 55
-            source: "images/genesis/range.png"
-            fillMode: Image.PreserveAspectFit
-            opacity: root.nightMode ? 0.75 : 0.9
-        }
+    Text {
+        x: 430
+        y: 645
+        text: root.rangeKm > 0 ? Math.round(root.rangeKm) + " км" : "—"
+        color: root.light2
+        font.pixelSize: 30
+    }
+
+    // Пробег — внизу справа (1596, 636), файл 360×110 рисуется 180×55.
+    Image {
+        x: 1596
+        y: 636
+        width: 180
+        height: 55
+        source: "images/genesis/odometer.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: root.nightMode ? 0.75 : 0.95
     }
 }

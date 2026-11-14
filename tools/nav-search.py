@@ -25,6 +25,10 @@ import re
 import sqlite3
 import sys
 
+# pyosmium ставится в проект без root: pip install --target build/pylibs osmium
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "build", "pylibs"))
+
 import osmium
 
 
@@ -133,8 +137,7 @@ def build(pbf_path, out_path):
 
     # Для зданий нужны координаты их точек: pyosmium соберёт их в
     # дисковый index (в памяти держать 100+ млн точек нельзя).
-    locations = osmium.NodeLocationsForWays(
-        osmium.index.create_map("flex_mem", tmpdir))
+    locations = osmium.NodeLocationsForWays(osmium.index.create_map("flex_mem"))
     handler.apply_file(pbf_path, locations=locations)
 
     # Пакетная вставка и построение FTS-индекса.

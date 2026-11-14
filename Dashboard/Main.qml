@@ -157,6 +157,22 @@ Window {
         { name: "Мойка",  lat: 55.7500, lon: 37.6180 }
     ]
     property int favoriteIndex: 0
+    // Недавние пункты назначения (последние 10). Хранятся в памяти сессии:
+    // Qt.labs.settings в этой сборке нет — при перезапуске список пуст.
+    property var recentRoutes: []
+    // Единый список для выбора энкодером: избранное, затем недавние.
+    readonly property var navChoices: {
+        const out = []
+        for (let i = 0; i < favorites.length; i++)
+            out.push(favorites[i])
+        for (let i = 0; i < recentRoutes.length; i++)
+            out.push(recentRoutes[i])
+        return out
+    }
+    // Текущее назначение маршрута («Дом» по умолчанию).
+    property real navDestLat: 55.7600
+    property real navDestLon: 37.6250
+    property string navDestName: "Дом"
     // Вид оторван от машины: джойстик двигает карту, в центре перекрестие.
     property bool mapDetached: false
 
@@ -204,8 +220,6 @@ Window {
     property real routeProgress: 0          // метры от старта
     readonly property real routeSpeed: 18   // м/с, чтобы не ждать минут
 
-    property real navDestLat: 55.7700
-    property real navDestLon: 37.6400
 
     Timer {
         interval: 250
@@ -243,6 +257,75 @@ Window {
 
     // Реальный GPS (gpsd) важнее демо-трека: пока есть фикс, позиция и курс
     // приходят от приёмника, и карта едет за ним.
+    // ---- пункты назначения: избранное, недавние, телефон ----
+
+    // Запомнить пункт назначения в «Недавние» (без дублей, последние 10).
+    function rememberDestination(name, lat, lon) {
+        const list = []
+        for (let i = 0; i < root.recentRoutes.length; i++) {
+            const r = root.recentRoutes[i]
+            if (r.name === name && Math.abs(r.lat - lat) < 1e-6
+                    && Math.abs(r.lon - lon) < 1e-6)
+                continue
+            list.push(r)
+        }
+        list.unshift({ name: name, lat: lat, lon: lon })
+        root.recentRoutes = list.slice(0, 10)
+    }
+
+    // Выбрать пункт назначения из объединённого списка и построить маршрут.
+    function chooseDestination(index) {
+        const c = root.navChoices[index]
+        if (!c)
+            return
+        root.favoriteIndex = index
+        root.navDestLat = c.lat
+        root.navDestLon = c.lon
+        root.navDestName = c.name
+        root.routeProgress = 0
+        root.mapDetached = false
+        route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
+        root.rememberDestination(c.name, c.lat, c.lon)
+        console.log("Маршрут к:", c.name)
+    }
+
+    // Адрес от телефона: ищем в базе адресов (SQLite FTS на сервере тайлов)
+    // и строим маршрут. Без тачскрина это основной способ ввести адрес.
+    function searchAddress(text) {
+        const base = offlineMapView.mapUrl.replace(/map\.html$/, "").replace(/\/$/, "")
+        const url = base + "/search?q=" + encodeURIComponent(text)
+        const xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE)
+                return
+            if (xhr.status !== 200) {
+                console.log("Поиск адреса: сервер", xhr.status)
+                return
+            }
+            let res = null
+            try { res = JSON.parse(xhr.responseText) } catch (e) {}
+            const hits = res && res.results ? res.results : []
+            if (hits.length === 0) {
+                console.log("Поиск адреса: не найдено —", text)
+                return
+            }
+            const h = hits[0]
+            root.navDestLat = h.lat
+            root.navDestLon = h.lon
+            root.navDestName = h.name || text
+            root.routeProgress = 0
+            root.mapDetached = false
+            if (!root.navigationMode)
+                root.navigationMode = true   // syncInputRouting построит маршрут
+            else
+                route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
+            root.rememberDestination(h.name || text, h.lat, h.lon)
+            console.log("Поиск адреса:", text, "→", h.name || "?")
+        }
+        xhr.open("GET", url)
+        xhr.send()
+    }
+
     Connections {
         target: GpsBackend
         function onPositionUpdated(lat, lon, course, speedKmh) {
@@ -273,14 +356,9 @@ Window {
         NetworkServer.setNavigationActive(root.navigationMode)
         NetworkServer.setInputForwarding(!root.navigationMode && !calibration.visible)
 
-        // вошли в навигацию с офлайн-картой — строим маршрут и едем по нему
+        // вошли в навигацию с офлайн-картой — строим маршрут к navDest
         if (root.navigationMode && root.offlineMap) {
             root.routeProgress = 0
-            const fav = root.favorites[root.favoriteIndex]
-            if (fav) {
-                root.navDestLat = fav.lat
-                root.navDestLon = fav.lon
-            }
             route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
         }
         if (!root.navigationMode)
@@ -290,6 +368,13 @@ Window {
     Connections {
         target: calibration
         function onVisibleChanged() { root.syncInputRouting() }
+    }
+
+    // Адрес, присланный телефоном (мультимедиа):
+    //   {"type":"address","text":"Москва, улица Ленина 5"}
+    Connections {
+        target: NetworkServer
+        function onAddressReceived(text) { root.searchAddress(text) }
     }
 
     // --- Кинематографичный запуск с 3D-машиной (см. Car3DView.qml) ---
@@ -424,22 +509,18 @@ Window {
                             return
                         root.navDestLon = c[0]
                         root.navDestLat = c[1]
+                        root.navDestName = "Точка на карте"
                         root.mapDetached = false
                         root.routeProgress = 0
                         route.buildRoute(root.gpsLat, root.gpsLon,
                                          root.navDestLat, root.navDestLon)
+                        root.rememberDestination("Точка на карте", c[1], c[0])
                         offlineMapView.attachToCar()
+                        console.log("Маршрут к: точке на карте")
                     })
                 } else {
-                    // Маршрут к выбранному избранному
-                    const fav = root.favorites[root.favoriteIndex]
-                    if (fav) {
-                        root.navDestLat = fav.lat
-                        root.navDestLon = fav.lon
-                        root.routeProgress = 0
-                        route.buildRoute(root.gpsLat, root.gpsLon,
-                                         root.navDestLat, root.navDestLon)
-                    }
+                    // Маршрут к выбранному избранному/недавнему
+                    root.chooseDestination(root.favoriteIndex)
                 }
             } else {
                 root.nextCenterMode()
@@ -448,11 +529,12 @@ Window {
         case "next":
         case "prev":
             if (root.navigationMode && root.offlineMap) {
-                // Энкодер в навигации листает избранное
-                const n = root.favorites.length
-                if (n > 0)
+                // Энкодер в навигации листает избранное + недавние
+                const n = root.navChoices.length
+                if (n > 0) {
                     root.favoriteIndex = (root.favoriteIndex + (name === "next" ? 1 : -1) + n) % n
-                console.log("Ввод: избранное", root.favorites[root.favoriteIndex].name)
+                    console.log("Ввод: назначение", root.navChoices[root.favoriteIndex].name)
+                }
             } else {
                 lamps.cycleOdometer(name === "next" ? 1 : -1)
             }
@@ -694,13 +776,13 @@ Window {
                 y: 8
                 spacing: 2
                 Text {
-                    text: root.mapDetached ? "ПЕРЕКРЕСТИЕ" : "ИЗБРАННОЕ"
+                    text: root.mapDetached ? "ПЕРЕКРЕСТИЕ" : "НАЗНАЧЕНИЕ"
                     color: "#5D7484"
                     font.pixelSize: 10
                     font.letterSpacing: 2
                 }
                 Repeater {
-                    model: root.favorites
+                    model: root.navChoices
                     delegate: Text {
                         required property int index
                         required property var modelData
