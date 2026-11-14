@@ -157,11 +157,11 @@ Item {
     //   нижняя кромка экрана (y ≈ 686) — предупреждения и аварии.
     // Положение каждой группы меняется одним числом: topLampY / bottomLampY.
     property real topLampY: 30
-    property real bottomLampY: 688
-    property real topLampSize: 38
-    property real bottomLampSize: 30
-    property int topLampSpacing: 22
-    property int bottomLampSpacing: 26
+    property real bottomLampY: 680
+    property real topLampSize: 44
+    property real bottomLampSize: 36
+    property int topLampSpacing: 26
+    property int bottomLampSpacing: 24
 
     // Самопроверка ламп при включении зажигания: все горят 2.5 с.
     property bool selfTest: true
@@ -211,24 +211,24 @@ Item {
     // работает и лампы пропадают совсем. Красит `tools/tint_genesis_icons.py`
     // из тех же белых исходников дизайнера.
     readonly property var topLamps: [
-        { art: "turn_left_cyan.png",            on: root.selfTest || (root.leftTurn && root.blinkOn) },
-        { art: "warn_high_beam_cyan.png",       on: root.selfTest || root.highBeamOn },
-        { art: "warn_position_lights_cyan.png", on: root.selfTest || root.positionOn },
-        { art: "warn_fog_front_cyan.png",       on: root.selfTest || root.fogOn },
-        { art: "turn_right_cyan.png",           on: root.selfTest || (root.rightTurn && root.blinkOn) }
+        { art: "images/left_turn.png", on: root.selfTest || (root.leftTurn && root.blinkOn) },
+        { art: "images/hi_beam.png",   on: root.selfTest || root.highBeamOn },
+        { art: "images/gabarit.png",   on: root.selfTest || root.positionOn },
+        { art: "images/tuman.png",     on: root.selfTest || root.fogOn },
+        { art: "images/right_turn.png", on: root.selfTest || (root.rightTurn && root.blinkOn) }
     ]
 
     // Нижняя группа: предупреждения и аварии.
     readonly property var bottomLamps: [
-        { art: "warn_oil_pressure_red.png",      on: root.selfTest || root.oilOn },
-        { art: "warn_brake_red_red.png",         on: root.selfTest || root.handBrakeOn },
-        { art: "warn_seat_belt_red.png",         on: root.selfTest || root.beltOn },
-        { art: "warn_battery_red.png",           on: root.selfTest || root.batteryOn },
-        { art: "warn_check_engine_amber.png",    on: root.selfTest || root.checkOn },
-        { art: "warn_abs_amber.png",             on: root.selfTest || root.absOn },
-        { art: "warn_car_triangle_red.png",      on: root.selfTest || root.overheat },
-        { art: "warn_attention_yellow_amber.png", on: root.selfTest || root.fuelLow },
-        { art: "warn_snowflake_cyan.png",        on: root.selfTest || root.coldRoad }
+        { art: "images/oil_press.png",     on: root.selfTest || root.oilOn },
+        { art: "images/H_brake.png",       on: root.selfTest || root.handBrakeOn },
+        { art: "images/belt.png",          on: root.selfTest || root.beltOn },
+        { art: "images/batt.png",          on: root.selfTest || root.batteryOn },
+        { art: "images/check.png",         on: root.selfTest || root.checkOn },
+        { art: "images/ABS.png",           on: root.selfTest || root.absOn },
+        { art: "images/temp_dvs_red.png",  on: root.selfTest || root.overheat },
+        { art: "images/fuel_tank.png",     on: root.selfTest || root.fuelLow },
+        { art: "images/snow.png",          on: root.selfTest || root.coldRoad }
     ]
 
     // Шкалы топлива и температуры — дуги вокруг центров дисков: расстояние
@@ -615,7 +615,8 @@ Item {
     // по просьбе заказчика — там раньше висело «278 км».
 
     // ======================= ЛАМПЫ =======================
-    // Одна лампа: картинка дизайнера в нужном цвете, без эффектов.
+    // Одна лампа: картинка из комплекта первого (классического) скина. Они уже
+    // цветные, поэтому тонирование не нужно — рисуются как есть, без шейдеров.
     component Lamp: Item {
         id: lamp
         required property string art
@@ -646,7 +647,7 @@ Item {
             delegate: Lamp {
                 required property var modelData
                 lampSize: root.topLampSize
-                art: "images/genesis/" + modelData.art
+                art: modelData.art
                 isOn: modelData.on
             }
         }
@@ -662,7 +663,7 @@ Item {
             model: root.bottomLamps
             delegate: Lamp {
                 required property var modelData
-                art: "images/genesis/" + modelData.art
+                art: modelData.art
                 isOn: modelData.on
             }
         }
