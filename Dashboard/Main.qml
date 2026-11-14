@@ -157,9 +157,9 @@ Window {
         { name: "Мойка",  lat: 55.7500, lon: 37.6180 }
     ]
     property int favoriteIndex: 0
-    // Недавние пункты назначения (последние 10). Хранятся в памяти сессии:
-    // Qt.labs.settings в этой сборке нет — при перезапуске список пуст.
-    property var recentRoutes: []
+    // Недавние пункты назначения (последние 10). Хранятся в C++
+    // (RecentDestinations → QSettings), поэтому переживают перезапуск.
+    readonly property var recentRoutes: RecentDestinations.items
     // Единый список для выбора энкодером: избранное, затем недавние
     // (недавние, совпадающие с избранным, не дублируем).
     readonly property var navChoices: {
@@ -271,17 +271,9 @@ Window {
     // ---- пункты назначения: избранное, недавние, телефон ----
 
     // Запомнить пункт назначения в «Недавние» (без дублей, последние 10).
+    // Хранит C++ (RecentDestinations), поэтому список живёт между запусками.
     function rememberDestination(name, lat, lon) {
-        const list = []
-        for (let i = 0; i < root.recentRoutes.length; i++) {
-            const r = root.recentRoutes[i]
-            if (r.name === name && Math.abs(r.lat - lat) < 1e-6
-                    && Math.abs(r.lon - lon) < 1e-6)
-                continue
-            list.push(r)
-        }
-        list.unshift({ name: name, lat: lat, lon: lon })
-        root.recentRoutes = list.slice(0, 10)
+        RecentDestinations.add(name, lat, lon)
     }
 
     // Выбрать пункт назначения из объединённого списка и построить маршрут.
@@ -297,6 +289,7 @@ Window {
         root.mapDetached = false
         route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
         root.rememberDestination(c.name, c.lat, c.lon)
+        offlineMapView.flyTo(c.lon, c.lat, root.mapZoom)
         console.log("Маршрут к:", c.name)
     }
 
@@ -333,6 +326,7 @@ Window {
             else
                 route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
             root.rememberDestination(h.name || text, h.lat, h.lon)
+            offlineMapView.flyTo(h.lon, h.lat, root.mapZoom)
             console.log("Поиск адреса:", text, "→", h.name || "?")
         }
         xhr.open("GET", url)

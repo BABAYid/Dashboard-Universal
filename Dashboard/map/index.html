@@ -65,6 +65,7 @@
     // Режим вида: follow = карта следует за машиной (по курсу); иначе —
     // карта оторвана, в центре перекрестие, джойстик её сдвигает.
     var follow = true;
+    var lastPose = null;   // последняя позиция машины от QML
 
     function applyFollow(lon, lat, course, zoom) {
       if (follow) {
@@ -78,8 +79,28 @@
 
     // Вызывается из QML: setPose(lon, lat, courseDeg, zoom)
     window.setPose = function(lon, lat, course, zoom) {
+      lastPose = { lon: lon, lat: lat, course: course || 0, zoom: zoom || map.getZoom() };
       applyFollow(lon, lat, course, zoom);
       document.getElementById('car').style.display = 'block';
+    };
+
+    // Плавный полёт к точке назначения и обратно к машине: используется
+    // после выбора пункта назначения (избранное/недавние/телефон/карта).
+    window.navFlyTo = function(lon, lat, zoom) {
+      follow = false;
+      showCross(false);
+      map.flyTo({ center: [lon, lat], zoom: zoom || map.getZoom(),
+                  duration: 1500, essential: true });
+      setTimeout(function() {
+        // Если за это время вид не перехватили ещё раз — возвращаемся к машине
+        if (follow === false && lastPose) {
+          follow = true;
+          map.flyTo({ center: [lastPose.lon, lastPose.lat],
+                      bearing: lastPose.course || 0,
+                      zoom: lastPose.zoom || map.getZoom(),
+                      duration: 1500, essential: true });
+        }
+      }, 1700);
     };
 
     // --- выбор точки на карте (избранное / «по карте») ---
@@ -88,9 +109,17 @@
       showCross(true);
     };
     window.navAttach = function() {
-      follow = true;
       showCross(false);
       document.getElementById('car').style.display = 'block';
+      if (lastPose) {
+        follow = true;
+        map.flyTo({ center: [lastPose.lon, lastPose.lat],
+                    bearing: lastPose.course || 0,
+                    zoom: lastPose.zoom || map.getZoom(),
+                    duration: 1500, essential: true });
+      } else {
+        follow = true;
+      }
     };
     window.navIsDetached = function() { return follow === false; };
     // Сдвиг вида джойстиком, в пикселях экрана.

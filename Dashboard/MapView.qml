@@ -56,6 +56,15 @@ Item {
         view.runJavaScript("window.navAttach && window.navAttach()")
         root.updatePose()
     }
+    // Плавный полёт к точке (после выбора пункта назначения) — карта
+    // сама возвращается к машине через ~1.5 с.
+    function flyTo(lon, lat, zoom) {
+        if (!root.ready)
+            return
+        view.runJavaScript("window.navFlyTo && window.navFlyTo("
+                           + lon + "," + lat + "," + zoom + ")")
+    }
+
     // Координаты центра экрана (то, что под перекрестием): [lon, lat] или null.
     function centerCoords(cb) {
         if (!root.ready) {
