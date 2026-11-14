@@ -24,7 +24,7 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
 |---|---|
 | `Gauge/Speedometer.png` | `Dashboard/images/genesis/dial_speed.png` |
 | `Gauge/Tachometer.png` | `Dashboard/images/genesis/dial_tach.png` |
-| `Gauge/Needle.png` | `Dashboard/images/genesis/needle.png` |
+| `Gauge/Needle.png` | `Dashboard/images/genesis/needle.png` (основная стрелка и стрелки шкал топлива/температуры) |
 | `Gauge/fuel.png` | `Dashboard/images/genesis/scale_fuel.png` (шкала топлива) |
 | `Gauge/temp.png` | `Dashboard/images/genesis/scale_temp.png` (шкала температуры) |
 | `Information/Footer.png` | `footer.png` — нижняя панель; в проекте рисуется `footer_clean.png` (без примерочных чисел) |
@@ -33,7 +33,6 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
 | `Indicator/*.png` | `ind_gear.png`, `ind_speed_limit.png`, `ind_driving_mode.png` |
 | `Иконки ошибок/*.png` (27) | `warn_*.png` (латиница, без пробелов) |
 | — | `turn_left/turn_right.png` — белые силуэты поворотников (см. ниже) |
-| — | `band_needle.png` — стрелка шкал топлива и температуры (см. ниже) |
 | — | `*_cyan/_amber/_red.png` — те же лампы в цвете (см. «Лампы») |
 | `Genesis · цифровая приборная панель · 1920×720.svg` | не подключается: из него взяты только числа (геометрия и палитра) |
 

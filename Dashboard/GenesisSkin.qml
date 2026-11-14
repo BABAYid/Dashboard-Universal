@@ -397,6 +397,10 @@ Item {
             clip: true
 
             Image {
+                // ось стрелки в арте смещена на 6.5 px от центра холста
+                // (стержень на x=686.5 при холсте 1360) — компенсируем,
+                // иначе кончик уходит в сторону от шкалы
+                x: -6.5 * layer.needleLength * 2 / 1360
                 width: layer.needleLength * 2
                 height: layer.needleLength * 2
                 source: "images/genesis/needle.png"
