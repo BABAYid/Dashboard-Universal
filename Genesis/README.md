@@ -27,8 +27,8 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
 | `Gauge/Needle.png` | `Dashboard/images/genesis/needle.png` |
 | `Gauge/fuel.png` | `Dashboard/images/genesis/scale_fuel.png` (шкала топлива) |
 | `Gauge/temp.png` | `Dashboard/images/genesis/scale_temp.png` (шкала температуры) |
-| `Information/Footer.png` | `footer.png` — нижняя панель |
-| `Information/Odometer.png`, `Range.png` | `odometer.png`, `range.png` |
+| `Information/Footer.png` | `footer.png` — нижняя панель; в проекте рисуется `footer_clean.png` (без примерочных чисел) |
+| `Information/Odometer.png`, `Range.png` | `odometer.png`, `range.png` → `odometer_clean.png`, `range_clean.png` |
 | `Icon/*.png` | `icon_clock/coolant/fuel/snow.png` |
 | `Indicator/*.png` | `ind_gear.png`, `ind_speed_limit.png`, `ind_driving_mode.png` |
 | `Иконки ошибок/*.png` (27) | `warn_*.png` (латиница, без пробелов) |
@@ -147,6 +147,36 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
 - Шкалы топлива и температуры (`scale_fuel/scale_temp`) подключены, но
   выключены: в макете 13.11 их нет, значения показаны числами. Включаются
   одной строкой `showAuxScales: true`.
+
+## Живые числа вместо примеров дизайнера (14.11.2026)
+
+В картинках комплекта числа нарисованы как образец: в `Range.png` — «369км»
+рядом с бензоколонкой, в `Odometer.png` — «2648км», в `Footer.png` — «8,8» слева
+(рядом со звёздочкой) и «8,8 l/100km» справа, плюс подписи шкалы 0 / 10 / 20.
+
+Под числами в файлах чистый прозрачный фон (проверено: альфа 0), поэтому цифры
+стираются обнулением альфы в нужных прямоугольниках — скрипт
+`tools/genesis_clean_numbers.py` делает копии `range_clean.png`,
+`odometer_clean.png`, `footer_clean.png`. Подписи «км» и «l/100km», значки и
+шкала остаются в картинке, а значения пишутся текстом ровно на место стёртых
+цифр:
+
+| Что | Источник данных | Место (право/верх цифр) | Откуда координаты |
+|---|---|---|---|
+| Запас хода | `rangeKm` (0x300 + средний расход) | правый край 321, верх 645 | стёртые «369» в Range.png |
+| Общий пробег | `CanBackend.odometer` | правый край 1679, верх 644 | стёртые «2648» в Odometer.png |
+| Мгновенный расход | `CanBackend.fuelRate` | правый край 677, верх 626 | стёртые «8,8» слева в Footer.png |
+| Средний расход | `CanBackend.avgConsumption` | правый край 1264, верх 625 | стёртые «8,8» перед «l/100km» |
+
+Кегль подобран по картинке: цифры в макете 31.5 px высотой — при шрифте
+приборки (Kdam Thmor Pro) это `pixelSize: 41`.
+
+**Шкала расхода 0…20.** В нижней полосе есть полоса-шкала от x=741 до x=1181 с
+подписями 0 / 10 / 20 — это 22 px на 1 л/100 км. Поверх неё рисуется ползунок:
+заливка от нуля до текущего значения с градиентом зелёный → жёлтый → красный и
+ручка в цвете порога — **до 10 л/100 км зелёная, 10…15 жёлтая, выше 15
+красная**. Ползунок ходит по мгновенному расходу (он живой), подпись справа
+показывает средний.
 
 ## Лампы: почему файлы покрашены заранее
 

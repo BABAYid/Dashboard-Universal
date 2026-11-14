@@ -58,6 +58,11 @@ Item {
     // Общий пробег. Main.qml его скину не передаёт (в классике одометр живёт
     // в Indicators.qml), поэтому берём прямо из CanBackend — как и лампы.
     property real odometer: CanBackend.odometer
+    // Расход топлива, л/100 км: мгновенный и средний за поездку.
+    readonly property real instantConsumption: CanBackend.fuelRate
+    readonly property real avgConsumption: CanBackend.avgConsumption
+    // Цифры набираем шрифтом приборки (он только для цифр и латиницы).
+    readonly property string numericFont: "Kdam Thmor Pro"
     property bool nightMode: false
 
     // ---- палитра из макета ----
@@ -621,39 +626,46 @@ Item {
     }
 
     // ======================= НИЖНЯЯ ПАНЕЛЬ =======================
-    // footer.png 1640×408 ставится 2× (820×204) — как в макете: полоса
-    // по центру низа, поверх неё пробег и запас хода.
     // Полоса: в макете она стоит не у самого низа, а на (551, 477) в половину
-    // натурального размера (820×204). Положение получено поиском картинки
-    // footer.png по рендеру макета: совпадение 0.69 при масштабе 0.50.
+    // натурального размера (820×204) — положение найдено поиском картинки
+    // footer.png по рендеру макета (совпадение 0.69 при масштабе 0.50).
+    //
+    // Числа в картинках дизайнера нарисованы как примеры («369км», «2648км»,
+    // «8,8 l/100km»), поэтому цифры из файлов стёрты скриптом
+    // tools/genesis_clean_numbers.py (`*_clean.png`), а живые значения
+    // пишутся текстом на их места. Подписи «км», «l/100km», значки и шкала
+    // 0/10/20 остались в картинке.
     Image {
         x: 551
         y: 477
         width: 820
         height: 204
-        source: "images/genesis/footer.png"
+        source: "images/genesis/footer_clean.png"
         fillMode: Image.PreserveAspectFit
         opacity: root.nightMode ? 0.8 : 1.0
     }
 
     // Запас хода — внизу слева (216, 637), файл 410×110 рисуется 205×55.
-    // Сама картинка — подпись с иконкой, число пишем справа от неё.
+    // Число занимает место стёртых цифр: справа прижато к подписи «км».
     Image {
         x: 216
         y: 637
         width: 205
         height: 55
-        source: "images/genesis/range.png"
+        source: "images/genesis/range_clean.png"
         fillMode: Image.PreserveAspectFit
         opacity: root.nightMode ? 0.75 : 0.95
     }
 
     Text {
-        x: 430
-        y: 645
-        text: root.rangeKm > 0 ? Math.round(root.rangeKm) + " км" : "—"
-        color: root.light2
-        font.pixelSize: 30
+        x: 170
+        width: 151              // правый край 321 — вплотную к «км» (327)
+        y: 631
+        horizontalAlignment: Text.AlignRight
+        text: root.rangeKm > 0 ? Math.round(root.rangeKm) : "—"
+        color: root.light
+        font.family: root.numericFont
+        font.pixelSize: 41
     }
 
     // Пробег — внизу справа (1596, 636), файл 360×110 рисуется 180×55.
@@ -662,8 +674,111 @@ Item {
         y: 636
         width: 180
         height: 55
-        source: "images/genesis/odometer.png"
+        source: "images/genesis/odometer_clean.png"
         fillMode: Image.PreserveAspectFit
         opacity: root.nightMode ? 0.75 : 0.95
+    }
+
+    Text {
+        x: 1520
+        width: 159              // правый край 1679 — перед «км» (1685)
+        y: 630
+        horizontalAlignment: Text.AlignRight
+        text: Math.round(root.odometer)
+        color: root.light
+        font.family: root.numericFont
+        font.pixelSize: 41
+    }
+
+    // ======================= РАСХОД И ШКАЛА 0…20 =======================
+    // В макете в нижней полосе две ячейки с расходом: слева число рядом со
+    // значком (мгновенный), справа число с подписью «l/100km» (средний).
+    // Между ними шкала с подписями 0 / 10 / 20 и полосой от x=741 до x=1181,
+    // то есть 22 px на 1 л/100 км.
+
+    readonly property real consumptionScaleX0: 741
+    readonly property real consumptionScaleX20: 1181
+    readonly property real consumptionShown:
+        Math.max(0, Math.min(20, root.instantConsumption))
+    readonly property color consumptionColor:
+        root.instantConsumption > 15 ? "#FF5252"
+      : root.instantConsumption > 10 ? "#F2C14E"
+      : "#57D68A"
+
+    // мгновенный расход — слева, рядом со значком (место стёртых «8,8»)
+    Text {
+        x: 585
+        width: 92               // правый край 677, слева остаётся значок (558…581)
+        y: 612
+        horizontalAlignment: Text.AlignRight
+        text: root.instantConsumption > 0
+              ? root.instantConsumption.toFixed(1).replace(".", ",")
+              : "—"
+        color: root.consumptionColor
+        font.family: root.numericFont
+        font.pixelSize: 41
+    }
+
+    // средний расход — справа, перед подписью «l/100km» (1269…1353)
+    Text {
+        x: 1160
+        width: 104              // правый край 1264
+        y: 611
+        horizontalAlignment: Text.AlignRight
+        text: root.avgConsumption > 0
+              ? root.avgConsumption.toFixed(1).replace(".", ",")
+              : "—"
+        color: root.light
+        font.family: root.numericFont
+        font.pixelSize: 41
+    }
+
+    // Ползунок шкалы: заливка от нуля до значения (зелёный → жёлтый → красный)
+    // и сама ручка с подсветкой цветом текущего порога.
+    Item {
+        x: root.consumptionScaleX0
+        y: 626
+        width: root.consumptionScaleX20 - root.consumptionScaleX0
+        height: 26
+
+        readonly property real knobX:
+            width * root.consumptionShown / 20
+
+        // подсвеченная часть шкалы
+        Rectangle {
+            x: 0
+            y: parent.height / 2 - 4
+            width: parent.knobX
+            height: 8
+            radius: 4
+            opacity: 0.75
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "#57D68A" }
+                GradientStop { position: 0.5; color: "#F2C14E" }
+                GradientStop { position: 1.0; color: "#FF5252" }
+            }
+            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+        }
+
+        // ручка
+        Rectangle {
+            width: 10
+            height: 26
+            radius: 5
+            x: parent.knobX - width / 2
+            anchors.verticalCenter: parent.verticalCenter
+            color: root.consumptionColor
+            Behavior on x { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 4
+                height: 14
+                radius: 2
+                color: "#FFFFFF"
+                opacity: 0.85
+            }
+        }
     }
 }

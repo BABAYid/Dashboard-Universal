@@ -120,6 +120,11 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
+        # Числа из картинок дизайнера стёрты (tools/genesis_clean_numbers.py):
+        # вместо примеров «369км», «2648км», «8,8 l/100km» пишутся живые значения.
+        images/genesis/footer_clean.png
+        images/genesis/range_clean.png
+        images/genesis/odometer_clean.png
         # Белые силуэты указателей поворота: в комплекте дизайнера их нет,
         # альфа взята у стрелок классического скина, цвет задаётся в QML.
         images/genesis/turn_left.png
