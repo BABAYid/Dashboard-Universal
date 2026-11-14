@@ -106,14 +106,33 @@ Item {
     readonly property real needleLength: dialDiameter * 0.528
     readonly property int needleCanvas: Math.round(needleLength * 2)
 
-    // Показывать ли дуги топлива и температуры поверх дисков. В макете
-    // 13.11 их нет — топливо и температура выведены числами в центральной
-    // колонке (см. ниже). Дуги оставлены на случай, если заказчик захочет
-    // вернуть: включить одной строкой.
-    property bool showAuxScales: false
-    readonly property real auxScale: 0.42
-    readonly property real auxOffsetX: 0.22
-    readonly property real auxOffsetY: 0.26
+    // Шкалы топлива и температуры — это fuel.png и temp.png из комплекта.
+    // Оба файла 1674/1686×1440 и рисуются вдвое меньше: 837/843×720, то есть
+    // ровно в половину высоты экрана и по углам — левый угол даёт топливо,
+    // правый температуру (замер по файлам: контент лежит в противоположных
+    // углах холстов). Точки оси полосы (начало, середина, конец) посчитаны по
+    // самим файлам (PCA по ярким пикселям), в экранных координатах.
+    // Точки: начало полосы, управляющая точка (кривая проходит через середину
+    // полосы) и конец. Посчитаны по весу «альфа × яркость» самих картинок,
+    // в экранных координатах (файл вдвое меньше + сдвиг 1077 у температуры).
+    readonly property var fuelBand: [ Qt.point(23.3, 477.2),
+                                      Qt.point(44.6, 581.1),
+                                      Qt.point(124.3, 649.0) ]
+    readonly property var tempBand: [ Qt.point(1782.2, 645.4),
+                                      Qt.point(1876.2, 584.8),
+                                      Qt.point(1882.6, 473.5) ]
+    // Если окажется, что пустой бак в машине на другом конце полосы —
+    // поменять местами: fuelReverse / tempReverse.
+    property bool fuelReverse: false
+    property bool tempReverse: false
+
+    // Точка на полосе: квадратичная кривая через три опорные точки.
+    function bandPoint(band, t) {
+        const k = Math.max(0, Math.min(1, t))
+        const a = (1 - k) * (1 - k), b = 2 * (1 - k) * k, c = k * k
+        return Qt.point(a * band[0].x + b * band[1].x + c * band[2].x,
+                        a * band[0].y + b * band[1].y + c * band[2].y)
+    }
 
     // ==================== ЛАМПЫ ====================
     // Раскладка. В макете места под лампы не размечены (дизайнер отдал иконки
@@ -231,14 +250,6 @@ Item {
         required property real valueMax
         property bool mirrored: false
 
-        // Вспомогательная шкала (топливо/температура) — по умолчанию выключена.
-        property bool hasAux: false
-        property real auxValue: 0
-        property real auxMin: 0
-        property real auxMax: 100
-        property string auxArt: ""
-        property string auxUnit: ""
-
         width: root.artSize
         height: root.artSize
         x: cx - width / 2
@@ -276,45 +287,33 @@ Item {
             }
         }
 
-        // ---- вспомогательная шкала: картинка дизайнера + мини-стрелка ----
-        Item {
-            id: aux
-            visible: root.showAuxScales && dial.hasAux
-            width: dial.width * root.auxScale
-            height: width * 0.86
-            x: dial.width / 2 - width / 2 + dial.width * (dial.mirrored ? root.auxOffsetX
-                                                                      : -root.auxOffsetX)
-            y: dial.height / 2 - height / 2 + dial.height * root.auxOffsetY
+    }
 
-            Image {
-                anchors.fill: parent
-                source: dial.auxArt
-                fillMode: Image.PreserveAspectFit
-                cache: true
-            }
+    // ======================= ШКАЛЫ ТОПЛИВА И ТЕМПЕРАТУРЫ =======================
+    // fuel.png и temp.png из комплекта: холсты 1674/1686×1440, рисуются
+    // вдвое меньше и ставятся в углы — топливо слева, температура справа.
+    // По макету они лежат ПОД дисками: полосы уходят под кольцо шкалы, поэтому
+    // в файле идут раньше приборов.
+    Image {
+        x: 0
+        y: 0
+        width: 837
+        height: 720
+        source: "images/genesis/scale_fuel.png"
+        fillMode: Image.PreserveAspectFit
+        cache: true
+        opacity: root.artLevel
+    }
 
-            Rectangle {
-                width: 3
-                height: aux.width * 0.34
-                radius: 1.5
-                x: aux.width / 2 - width / 2
-                y: aux.height / 2 - height
-                color: root.light
-                antialiasing: true
-                transformOrigin: Item.Bottom
-                rotation: 40 + 100 * Math.max(0, Math.min(1,
-                              (dial.auxValue - dial.auxMin) / (dial.auxMax - dial.auxMin)))
-                Behavior on rotation { NumberAnimation { duration: 250 } }
-            }
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: parent.height - 4
-                text: dial.auxUnit
-                color: root.mid3
-                font.pixelSize: 12
-            }
-        }
+    Image {
+        x: 1077
+        y: 0
+        width: 843
+        height: 720
+        source: "images/genesis/scale_temp.png"
+        fillMode: Image.PreserveAspectFit
+        cache: true
+        opacity: root.artLevel
     }
 
     Dial {
@@ -323,11 +322,6 @@ Item {
         art: "images/genesis/dial_speed.png"
         value: root.speed
         valueMax: 200
-        hasAux: true
-        auxValue: root.fuel
-        auxMax: 100
-        auxArt: "images/genesis/scale_fuel.png"
-        auxUnit: "ТОПЛИВО"
     }
 
     Dial {
@@ -337,12 +331,56 @@ Item {
         value: root.rpm / 1000.0
         valueMax: 8
         mirrored: true
-        hasAux: true
-        auxValue: root.temp
-        auxMin: 40
-        auxMax: 120
-        auxArt: "images/genesis/scale_temp.png"
-        auxUnit: "ТЕМП."
+    }
+
+
+    // Указатели шкал: светящаяся точка на полосе. Ход — по квадратичной
+    // кривой через три опорные точки полосы (посчитаны по самим картинкам).
+    component BandPointer: Item {
+        id: ptr
+        required property var band
+        required property real t
+        readonly property point spot: root.bandPoint(ptr.band, ptr.t)
+
+        width: 26
+        height: 26
+        x: spot.x - width / 2
+        y: spot.y - height / 2
+        Behavior on t { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: root.glow1
+            opacity: 0.18
+        }
+        Rectangle {
+            anchors.centerIn: parent
+            width: 16
+            height: 16
+            radius: 8
+            color: root.glow1
+            opacity: 0.45
+        }
+        Rectangle {
+            anchors.centerIn: parent
+            width: 8
+            height: 8
+            radius: 4
+            color: root.light
+        }
+    }
+
+    BandPointer {
+        band: root.fuelBand
+        t: root.fuelReverse ? 1 - root.fuel / 100 : root.fuel / 100
+    }
+
+    BandPointer {
+        band: root.tempBand
+        t: root.tempReverse
+           ? 1 - (root.temp - 40) / 80
+           : (root.temp - 40) / 80
     }
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
