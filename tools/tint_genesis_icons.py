@@ -29,12 +29,14 @@ COLORS = {
     "cyan": "#BCEAF1",     # lampInfo  — свет, габариты, поворотники
     "amber": "#F2C14E",    # lampWarn  — предупреждение
     "red": "#FF5252",      # lampAlarm — авария
+    "blue": "#63C8FF",     # снежинка «мороз» — когда за бортом ниже нуля
 }
 
 # какие иконки в каком цвете нужны скину
 NEEDED = {
     "cyan": ["turn_left", "turn_right", "warn_high_beam", "warn_position_lights",
              "warn_fog_front", "warn_snowflake", "warn_fog_rear"],
+    "blue": ["icon_snow"],
     "amber": ["warn_check_engine", "warn_abs", "warn_attention_yellow",
               "warn_stability_esc", "warn_tire_pressure"],
     "red": ["warn_oil_pressure", "warn_brake_red", "warn_seat_belt",

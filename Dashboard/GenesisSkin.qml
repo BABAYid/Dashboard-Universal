@@ -58,6 +58,8 @@ Item {
     // Общий пробег. Main.qml его скину не передаёт (в классике одометр живёт
     // в Indicators.qml), поэтому берём прямо из CanBackend — как и лампы.
     property real odometer: CanBackend.odometer
+    // Температура за бортом (0x300 байт 3): от неё цвет снежинки и подпись слева.
+    readonly property real outsideTemp: CanBackend.outsideTemp
     // Расход топлива, л/100 км: мгновенный и средний за поездку.
     readonly property real instantConsumption: CanBackend.fuelRate
     readonly property real avgConsumption: CanBackend.avgConsumption
@@ -612,17 +614,19 @@ Item {
         opacity: root.nightMode ? 0.8 : 0.9
     }
 
-    // Снежинка «холодная дорога»: в макете стоит внизу слева, на левом конце
-    // нижней полосы — (553, 628), файл 96×80 рисуется 34×28.
+    // Снежинка: в макете стоит внизу слева, на левом конце нижней полосы —
+    // (553, 628), файл 96×80 рисуется 34×28. Вшитая в footer.png снежинка
+    // стёрта (tools/genesis_clean_numbers.py), потому что эта должна синеть
+    // на морозе: ниже нуля — синяя, иначе светлая.
     Image {
         x: 553
         y: 628
         width: 34
         height: 28
-        visible: root.coldRoad
-        source: "images/genesis/icon_snow.png"
+        source: root.outsideTemp < 0 ? "images/genesis/icon_snow_blue.png"
+                                     : "images/genesis/icon_snow.png"
         fillMode: Image.PreserveAspectFit
-        opacity: root.nightMode ? 0.75 : 0.9
+        opacity: root.nightMode ? 0.8 : 0.95
     }
 
     // ======================= НИЖНЯЯ ПАНЕЛЬ =======================
@@ -660,12 +664,12 @@ Item {
     Text {
         x: 170
         width: 151              // правый край 321 — вплотную к «км» (327)
-        y: 631
+        y: 634
         horizontalAlignment: Text.AlignRight
         text: root.rangeKm > 0 ? Math.round(root.rangeKm) : "—"
         color: root.light
         font.family: root.numericFont
-        font.pixelSize: 41
+        font.pixelSize: 36
     }
 
     // Пробег — внизу справа (1596, 636), файл 360×110 рисуется 180×55.
@@ -682,19 +686,20 @@ Item {
     Text {
         x: 1520
         width: 159              // правый край 1679 — перед «км» (1685)
-        y: 630
+        y: 633
         horizontalAlignment: Text.AlignRight
         text: Math.round(root.odometer)
         color: root.light
         font.family: root.numericFont
-        font.pixelSize: 41
+        font.pixelSize: 36
     }
 
     // ======================= РАСХОД И ШКАЛА 0…20 =======================
-    // В макете в нижней полосе две ячейки с расходом: слева число рядом со
-    // значком (мгновенный), справа число с подписью «l/100km» (средний).
-    // Между ними шкала с подписями 0 / 10 / 20 и полосой от x=741 до x=1181,
-    // то есть 22 px на 1 л/100 км.
+    // В макете в нижней полосе две ячейки: слева число рядом со снежинкой
+    // (это температура за бортом — цифры «8,8» там были примером), справа
+    // число с подписью «l/100km» (средний расход). Между ними шкала с
+    // подписями 0 / 10 / 20 и полосой от x=741 до x=1181, то есть 22 px на
+    // 1 л/100 км.
 
     readonly property real consumptionScaleX0: 741
     readonly property real consumptionScaleX20: 1181
@@ -705,32 +710,33 @@ Item {
       : root.instantConsumption > 10 ? "#F2C14E"
       : "#57D68A"
 
-    // мгновенный расход — слева, рядом со значком (место стёртых «8,8»)
+    // Температура за бортом — слева, рядом со снежинкой (место стёртых «8,8»).
+    // Расход живёт справа, у подписи «l/100km».
     Text {
         x: 585
-        width: 92               // правый край 677, слева остаётся значок (558…581)
-        y: 612
+        width: 92               // правый край 677, слева остаётся снежинка (558…581)
+        y: 615
         horizontalAlignment: Text.AlignRight
-        text: root.instantConsumption > 0
-              ? root.instantConsumption.toFixed(1).replace(".", ",")
+        text: root.outsideTemp > -40
+              ? Math.round(root.outsideTemp) + "°"
               : "—"
-        color: root.consumptionColor
+        color: root.outsideTemp < 0 ? "#63C8FF" : root.light
         font.family: root.numericFont
-        font.pixelSize: 41
+        font.pixelSize: 36
     }
 
     // средний расход — справа, перед подписью «l/100km» (1269…1353)
     Text {
         x: 1160
         width: 104              // правый край 1264
-        y: 611
+        y: 614
         horizontalAlignment: Text.AlignRight
         text: root.avgConsumption > 0
               ? root.avgConsumption.toFixed(1).replace(".", ",")
               : "—"
         color: root.light
         font.family: root.numericFont
-        font.pixelSize: 41
+        font.pixelSize: 36
     }
 
     // Ползунок шкалы: заливка от нуля до значения (зелёный → жёлтый → красный)

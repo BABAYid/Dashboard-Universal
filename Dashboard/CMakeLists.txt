@@ -116,6 +116,8 @@ qt_add_qml_module(appDashboard
         images/genesis/icon_coolant.png
         images/genesis/icon_fuel.png
         images/genesis/icon_snow.png
+        # Синяя снежинка: на морозе (ниже 0) значок меняет цвет
+        images/genesis/icon_snow_blue.png
         images/genesis/ind_driving_mode.png
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
