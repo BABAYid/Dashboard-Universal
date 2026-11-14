@@ -134,6 +134,8 @@ z12 1 444, z13 5 476, z14 21 462, z15 85 509), bounds ровно наш bbox.
     python3 tools/nav-search.py build maps/district.osm.pbf maps/addresses.sqlite
     python3 tools/nav-search.py tiles  maps/addresses.sqlite maps/tiles.mbtiles
 
+Проверка с телефона (приборка запущена): `python3 tools/send_address.py "Красная площадь"`.
+
 `tools/tile-server.py` отдаёт поиск по `/search?q=…&lat=&lon=&limit=5`
 (с позицией — ближайшие первые, без неё — по релевантности FTS).
 База — в `maps/` (в git не попадает).
