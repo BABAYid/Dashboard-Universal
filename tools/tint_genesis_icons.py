@@ -29,8 +29,14 @@ COLORS = {
     "cyan": "#BCEAF1",     # lampInfo  — свет, габариты, поворотники
     "amber": "#F2C14E",    # lampWarn  — предупреждение
     "red": "#FF5252",      # lampAlarm — авария
-    "blue": "#63C8FF",     # снежинка «мороз» — когда за бортом ниже нуля
+    "blue": "#63C8FF",     # снежинка «мороз» + холодная температура
+    "green": "#57D68A",    # норма: топлива хватает, температура в рабочей зоне
 }
+
+# Стрелка прибора (нужна для цветного шлейфа шкал топлива и температуры).
+# Красится так же: альфа та же, цвет плоский.
+NEEDLE = "needle"
+NEEDLE_TONES = ["red", "green", "blue"]
 
 # какие иконки в каком цвете нужны скину
 NEEDED = {
@@ -51,6 +57,21 @@ def hex_to_rgb(value):
 
 def main():
     made = []
+    # стрелка → цветные копии для шлейфа
+    for tone in NEEDLE_TONES:
+        src = os.path.join(IMG, NEEDLE + ".png")
+        if not os.path.exists(src):
+            print(f"  нет исходника: {NEEDLE}.png — пропуск")
+            continue
+        im = Image.open(src).convert("RGBA")
+        arr = np.asarray(im)
+        out = np.zeros_like(arr)
+        r, g, b = hex_to_rgb(COLORS[tone])
+        out[:, :, 0], out[:, :, 1], out[:, :, 2] = r, g, b
+        out[:, :, 3] = arr[:, :, 3]
+        dst = os.path.join(IMG, f"{NEEDLE}_{tone}.png")
+        Image.fromarray(out).save(dst, optimize=True)
+        made.append(os.path.basename(dst) + f" ({os.path.getsize(dst)//1024} КБ)")
     for tone, names in NEEDED.items():
         rgb = hex_to_rgb(COLORS[tone])
         for name in names:

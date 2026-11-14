@@ -125,6 +125,10 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
+        # Цветные копии стрелки для шлейфа шкал (tools/tint_genesis_icons.py)
+        images/genesis/needle_red.png
+        images/genesis/needle_green.png
+        images/genesis/needle_blue.png
         # Числа из картинок дизайнера стёрты (tools/genesis_clean_numbers.py):
         # вместо примеров «369км», «2648км», «8,8 l/100km» пишутся живые значения.
         images/genesis/footer_clean.png

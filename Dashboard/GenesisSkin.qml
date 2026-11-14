@@ -130,7 +130,7 @@ Item {
                                       Qt.point(1882.6, 473.5) ]
     // Если окажется, что пустой бак в машине на другом конце полосы —
     // поменять местами: fuelReverse / tempReverse.
-    property bool fuelReverse: false
+    property bool fuelReverse: true
     property bool tempReverse: false
 
     // Угол касательной в точке полосы (куда «смотрит» стрелка).
@@ -378,6 +378,7 @@ Item {
         required property real startRadius
         required property real needleLength
         required property real alpha
+        required property string art
 
         width: 0
         height: 0
@@ -403,7 +404,7 @@ Item {
                 x: -6.5 * layer.needleLength * 2 / 1360
                 width: layer.needleLength * 2
                 height: layer.needleLength * 2
-                source: "images/genesis/needle.png"
+                source: layer.art
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 mipmap: true
@@ -428,6 +429,9 @@ Item {
         // С какого радиуса стрелка видна: кольцо шкалы диска — радиус 326,
         // всё, что ближе 330, считается «под циферблатом» и не рисуется.
         property real visibleFrom: 330
+        // Цвет шлейфа: готовая покрашенная копия стрелки (tools/tint_genesis_icons.py).
+        // Сама стрелка остаётся белой, цветом горит только хвост.
+        property string trailArt: "images/genesis/needle_green.png"
 
         x: needle.cx
         y: needle.cy
@@ -443,6 +447,7 @@ Item {
                 alpha: modelData.op
                 startRadius: needle.visibleFrom
                 needleLength: needle.length
+                art: needle.trailArt
             }
         }
 
@@ -452,12 +457,16 @@ Item {
             alpha: 1.0
             startRadius: needle.visibleFrom
             needleLength: needle.length
+            art: "images/genesis/needle.png"
         }
     }
 
     // топливо: ось — центр спидометра, кончик чуть выходит за полосу
     // (полоса на радиусе ~415, стрелка 435 — как основная, она тоже
-    // перекрывает метку)
+    // перекрывает метку).
+    // На шкале у дизайнера подписи стоят «0» к прибору и «1» наружу, поэтому
+    // направление перевёрнуто: пустой бак показывает на 0 (fuelReverse).
+    // Шлейф: меньше 20 % остатка — красный, иначе зелёный.
     DialNeedle {
         cx: root.dialCx1
         cy: root.dialCy1
@@ -465,6 +474,8 @@ Item {
         angleTo: root.bandEndpointAngle(root.fuelBand, true, root.dialCx1, root.dialCy1)
         value: root.fuelReverse ? 1 - root.fuel / 100 : root.fuel / 100
         length: 435
+        trailArt: root.fuel < 20 ? "images/genesis/needle_red.png"
+                                 : "images/genesis/needle_green.png"
     }
 
     // температура: ось — центр тахометра, полоса на радиусе ~398
@@ -475,6 +486,10 @@ Item {
         angleTo: root.bandEndpointAngle(root.tempBand, true, root.dialCx2, root.dialCy2)
         value: root.tempReverse ? 1 - (root.temp - 40) / 80 : (root.temp - 40) / 80
         length: 420
+        // шлейф: ниже 60 °C — синий, 60…100 — зелёный, выше 100 — красный
+        trailArt: root.temp < 60 ? "images/genesis/needle_blue.png"
+                : root.temp > 100 ? "images/genesis/needle_red.png"
+                : "images/genesis/needle_green.png"
     }
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
