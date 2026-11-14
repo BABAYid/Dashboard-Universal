@@ -126,9 +126,17 @@ z12 1 444, z13 5 476, z14 21 462, z15 85 509), bounds ровно наш bbox.
 маршрут к выбранному пункту или к перекрестию, BACK/NAV — выход.
 
 Поиск адреса — `tools/nav-search.py`: строит `maps/addresses.sqlite`
-(SQLite FTS5: дома, названия улиц, города, парки из `district.osm.pbf`).
-`tools/tile-server.py` отдаёт его по `/search?q=…&limit=5`; приборка
-(и телефон) спрашивают там. База данных — в `maps/` (в git не попадает).
+(SQLite FTS5: дома, улицы, города, парки и площади из `district.osm.pbf`,
+дополненные названиями из готовых тайлов). Сборка из pbf занимает ~40-50
+минут (как и тайлы), затем `tiles` дописывает названия из `tiles.mbtiles`
+за пару минут — в итоге ~2.6 млн записей, ~300 МБ.
+
+    python3 tools/nav-search.py build maps/district.osm.pbf maps/addresses.sqlite
+    python3 tools/nav-search.py tiles  maps/addresses.sqlite maps/tiles.mbtiles
+
+`tools/tile-server.py` отдаёт поиск по `/search?q=…&lat=&lon=&limit=5`
+(с позицией — ближайшие первые, без неё — по релевантности FTS).
+База — в `maps/` (в git не попадает).
 
 Полноценный ввод текста джойстиком — не делаем: это сотни щелчков.
 Формулировка в интерфейсе: «выберите на карте или с телефона».
