@@ -71,11 +71,12 @@ def search_address(q, limit=5, lat=None, lon=None):
             "limit ?",
             (match, lat, lat, lon, lon, limit)).fetchall()
     else:
+        # Ранжирование FTS (bm25): rank работает только при join с адресной
+        # таблицей — иначе SQLite ругается «no such column: rank».
         rows = ADDR.execute(
             "select a.name, a.street, a.housenumber, a.kind, a.lat, a.lon "
-            "from addr a where a.rowid in "
-            "(select rowid from addr_fts where addr_fts match ?) "
-            "order by rank limit ?",
+            "from addr a join addr_fts f on f.rowid = a.rowid "
+            "where addr_fts match ? order by rank limit ?",
             (match, limit)).fetchall()
     return [{"name": r[0], "street": r[1], "housenumber": r[2],
              "kind": r[3], "lat": r[4], "lon": r[5]} for r in rows]

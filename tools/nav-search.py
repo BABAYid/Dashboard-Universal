@@ -20,9 +20,11 @@
 #  оттуда при вводе адреса с телефона.
 # ============================================================================
 import argparse
+import math
 import os
 import re
 import sqlite3
+import struct
 import sys
 
 # pyosmium ставится в проект без root: pip install --target build/pylibs osmium
@@ -181,6 +183,156 @@ def build(pbf_path, out_path):
           f"улиц {handler.streets}), {size:.0f} МБ → {out_path}")
 
 
+def _tile_xy(lat, lon, z):
+    n = 2 ** z
+    return int((lon + 180) / 360 * n), int((1 - math.log(
+        math.tan(math.radians(lat)) + 1 / math.cos(math.radians(lat)))
+        / math.pi) / 2 * n)
+
+
+def _varint(b, i):
+    r = 0
+    s = 0
+    while True:
+        c = b[i]
+        i += 1
+        r |= (c & 0x7f) << s
+        if not c & 0x80:
+            return r, i
+        s += 7
+
+
+def _fields(b):
+    i = 0
+    out = []
+    while i < len(b):
+        k, i = _varint(b, i)
+        f, wt = k >> 3, k & 7
+        if wt == 0:
+            v, i = _varint(b, i)
+        elif wt == 2:
+            ln, i = _varint(b, i)
+            v = b[i:i + ln]
+            i += ln
+        elif wt == 5:
+            v = b[i:i + 4]
+            i += 4
+        else:
+            v = b[i:i + 8]
+            i += 8
+        out.append((f, v, wt))
+    return out
+
+
+def _val(v):
+    if not isinstance(v, (bytes, bytearray)):
+        return v
+    for k, val_, _ in _fields(v):
+        try:
+            if k == 1:
+                return val_.decode("utf-8")
+            if k == 2:
+                return struct.unpack("<f", val_)[0]
+            if k == 3:
+                return struct.unpack("<d", val_)[0]
+            if k == 7:
+                return bool(val_)
+            if k in (4, 5, 6):
+                return val_ if isinstance(val_, int) else int.from_bytes(val_, "little")
+        except Exception:
+            return None
+    return None
+
+
+def scan_tiles(db, mbtiles):
+    """Дополнить базу названиями из готовых тайлов.
+
+    Planetiler уже собрал POI/площади/улицы из OSM (включая relations),
+    поэтому если в addr что-то не попало из pbf, берём отсюда. Быстро:
+    разбор 114 тыс. тайлов — пара минут.
+    """
+    import gzip
+    tdb = sqlite3.connect(mbtiles)
+    seen = set()
+    added = 0
+    rows = []
+    layers = {"poi": "poi", "place": "place", "park": "park",
+              "transportation_name": "street"}
+    for z, x, y, data in tdb.execute(
+            "select zoom_level, tile_column, tile_row, tile_data from tiles"):
+        if data[:2] == b"\x1f\x8b":
+            data = gzip.decompress(data)
+        scale = 360.0 / (2 ** z)
+        # tile_row в mbtiles — TMS (снизу вверх); для широты нужен XYZ.
+        y_xyz = (1 << z) - 1 - y
+        try:
+            for f, v, _ in _fields(data):
+                if f != 3:
+                    continue
+                name = None
+                feats = []
+                keys = []
+                vals = []
+                for ff, vv, _ in _fields(v):
+                    if ff == 1:
+                        name = vv.decode("utf-8")
+                    elif ff == 2:
+                        feats.append(vv)
+                    elif ff == 3:
+                        keys.append(vv.decode("utf-8"))
+                    elif ff == 4:
+                        vals.append(_val(vv))
+                kind = layers.get(name)
+                if kind is None:
+                    continue
+                for fb in feats:
+                    tags = []
+                    geom = b""
+                    for k, val_, _ in _fields(fb):
+                        if k == 2:
+                            arr = []
+                            j = 0
+                            while j < len(val_):
+                                n, j = _varint(val_, j)
+                                arr.append(n)
+                            tags.extend(arr)
+                        elif k == 4:
+                            geom = val_
+                    props = {keys[tags[i]]: vals[tags[i + 1]]
+                             for i in range(0, len(tags) - 1, 2)}
+                    nm = props.get("name") or props.get("name:ru") or ""
+                    if not nm:
+                        continue
+                    # первая точка геометрии (DecodeCommand): MoveTo(1) + x,y zigzag
+                    if not geom:
+                        continue
+                    j = 0
+                    cmd, j = _varint(geom, j)
+                    if cmd >> 3 != 1:
+                        continue
+                    cx, j = _varint(geom, j)
+                    cy, j = _varint(geom, j)
+                    px = (cx >> 1) ^ (-(cx & 1))
+                    py = (cy >> 1) ^ (-(cy & 1))
+                    lon = (x + px / 4096.0) * scale - 180
+                    lat = math.degrees(math.atan(math.sinh(math.pi * (
+                        1 - 2 * (y_xyz + py / 4096.0) / (2 ** z)))))
+                    key = (nm, round(lat, 4), round(lon, 4), kind)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    rows.append((nm, nm if kind == "street" else "",
+                                 "", kind, lat, lon))
+                    added += 1
+        except Exception:
+            continue
+    tdb.close()
+    db.executemany("insert into addr values (?,?,?,?,?,?)", rows)
+    db.execute("insert into addr_fts(addr_fts) values ('rebuild')")
+    db.commit()
+    print(f"из тайлов добавлено {added} названий")
+
+
 def fts_query(text):
     toks = re.findall(r"[^\W_]+", text.lower(), re.UNICODE)
     if not toks:
@@ -214,9 +366,15 @@ def main():
     s.add_argument("db")
     s.add_argument("text")
 
+    t = sub.add_parser("tiles", help="дополнить базу названиями из tiles.mbtiles")
+    t.add_argument("db")
+    t.add_argument("mbtiles")
+
     args = ap.parse_args()
     if args.cmd == "build":
         build(args.pbf, args.out)
+    elif args.cmd == "tiles":
+        scan_tiles(open_db(args.db), args.mbtiles)
     else:
         for name, street, num, kind, lat, lon in search(args.db, args.text):
             print(f"[{kind}] {name}  ({lat:.5f}, {lon:.5f})")
