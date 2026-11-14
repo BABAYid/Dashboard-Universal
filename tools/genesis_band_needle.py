@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Рисует стрелку и шлейф для шкал топлива и температуры (скин Genesis).
+"""Рисует стрелку для шкал топлива и температуры (скин Genesis).
 
-Зачем свои картинки: у шкал нет отдельной стрелки в комплекте дизайнера —
-в макете там просто светлая полоса. Рисуем стрелку-клин с градиентом и шлейф
-за ней; шейдерные эффекты в проекте не используются (на программном рендерере
-они не работают), поэтому обе картинки — просто PNG с альфой.
+Стрелка простая и прямая, как у настоящего прибора: ось вращения — левый край
+картинки по центру, остриё — правый край. В QML она ставится в центр диска
+(тот же, что у основной стрелки) и поворачивается на угол нужной шкалы.
+Градиент вдоль стрелки запечён в PNG: шейдерных эффектов в проекте нет —
+на программном рендерере они не работают.
+
+Шлейф отдельной картинкой не нужен: в QML за стрелкой идут её же «призраки»
+с запаздыванием по углу (см. GenesisSkin.qml, компонент DialNeedle).
 
     python3 tools/genesis_band_needle.py
 
-Результат в Dashboard/images/genesis:
-    band_needle.png   90×20  — стрелка, остриё вправо, градиент вдоль клина
-    band_trail.png   120×30  — шлейф, плотный справа (у стрелки), тает влево
-
-Остриё смотрит вправо: в QML стрелка поворачивается на угол касательной полосы.
+Результат: Dashboard/images/genesis/band_needle.png — 440×18.
 """
 
 import os
@@ -22,79 +22,55 @@ from PIL import Image, ImageFilter
 HERE = os.path.dirname(os.path.abspath(__file__))
 IMG = os.path.join(HERE, "..", "Dashboard", "images", "genesis")
 
-NEEDLE_W, NEEDLE_H = 90, 20
-TRAIL_W, TRAIL_H = 120, 30
+W, H = 440, 18
 
-HEAD = (232, 244, 240)      # #E8F4F0 — остриё
-BODY = (188, 234, 241)      # #BCEAF1 — тело стрелки и шлейф
-
-
-def gradient_along(width, head, body):
-    """Цвет по длине: от body к head."""
-    t = np.linspace(0, 1, width)[None, :, None]
-    head_a = np.array(head, dtype=float)[None, None, :]
-    body_a = np.array(body, dtype=float)[None, None, :]
-    return body_a + (head_a - body_a) * t
-
-
-def needle():
-    w, h = NEEDLE_W, NEEDLE_H
-    alpha = np.zeros((h, w), dtype=float)
-    cx = h / 2.0
-    for x in range(w):
-        u = x / (w - 1)                      # 0 — хвост, 1 — остриё
-        # клин: у хвоста тонкий, к острию сходится в точку
-        half = (1.0 - u) ** 0.85 * (cx - 1.5)
-        half = max(half, 0.6)
-        for y in range(h):
-            d = abs(y + 0.5 - cx)
-            if d <= half:
-                alpha[y, x] = 1.0
-    # мягкие края
-    a_img = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8))
-    alpha = np.asarray(a_img).astype(float) / 255.0
-
-    rgb = gradient_along(w, HEAD, BODY).repeat(h, axis=0)
-    out = np.zeros((h, w, 4))
-    out[:, :, :3] = rgb
-    out[:, :, 3] = alpha * 255
-
-    # свечение вокруг острия
-    glow = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(3.2))
-    g = np.asarray(glow).astype(float) / 255.0 * 0.55
-    out[:, :, 3] = np.clip(out[:, :, 3] + g * 255, 0, 255)
-    return Image.fromarray(out.astype(np.uint8))
-
-
-def trail():
-    w, h = TRAIL_W, TRAIL_H
-    alpha = np.zeros((h, w), dtype=float)
-    cx = h / 2.0
-    for x in range(w):
-        u = x / (w - 1)                      # 0 — дальний конец, 1 — у стрелки
-        fade = u ** 2.2                      # тает к дальнему концу
-        half = (0.35 + 0.65 * u) * (cx - 2.0)
-        for y in range(h):
-            d = abs(y + 0.5 - cx)
-            if d <= half:
-                alpha[y, x] = fade * (1.0 - (d / max(half, 0.6)) ** 2)
-    a_img = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(3.0))
-    alpha = np.asarray(a_img).astype(float) / 255.0
-
-    rgb = gradient_along(w, HEAD, BODY).repeat(h, axis=0)
-    out = np.zeros((h, w, 4))
-    out[:, :, :3] = rgb
-    out[:, :, 3] = np.clip(alpha * 210, 0, 255)
-    return Image.fromarray(out.astype(np.uint8))
+TIP = (232, 244, 240)       # #E8F4F0 — остриё
+BASE = (150, 190, 200)      # приглушённое основание
+GLOW = (188, 234, 241)      # #BCEAF1 — свечение вокруг
 
 
 def main():
-    n = needle()
-    t = trail()
-    n.save(os.path.join(IMG, "band_needle.png"))
-    t.save(os.path.join(IMG, "band_trail.png"))
-    print(f"band_needle.png {n.size}")
-    print(f"band_trail.png  {t.size}")
+    alpha = np.zeros((H, W), dtype=float)
+    cy = H / 2.0
+    for x in range(W):
+        u = x / (W - 1)
+        if x < 6:
+            half = 3.0                       # пятка у оси
+        elif u < 0.94:
+            half = 3.6 - 1.4 * u             # ровное сужение
+        else:
+            half = max(0.6, 2.2 * (1.0 - (u - 0.94) / 0.06))   # остриё
+        for y in range(H):
+            d = abs(y + 0.5 - cy)
+            if d <= half:
+                alpha[y, x] = 1.0
+
+    a_img = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.7))
+    alpha = np.asarray(a_img).astype(float) / 255.0
+
+    # цвет вдоль стрелки: основание приглушённое, к острию — светлое
+    t = np.linspace(0, 1, W)[None, :, None]
+    base = np.array(BASE, float)[None, None, :]
+    tip = np.array(TIP, float)[None, None, :]
+    rgb = (base + (tip - base) * (t ** 0.7)).repeat(H, axis=0)
+
+    out = np.zeros((H, W, 4))
+    out[:, :, :3] = rgb
+    out[:, :, 3] = alpha * 255
+
+    # мягкое свечение вокруг острия и по всей длине
+    glow = Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2.6))
+    g = np.asarray(glow).astype(float) / 255.0
+    glow_rgb = np.zeros((H, W, 4))
+    glow_rgb[:, :, :3] = np.array(GLOW, float)
+    glow_rgb[:, :, 3] = np.clip(g * 150, 0, 255)
+
+    base_img = Image.fromarray(out.astype(np.uint8))
+    glow_img = Image.fromarray(glow_rgb.astype(np.uint8))
+    final = Image.alpha_composite(glow_img, base_img)
+    path = os.path.join(IMG, "band_needle.png")
+    final.save(path)
+    print(f"band_needle.png {final.size} (ось вращения — левый центр)")
 
 
 if __name__ == "__main__":
