@@ -366,7 +366,8 @@ Item {
     // картинка обрезается по радиусу visibleFrom, наружу торчит только кончик
     // на шкале. Шлейф — три копии стрелки с запаздыванием по углу: пока стрелка
     // едет, за ней тянется хвост, в покое копии сливаются и хвост исчезает.
-    // Один слой стрелки. Картинка — только видимый кончик (120×18), поэтому
+    // Один слой стрелки. Картинка — только видимый кончик (120×5, толщина
+    // постоянная 5 px), поэтому
     // основание от оси диска не рисуется: стрелка как будто уходит под
     // циферблат, наружу торчит кончик на шкале топлива/температуры.
     component NeedleLayer: Item {
@@ -385,12 +386,14 @@ Item {
             NumberAnimation { duration: layer.lag; easing.type: Easing.OutCubic }
         }
 
+        // толщина постоянная — 5 px, как у обычной стрелки указателя
         Image {
             x: layer.startRadius
-            y: -(layer.needleLength - layer.startRadius) * 18 / 120 / 2
+            y: -2.5
             width: layer.needleLength - layer.startRadius
-            height: (layer.needleLength - layer.startRadius) * 18 / 120
+            height: 5
             source: "images/genesis/band_needle.png"
+            fillMode: Image.Stretch
         }
     }
 
