@@ -752,28 +752,24 @@ Item {
         opacity: root.nightMode ? 0.8 : 1.0
     }
 
-    // Запас хода — внизу слева (216, 637), файл 410×110 рисуется 205×55.
-    // Число занимает место стёртых цифр: справа прижато к подписи «км».
-    Image {
-        x: 216
-        y: 637
-        width: 205
-        height: 55
-        source: "images/genesis/range_clean.png"
-        fillMode: Image.PreserveAspectFit
-        opacity: root.nightMode ? 0.75 : 0.95
-    }
-
-    Text {
-        x: 170
-        width: 151              // правый край 321 — вплотную к «км» (327)
-        y: 634
-        horizontalAlignment: Text.AlignRight
-        text: root.rangeKm > 0 ? Math.round(root.rangeKm) : "—"
-        color: root.light
-        font.family: root.numericFont
-        font.pixelSize: 36
-    }
+    // Запас хода внизу слева не выводится (по просьбе заказчика убрано):
+    // в макете там был блок «бензоколонка + 369км». Сам запас виден в третьей
+    // строке центральной колонки, рядом с часами. Чтобы вернуть блок —
+    // раскомментировать и положить картинку images/genesis/range_clean.png.
+    // Image {
+    //     x: 216; y: 637; width: 205; height: 55
+    //     source: "images/genesis/range_clean.png"
+    //     fillMode: Image.PreserveAspectFit
+    //     opacity: root.nightMode ? 0.75 : 0.95
+    // }
+    // Text {
+    //     x: 170; width: 151; y: 634
+    //     horizontalAlignment: Text.AlignRight
+    //     text: root.rangeKm > 0 ? Math.round(root.rangeKm) : "—"
+    //     color: root.light
+    //     font.family: root.numericFont
+    //     font.pixelSize: 36
+    // }
 
     // Пробег — внизу справа (1596, 636), файл 360×110 рисуется 180×55.
     Image {
