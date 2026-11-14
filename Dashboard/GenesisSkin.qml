@@ -426,8 +426,8 @@ Item {
             * Math.max(0, Math.min(1, needle.value))
 
         // С какого радиуса стрелка видна: кольцо шкалы диска — радиус 326,
-        // всё, что ближе 340, считается «под циферблатом» и не рисуется.
-        property real visibleFrom: 340
+        // всё, что ближе 330, считается «под циферблатом» и не рисуется.
+        property real visibleFrom: 330
 
         x: needle.cx
         y: needle.cy
@@ -455,24 +455,26 @@ Item {
         }
     }
 
-    // топливо: ось — центр спидометра, кончик достаёт до полосы (радиус ~415)
+    // топливо: ось — центр спидометра, кончик чуть выходит за полосу
+    // (полоса на радиусе ~415, стрелка 435 — как основная, она тоже
+    // перекрывает метку)
     DialNeedle {
         cx: root.dialCx1
         cy: root.dialCy1
         angleFrom: root.bandEndpointAngle(root.fuelBand, false, root.dialCx1, root.dialCy1)
         angleTo: root.bandEndpointAngle(root.fuelBand, true, root.dialCx1, root.dialCy1)
         value: root.fuelReverse ? 1 - root.fuel / 100 : root.fuel / 100
-        length: 412
+        length: 435
     }
 
-    // температура: ось — центр тахометра, радиус полосы ~399
+    // температура: ось — центр тахометра, полоса на радиусе ~398
     DialNeedle {
         cx: root.dialCx2
         cy: root.dialCy2
         angleFrom: root.bandEndpointAngle(root.tempBand, false, root.dialCx2, root.dialCy2)
         angleTo: root.bandEndpointAngle(root.tempBand, true, root.dialCx2, root.dialCy2)
         value: root.tempReverse ? 1 - (root.temp - 40) / 80 : (root.temp - 40) / 80
-        length: 398
+        length: 420
     }
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
