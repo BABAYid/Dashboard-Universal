@@ -210,12 +210,13 @@ Item {
     // задаётся только шейдерным MultiEffect, а на программном рендерере он не
     // работает и лампы пропадают совсем. Красит `tools/tint_genesis_icons.py`
     // из тех же белых исходников дизайнера.
+    // dx — сдвиг лампы от общей сетки: поворотники разнесены наружу на 50 px
     readonly property var topLamps: [
-        { art: "images/left_turn.png", on: root.selfTest || (root.leftTurn && root.blinkOn) },
-        { art: "images/hi_beam.png",   on: root.selfTest || root.highBeamOn },
-        { art: "images/gabarit.png",   on: root.selfTest || root.positionOn },
-        { art: "images/tuman.png",     on: root.selfTest || root.fogOn },
-        { art: "images/right_turn.png", on: root.selfTest || (root.rightTurn && root.blinkOn) }
+        { art: "images/left_turn.png",  dx: -50, on: root.selfTest || (root.leftTurn && root.blinkOn) },
+        { art: "images/hi_beam.png",    dx: 0,   on: root.selfTest || root.highBeamOn },
+        { art: "images/gabarit.png",    dx: 0,   on: root.selfTest || root.positionOn },
+        { art: "images/tuman.png",      dx: 0,   on: root.selfTest || root.fogOn },
+        { art: "images/right_turn.png", dx: 50,  on: root.selfTest || (root.rightTurn && root.blinkOn) }
     ]
 
     // Нижняя группа: предупреждения и аварии.
@@ -636,17 +637,25 @@ Item {
         }
     }
 
-    // Верхняя полоса между приборами: поворотники по краям, между ними свет.
-    Row {
-        x: (root.width - width) / 2
-        y: root.topLampY
-        spacing: root.topLampSpacing
+    // Верхняя полоса между приборами: поворотники по краям (разнесены наружу
+    // на 50 px), между ними свет. Позиции считаются вручную, а не Row:
+    // в позиционере сдвинуть отдельного ребёнка нельзя.
+    readonly property real topRowX:
+        (width - (topLamps.length * topLampSize + (topLamps.length - 1) * topLampSpacing)) / 2
 
-        Repeater {
-            model: root.topLamps
-            delegate: Lamp {
-                required property var modelData
-                lampSize: root.topLampSize
+    Repeater {
+        model: root.topLamps
+        delegate: Item {
+            required property var modelData
+            required property int index
+            x: root.topRowX + index * (root.topLampSize + root.topLampSpacing)
+               + (modelData.dx || 0)
+            y: root.topLampY
+            width: root.topLampSize
+            height: root.topLampSize
+
+            Lamp {
+                anchors.fill: parent
                 art: modelData.art
                 isOn: modelData.on
             }
