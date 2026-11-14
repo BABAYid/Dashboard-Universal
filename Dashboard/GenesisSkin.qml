@@ -361,8 +361,39 @@ Item {
     // той же, что у основной стрелки. Шкалы-полосы это дуги вокруг этого
     // центра (расстояние до обоих концов одинаковое), поэтому стрелка просто
     // поворачивается на угол от «пусто» до «полно» и кончиком достаёт до полосы.
-    // Шлейф — три копии стрелки с запаздыванием по углу: пока стрелка едет,
-    // за ней тянется хвост, в покое копии сливаются с ней и хвост исчезает.
+    //
+    // Внутри диска стрелку не видно (как будто она уходит под циферблат):
+    // картинка обрезается по радиусу visibleFrom, наружу торчит только кончик
+    // на шкале. Шлейф — три копии стрелки с запаздыванием по углу: пока стрелка
+    // едет, за ней тянется хвост, в покое копии сливаются и хвост исчезает.
+    // Один слой стрелки. Картинка — только видимый кончик (120×18), поэтому
+    // основание от оси диска не рисуется: стрелка как будто уходит под
+    // циферблат, наружу торчит кончик на шкале топлива/температуры.
+    component NeedleLayer: Item {
+        id: layer
+        required property real angle
+        required property real lag
+        required property real startRadius
+        required property real needleLength
+        required property real alpha
+
+        width: 0
+        height: 0
+        rotation: layer.angle
+        opacity: layer.alpha
+        Behavior on rotation {
+            NumberAnimation { duration: layer.lag; easing.type: Easing.OutCubic }
+        }
+
+        Image {
+            x: layer.startRadius
+            y: -(layer.needleLength - layer.startRadius) * 18 / 120 / 2
+            width: layer.needleLength - layer.startRadius
+            height: (layer.needleLength - layer.startRadius) * 18 / 120
+            source: "images/genesis/band_needle.png"
+        }
+    }
+
     component DialNeedle: Item {
         id: needle
         required property real cx
@@ -376,6 +407,10 @@ Item {
             needle.angleFrom + (needle.angleTo - needle.angleFrom)
             * Math.max(0, Math.min(1, needle.value))
 
+        // С какого радиуса стрелка видна: кольцо шкалы диска — радиус 326,
+        // всё, что ближе 340, считается «под циферблатом» и не рисуется.
+        property real visibleFrom: 340
+
         x: needle.cx
         y: needle.cy
         width: 0
@@ -383,33 +418,22 @@ Item {
 
         Repeater {
             model: [ { lag: 150, op: 0.50 }, { lag: 290, op: 0.30 }, { lag: 470, op: 0.15 } ]
-            delegate: Image {
+            delegate: NeedleLayer {
                 required property var modelData
-                source: "images/genesis/band_needle.png"
-                width: needle.length
-                height: 18 * needle.length / 440
-                x: 0
-                y: -height / 2
-                transformOrigin: Item.Left
-                rotation: needle.angle
-                opacity: modelData.op
-                Behavior on rotation {
-                    NumberAnimation { duration: modelData.lag; easing.type: Easing.OutCubic }
-                }
+                angle: needle.angle
+                lag: modelData.lag
+                alpha: modelData.op
+                startRadius: needle.visibleFrom
+                needleLength: needle.length
             }
         }
 
-        Image {
-            source: "images/genesis/band_needle.png"
-            width: needle.length
-            height: 18 * needle.length / 440
-            x: 0
-            y: -height / 2
-            transformOrigin: Item.Left
-            rotation: needle.angle
-            Behavior on rotation {
-                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
-            }
+        NeedleLayer {
+            angle: needle.angle
+            lag: 200
+            alpha: 1.0
+            startRadius: needle.visibleFrom
+            needleLength: needle.length
         }
     }
 
