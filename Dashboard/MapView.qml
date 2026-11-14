@@ -27,7 +27,7 @@ Item {
     property bool active: false      // карта нужна только в навигации
 
     // Адрес страницы карты: по умолчанию наш локальный сервер тайлов
-    property string mapUrl: "http://127.0.0.1:8090/map.html"
+    property string mapUrl: "http://127.0.0.1:8091/map.html"
 
     // Готовность страницы (после неё можно вызывать setPose)
     property bool ready: false

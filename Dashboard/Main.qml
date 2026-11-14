@@ -160,13 +160,24 @@ Window {
     // Недавние пункты назначения (последние 10). Хранятся в памяти сессии:
     // Qt.labs.settings в этой сборке нет — при перезапуске список пуст.
     property var recentRoutes: []
-    // Единый список для выбора энкодером: избранное, затем недавние.
+    // Единый список для выбора энкодером: избранное, затем недавние
+    // (недавние, совпадающие с избранным, не дублируем).
     readonly property var navChoices: {
         const out = []
         for (let i = 0; i < favorites.length; i++)
             out.push(favorites[i])
-        for (let i = 0; i < recentRoutes.length; i++)
-            out.push(recentRoutes[i])
+        for (let i = 0; i < recentRoutes.length; i++) {
+            const r = recentRoutes[i]
+            let dup = false
+            for (let j = 0; j < favorites.length; j++) {
+                const f = favorites[j]
+                if (f.name === r.name && Math.abs(f.lat - r.lat) < 1e-6
+                        && Math.abs(f.lon - r.lon) < 1e-6)
+                    dup = true
+            }
+            if (!dup)
+                out.push(r)
+        }
         return out
     }
     // Текущее назначение маршрута («Дом» по умолчанию).
@@ -293,7 +304,9 @@ Window {
     // и строим маршрут. Без тачскрина это основной способ ввести адрес.
     function searchAddress(text) {
         const base = offlineMapView.mapUrl.replace(/map\.html$/, "").replace(/\/$/, "")
+        // Позиция машины — чтобы ближайшие совпадения шли первыми.
         const url = base + "/search?q=" + encodeURIComponent(text)
+                  + "&lat=" + root.gpsLat + "&lon=" + root.gpsLon
         const xhr = new XMLHttpRequest()
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE)

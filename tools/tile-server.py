@@ -52,7 +52,7 @@ def open_addr_db(path):
     print(f"База адресов: {n} записей")
 
 
-def search_address(q, limit=5):
+def search_address(q, limit=5, lat=None, lon=None):
     if ADDR is None or not q:
         return []
     import re
@@ -60,11 +60,23 @@ def search_address(q, limit=5):
     if not toks:
         return []
     match = " ".join('\"%s\"*' % t for t in toks)
-    rows = ADDR.execute(
-        "select a.name, a.street, a.housenumber, a.kind, a.lat, a.lon "
-        "from addr a where a.rowid in "
-        "(select rowid from addr_fts where addr_fts match ?) limit ?",
-        (match, limit)).fetchall()
+    # Если известна позиция машины — ближайшие совпадения важнее: иначе
+    # «Красная площадь» найдётся в другом городе раньше, чем в Москве.
+    if lat is not None and lon is not None:
+        rows = ADDR.execute(
+            "select a.name, a.street, a.housenumber, a.kind, a.lat, a.lon "
+            "from addr a where a.rowid in "
+            "(select rowid from addr_fts where addr_fts match ?) "
+            "order by (a.lat - ?)*(a.lat - ?) + (a.lon - ?)*(a.lon - ?) "
+            "limit ?",
+            (match, lat, lat, lon, lon, limit)).fetchall()
+    else:
+        rows = ADDR.execute(
+            "select a.name, a.street, a.housenumber, a.kind, a.lat, a.lon "
+            "from addr a where a.rowid in "
+            "(select rowid from addr_fts where addr_fts match ?) "
+            "order by rank limit ?",
+            (match, limit)).fetchall()
     return [{"name": r[0], "street": r[1], "housenumber": r[2],
              "kind": r[3], "lat": r[4], "lon": r[5]} for r in rows]
 
@@ -132,7 +144,12 @@ class Handler(BaseHTTPRequestHandler):
                 limit = max(1, min(20, int((qs.get("limit") or ["5"])[0])))
             except ValueError:
                 limit = 5
-            result = search_address(text, limit)
+            def fnum(name):
+                try:
+                    return float((qs.get(name) or [""])[0])
+                except ValueError:
+                    return None
+            result = search_address(text, limit, fnum("lat"), fnum("lon"))
             body = json.dumps({"query": text, "results": result}).encode("utf-8")
             return self._send(200, body, "application/json")
 

@@ -94,6 +94,37 @@ class Builder(osmium.SimpleHandler):
             return None
         return sum(lats) / len(lats), sum(lons) / len(lons)
 
+    def area(self, a):
+        t = a.tags
+        name = t.get("name")
+        if not name:
+            return
+        kind = None
+        place = t.get("place")
+        if place in ("city", "town", "village", "hamlet", "suburb",
+                     "quarter", "neighbourhood", "locality", "district",
+                     "square"):
+            kind = "place"
+        elif t.get("leisure") in ("park", "garden"):
+            kind = "park"
+        elif t.get("tourism") == "attraction":
+            kind = "attraction"
+        if kind is None:
+            return
+        key = (kind, name)
+        if key in self.seen:
+            return
+        lats, lons = [], []
+        for ring in a.outer_rings():
+            for n in ring:
+                lats.append(n.lat)
+                lons.append(n.lon)
+        if not lats:
+            return
+        self.seen.add(key)
+        self._add(name, name if kind == "street" else "", "", kind,
+                  sum(lats) / len(lats), sum(lons) / len(lons))
+
     def way(self, w):
         t = w.tags
         c = self._centroid(w)
@@ -113,7 +144,7 @@ class Builder(osmium.SimpleHandler):
                 kind = "park"
             elif t.get("place") in ("city", "town", "village", "hamlet",
                                     "suburb", "quarter", "neighbourhood",
-                                    "locality", "district"):
+                                    "locality", "district", "square"):
                 kind = "place"
             if kind and ("street" in (kind,) or kind in ("park", "place")):
                 key = (kind, name)
@@ -135,10 +166,9 @@ def build(pbf_path, out_path):
     db = open_db(out_path, create=True)
     handler = Builder(db)
 
-    # Для зданий нужны координаты их точек: pyosmium соберёт их в
-    # дисковый index (в памяти держать 100+ млн точек нельзя).
-    locations = osmium.NodeLocationsForWays(osmium.index.create_map("flex_mem"))
-    handler.apply_file(pbf_path, locations=locations)
+    # locations=True заодно собирает площади из мультиполигонов (area()):
+    # Красная площадь и т. п. в OSM — relations, без этого они не найдутся.
+    handler.apply_file(pbf_path, locations=True)
 
     # Пакетная вставка и построение FTS-индекса.
     db.executemany("insert into addr values (?,?,?,?,?,?)", handler.rows)
