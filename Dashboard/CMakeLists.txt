@@ -122,9 +122,9 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
-        # Стрелка и шлейф шкал топлива/температуры (tools/genesis_band_needle.py)
+        # Стрелка шкал топлива/температуры (tools/genesis_band_needle.py);
+        # шлейф — её же копии с запаздыванием, отдельной картинки нет
         images/genesis/band_needle.png
-        images/genesis/band_trail.png
         # Числа из картинок дизайнера стёрты (tools/genesis_clean_numbers.py):
         # вместо примеров «369км», «2648км», «8,8 l/100km» пишутся живые значения.
         images/genesis/footer_clean.png

@@ -33,7 +33,7 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
 | `Indicator/*.png` | `ind_gear.png`, `ind_speed_limit.png`, `ind_driving_mode.png` |
 | `Иконки ошибок/*.png` (27) | `warn_*.png` (латиница, без пробелов) |
 | — | `turn_left/turn_right.png` — белые силуэты поворотников (см. ниже) |
-| — | `band_needle.png`, `band_trail.png` — стрелка и шлейф шкал (см. ниже) |
+| — | `band_needle.png` — стрелка шкал топлива и температуры (см. ниже) |
 | — | `*_cyan/_amber/_red.png` — те же лампы в цвете (см. «Лампы») |
 | `Genesis · цифровая приборная панель · 1920×720.svg` | не подключается: из него взяты только числа (геометрия и палитра) |
 
@@ -245,7 +245,8 @@ headless-проверках) шейдерные эффекты не работа
 | Нижний ряд ламп | `bottomLampY`, `bottomLampSize`, `bottomLampSpacing` | 688, 30, 26 |
 | Шкалы топлива/температуры | `x`/`y`/`width` у `scale_fuel.png` и `scale_temp.png` | (0,0) 837×720 и (1077,0) 843×720 |
 | Направление шкал | `fuelReverse` / `tempReverse` | false |
-| Траектория указателя | `fuelBand` / `tempBand` | три точки на экране |
+| Концы шкал (углы стрелок) | `fuelBand` / `tempBand` | три точки на экране |
+| Длина стрелок | `length:` у `DialNeedle` | 412 (топливо), 398 (температура) |
 | Состав ламп | таблицы `topLamps` / `bottomLamps` | 5 + 9 |
 | Полоса внизу | `x`/`y` у `footer.png` | (551, 477), 820×204 |
 | Подписи запаса/пробега | `x`/`y` у `range.png` и `odometer.png` | (216,637) и (1596,636) |

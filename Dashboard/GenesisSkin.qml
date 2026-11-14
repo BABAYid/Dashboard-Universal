@@ -231,6 +231,14 @@ Item {
         { art: "warn_snowflake_cyan.png",        on: root.selfTest || root.coldRoad }
     ]
 
+    // Шкалы топлива и температуры — дуги вокруг центров дисков: расстояние
+    // от центра до обоих концов полосы одинаковое (топливо 415.5 и 416.4 px,
+    // температура 401.4 и 397.7). Поэтому стрелки простые и прямые, ось — центр.
+    function bandEndpointAngle(band, atEnd, cx, cy) {
+        const p = atEnd ? band[2] : band[0]
+        return Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI
+    }
+
     // Угол стрелки в градусах поворота холста. Зеркальный прибор идёт
     // против часовой: ноль справа (135°), максимум слева (-135°).
     function needleAngle(value, max, mirrored) {
@@ -349,80 +357,80 @@ Item {
     }
 
 
-    // Указатели шкал: стрелка-клин с градиентом и тающий шлейф за ней.
-    // Картинки рисует tools/genesis_band_needle.py (band_needle.png,
-    // band_trail.png) — шейдерных эффектов в проекте нет, поэтому и градиент,
-    // и шлейф запечены в PNG.
-    //
-    // Шлейф ведёт себя как описано в docs/needle_trail.md: пока стрелка
-    // движется — горит ярко, встала — гаснет за 0.4 с (слабое свечение
-    // остаётся, чтобы след читался и в покое).
-    component BandPointer: Item {
-        id: ptr
-        required property var band
-        required property real t
-        readonly property point spot: root.bandPoint(ptr.band, ptr.t)
-        readonly property real angle: root.bandAngle(ptr.band, ptr.t)
+    // Стрелки шкал топлива и температуры: прямые, с осью в центре диска —
+    // той же, что у основной стрелки. Шкалы-полосы это дуги вокруг этого
+    // центра (расстояние до обоих концов одинаковое), поэтому стрелка просто
+    // поворачивается на угол от «пусто» до «полно» и кончиком достаёт до полосы.
+    // Шлейф — три копии стрелки с запаздыванием по углу: пока стрелка едет,
+    // за ней тянется хвост, в покое копии сливаются с ней и хвост исчезает.
+    component DialNeedle: Item {
+        id: needle
+        required property real cx
+        required property real cy
+        required property real angleFrom
+        required property real angleTo
+        required property real value          // 0…1
+        required property real length         // от оси до кончика, px
 
-        // «стрелка движется»: ловим изменение t (у него есть Behavior, поэтому
-        // сигнал идёт и во время анимации)
-        property real prevT: ptr.t
-        property bool moving: false
-        onTChanged: {
-            if (Math.abs(ptr.t - ptr.prevT) > 0.002)
-                ptr.moving = true
-            ptr.prevT = ptr.t
-            settleTimer.restart()
-        }
-        Timer {
-            id: settleTimer
-            interval: 100
-            onTriggered: ptr.moving = false
-        }
+        readonly property real angle:
+            needle.angleFrom + (needle.angleTo - needle.angleFrom)
+            * Math.max(0, Math.min(1, needle.value))
 
-        x: spot.x
-        y: spot.y
+        x: needle.cx
+        y: needle.cy
         width: 0
         height: 0
 
-        // контейнер поворота: вращается вокруг самой точки (0,0)
-        Item {
-            rotation: ptr.angle
-
-            // шлейф: тянется назад от хвоста стрелки
-            Image {
-                source: "images/genesis/band_trail.png"
-                width: 104
-                height: 26
-                x: -4 - width
+        Repeater {
+            model: [ { lag: 150, op: 0.50 }, { lag: 290, op: 0.30 }, { lag: 470, op: 0.15 } ]
+            delegate: Image {
+                required property var modelData
+                source: "images/genesis/band_needle.png"
+                width: needle.length
+                height: 18 * needle.length / 440
+                x: 0
                 y: -height / 2
-                opacity: ptr.moving ? 1.0 : 0.5
-                Behavior on opacity {
-                    NumberAnimation { duration: 400; easing.type: Easing.OutQuad }
+                transformOrigin: Item.Left
+                rotation: needle.angle
+                opacity: modelData.op
+                Behavior on rotation {
+                    NumberAnimation { duration: modelData.lag; easing.type: Easing.OutCubic }
                 }
             }
+        }
 
-            // стрелка: хвост на 26 px позади точки, остриё — на 44 вперёд
-            Image {
-                source: "images/genesis/band_needle.png"
-                width: 70
-                height: 16
-                x: -26
-                y: -height / 2
+        Image {
+            source: "images/genesis/band_needle.png"
+            width: needle.length
+            height: 18 * needle.length / 440
+            x: 0
+            y: -height / 2
+            transformOrigin: Item.Left
+            rotation: needle.angle
+            Behavior on rotation {
+                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
             }
         }
     }
 
-    BandPointer {
-        band: root.fuelBand
-        t: root.fuelReverse ? 1 - root.fuel / 100 : root.fuel / 100
+    // топливо: ось — центр спидометра, кончик достаёт до полосы (радиус ~415)
+    DialNeedle {
+        cx: root.dialCx1
+        cy: root.dialCy1
+        angleFrom: root.bandEndpointAngle(root.fuelBand, false, root.dialCx1, root.dialCy1)
+        angleTo: root.bandEndpointAngle(root.fuelBand, true, root.dialCx1, root.dialCy1)
+        value: root.fuelReverse ? 1 - root.fuel / 100 : root.fuel / 100
+        length: 412
     }
 
-    BandPointer {
-        band: root.tempBand
-        t: root.tempReverse
-           ? 1 - (root.temp - 40) / 80
-           : (root.temp - 40) / 80
+    // температура: ось — центр тахометра, радиус полосы ~399
+    DialNeedle {
+        cx: root.dialCx2
+        cy: root.dialCy2
+        angleFrom: root.bandEndpointAngle(root.tempBand, false, root.dialCx2, root.dialCy2)
+        angleTo: root.bandEndpointAngle(root.tempBand, true, root.dialCx2, root.dialCy2)
+        value: root.tempReverse ? 1 - (root.temp - 40) / 80 : (root.temp - 40) / 80
+        length: 398
     }
 
     // ======================= ЦЕНТРАЛЬНАЯ КОЛОНКА =======================
