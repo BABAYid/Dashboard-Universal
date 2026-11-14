@@ -142,7 +142,7 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
   заказчика): `left_turn/right_turn`, `hi_beam`, `gabarit`, `tuman`,
   `oil_press`, `H_brake`, `belt`, `batt`, `check`, `ABS`, `temp_dvs_red`,
   `fuel_tank`, `snow`. Они уже цветные, поэтому тонирование не нужно — рисуются
-  как есть, без шейдеров. Поворотники разнесены наружу на 50 px от общей сетки
+  как есть, без шейдеров. Поворотники разнесены наружу на 100 px от общей сетки
   (поле `dx` в таблице `topLamps`): в позиционере `Row` сдвинуть одного ребёнка
   нельзя, поэтому ряд раскладывается вручную через `Repeater` и `topRowX`. Иконки Genesis (`warn_*`, `*_cyan/_amber/_red`)
   остались в ресурсах: если понадобится вернуть «родной» комплект — менять
@@ -271,7 +271,7 @@ headless-проверках) шейдерные эффекты не работа
 | Длина стрелки | `needleLength` / `needleCanvas` | 0.528 × Ø = 344 / 688 |
 | Центры приборов | `dialCx1/1`, `dialCx2/2` | (421, 357) и (1502, 358) |
 | Верхний ряд ламп | `topLampY`, `topLampSize`, `topLampSpacing` | 30, 44, 26 |
-| Разнос поворотников | `dx` в таблице `topLamps` | ±50 px (наружу) |
+| Разнос поворотников | `dx` в таблице `topLamps` | ±100 px (наружу) |
 | Нижний ряд ламп | `bottomLampY`, `bottomLampSize`, `bottomLampSpacing` | 680, 36, 24 |
 | Шкалы топлива/температуры | `x`/`y`/`width` у `scale_fuel.png` и `scale_temp.png` | (0,0) 837×720 и (1077,0) 843×720 |
 | Направление шкал | `fuelReverse` / `tempReverse` | топливо — true + подписи 0/1 поменяны в картинке; температура — false |

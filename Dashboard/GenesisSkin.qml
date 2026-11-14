@@ -210,13 +210,13 @@ Item {
     // задаётся только шейдерным MultiEffect, а на программном рендерере он не
     // работает и лампы пропадают совсем. Красит `tools/tint_genesis_icons.py`
     // из тех же белых исходников дизайнера.
-    // dx — сдвиг лампы от общей сетки: поворотники разнесены наружу на 50 px
+    // dx — сдвиг лампы от общей сетки: поворотники разнесены наружу на 100 px
     readonly property var topLamps: [
-        { art: "images/left_turn.png",  dx: -50, on: root.selfTest || (root.leftTurn && root.blinkOn) },
+        { art: "images/left_turn.png",  dx: -100, on: root.selfTest || (root.leftTurn && root.blinkOn) },
         { art: "images/hi_beam.png",    dx: 0,   on: root.selfTest || root.highBeamOn },
         { art: "images/gabarit.png",    dx: 0,   on: root.selfTest || root.positionOn },
         { art: "images/tuman.png",      dx: 0,   on: root.selfTest || root.fogOn },
-        { art: "images/right_turn.png", dx: 50,  on: root.selfTest || (root.rightTurn && root.blinkOn) }
+        { art: "images/right_turn.png", dx: 100,  on: root.selfTest || (root.rightTurn && root.blinkOn) }
     ]
 
     // Нижняя группа: предупреждения и аварии.
@@ -638,7 +638,7 @@ Item {
     }
 
     // Верхняя полоса между приборами: поворотники по краям (разнесены наружу
-    // на 50 px), между ними свет. Позиции считаются вручную, а не Row:
+    // на 100 px), между ними свет. Позиции считаются вручную, а не Row:
     // в позиционере сдвинуть отдельного ребёнка нельзя.
     readonly property real topRowX:
         (width - (topLamps.length * topLampSize + (topLamps.length - 1) * topLampSpacing)) / 2
