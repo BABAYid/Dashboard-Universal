@@ -114,7 +114,8 @@ Item {
                 const d = JSON.parse(xhr.responseText)
                 const p = d.paths[0]
                 root.routeDistanceM = p.distance
-                root.routeTimeS = p.time
+                // GraphHopper отдаёт time в миллисекундах — храним секунды
+                root.routeTimeS = p.time / 1000
                 root.points = p.points.coordinates   // [lon, lat]
 
                 // накопительные расстояния манёвров
@@ -157,16 +158,17 @@ Item {
         const t = root.traveledM
         for (let i = 0; i < root.maneuvers.length; i++) {
             const m = root.maneuvers[i]
-            if (m.at + (m.distance || 0) > t) {
-                root.hintText = m.text
-                root.hintSign = m.sign
-                root.hintManeuver = m.maneuver
-                root.hintDistanceM = Math.max(0, m.at - t)
-                root.nextStep = { maneuver: m.maneuver,
-                                  distanceM: Math.max(0, m.at - t),
-                                  street: m.text }
-                return
-            }
+            // Участок уже пройден (или идёт) — этот манёвр позади.
+            if (m.at <= t + 1e-6)
+                continue
+            root.hintText = m.text
+            root.hintSign = m.sign
+            root.hintManeuver = m.maneuver
+            root.hintDistanceM = m.at - t
+            root.nextStep = { maneuver: m.maneuver,
+                              distanceM: m.at - t,
+                              street: m.text }
+            return
         }
         root.hintText = "Прибытие"
         root.hintDistanceM = Math.max(0, root.routeDistanceM - t)
