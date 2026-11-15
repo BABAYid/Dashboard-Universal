@@ -586,8 +586,12 @@ void NetworkServer::onTextMessage(const QString &text)
     if (type == QLatin1String("route_handoff")) {
         // Android просит построить маршрут к точке. Проверяем координаты:
         // нули и NaN — это не точка, такой запрос не пускаем.
-        const double lat = object.value(QStringLiteral("lat")).toDouble(qQNaN());
-        const double lon = object.value(QStringLiteral("lon")).toDouble(qQNaN());
+        // Формат контракта §6.6 — вложенный объект to{lat,lon,label};
+        // плоские lat/lon/name оставляем для совместимости со старым клиентом.
+        const QJsonObject to = object.value(QStringLiteral("to")).toObject();
+        const QJsonObject point = to.isEmpty() ? object : to;
+        const double lat = point.value(QStringLiteral("lat")).toDouble(qQNaN());
+        const double lon = point.value(QStringLiteral("lon")).toDouble(qQNaN());
         const bool ok = std::isfinite(lat) && std::isfinite(lon)
             && lat >= -90.0 && lat <= 90.0
             && lon >= -180.0 && lon <= 180.0
@@ -596,7 +600,9 @@ void NetworkServer::onTextMessage(const QString &text)
             qWarning() << "Сеть: route_handoff с некорректными координатами" << lat << lon;
             return;
         }
-        const QString name = object.value(QStringLiteral("name")).toString();
+        QString name = point.value(QStringLiteral("label")).toString();
+        if (name.isEmpty())
+            name = object.value(QStringLiteral("name")).toString();
         qInfo() << "Сеть: route_handoff" << lat << lon << name;
         emit routeRequested(lat, lon, name);
         return;
