@@ -849,6 +849,8 @@ Window {
             blindSpotEnabled: root.blindSpotEnabled
             promoVideoLeft: root.promoVideoLeft
             promoVideoRight: root.promoVideoRight
+            cameraLeft: root.leftTurn
+            cameraRight: root.rightTurn
         }
 
         // ============ 3D-МАШИНА: 5-й вид центральной зоны (714,154,492×404) ============
@@ -1188,6 +1190,8 @@ Window {
         Shortcut { sequence: "F11"; onActivated: input.button(10) }
         Shortcut { sequence: "F12"; onActivated: input.button(11) }
         Shortcut { sequence: "Insert"; onActivated: input.button(12) }
+        // На ноутбуках без Insert: Enter дублирует PRESS (выбор пункта назначения).
+        Shortcut { sequence: "Return"; onActivated: input.button(12) }
         Shortcut { sequence: "="; onActivated: input.encoder(1) }
         Shortcut { sequence: "+"; onActivated: input.encoder(1) }
         Shortcut { sequence: "-"; onActivated: input.encoder(-1) }
