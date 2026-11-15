@@ -191,8 +191,14 @@ DASHBOARD_SKIN=genesis ./build/appDashboard --mock
   вызывается `play()`/`pause()`, чтобы декодер не работал впустую;
 - если видео нет — по центру пишется «КАМЕРА L» / «КАМЕРА R».
 
-Скин получает от `Main.qml` три свойства: `blindSpotEnabled`, `promoVideoLeft`,
-`promoVideoRight`; сами поворотники берёт из `CanBackend`.
+Скин получает от `Main.qml` пять свойств: `blindSpotEnabled`, `promoVideoLeft`,
+`promoVideoRight`, `cameraLeft`, `cameraRight`. Сигналы поворотников идут именно
+из `Main.qml` (`root.leftTurn` / `root.rightTurn`), а не из `CanBackend`: в Main
+к ним добавлены демо-переключатели стрелками на клавиатуре.
+
+**Условие показа то же, что в классике:** `поворотник && «слепые зоны»`. Опция
+«слепые зоны» лежит в настройках приборки и хранится в `Dashboard.conf`
+(`savedBlindSpotEnabled`); если она выключена — видео не будет ни в одном скине.
 
 На столе (программный рендерер) видно только тёмный круг: `MultiEffect` —
 шейдерный, без GPU не рисует. На устройстве видео работает так же, как в

@@ -74,6 +74,11 @@ Item {
     property bool blindSpotEnabled: true
     property string promoVideoLeft: ""
     property string promoVideoRight: ""
+    // Сигналы поворотников для камер берём из Main.qml, а не из CanBackend:
+    // в Main к ним добавлены демо-переключатели (стрелки на клавиатуре),
+    // иначе в демо-режиме камера не включалась бы.
+    property bool cameraLeft: false
+    property bool cameraRight: false
 
     // ---- палитра из макета ----
     // Ночной режим НЕ гасит панель: в машине он включён всегда, когда горят
@@ -439,7 +444,7 @@ Item {
         value: root.speed
         valueMax: 200
 
-        cameraVisible: root.blindSpotEnabled && root.leftTurn
+        cameraVisible: root.blindSpotEnabled && root.cameraLeft
         cameraVideoSource: root.promoVideoLeft
         cameraLabel: "L"
     }
@@ -452,7 +457,7 @@ Item {
         valueMax: 8
         mirrored: true
 
-        cameraVisible: root.blindSpotEnabled && root.rightTurn
+        cameraVisible: root.blindSpotEnabled && root.cameraRight
         cameraVideoSource: root.promoVideoRight
         cameraLabel: "R"
     }
