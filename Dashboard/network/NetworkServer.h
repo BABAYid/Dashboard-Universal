@@ -80,6 +80,16 @@ public:
     // навигация), события джойстика не пересылаются в мультимедиа.
     Q_INVOKABLE void setInputForwarding(bool on);
 
+    // Приборка взяла маршрут на себя (строит GraphHopper): в этом режиме
+    // кадры экрана от Android — только резерв, поэтому подписка снимается.
+    Q_INVOKABLE void setOfflineRouteActive(bool on);
+
+    // Состояние своего маршрута для route_state (App серверу раз в секунду).
+    // QML обновляет значения при движении; отправка — на 1-Гц таймере.
+    Q_INVOKABLE void setRouteState(bool active, double remainingM, double etaS,
+                                   const QString &maneuver, double nextDistanceM,
+                                   const QString &street);
+
     // Текущий кадр карты для QQuickImageProvider (`image://mapframe/<seq>`).
     QImage mapFrame() const;
 
@@ -110,11 +120,17 @@ signals:
     // и строит маршрут (см. Main.qml, searchAddress).
     void addressReceived(const QString &text);
 
+    // Маршрут от Android: route_handoff — построить к точке, route_clear —
+    // сбросить. Приборка берёт маршрут на себя, кадры экрана — резерв.
+    void routeRequested(double lat, double lon, const QString &name);
+    void routeCancelled();
+
 private slots:
     void onTextMessage(const QString &text);
     void onBinaryMessage(const QByteArray &data);
     void onClimateResult(int id, int action, int result);
     void pushCarSnapshot();
+    void pushRouteState();
     void pushStatus();
     void checkNavStale();
 
@@ -145,6 +161,14 @@ private:
     bool m_mapSupported = false;
     bool m_navigationActive = false;   // приборка в навигационном режиме
     bool m_forwardInput = true;        // пересылать ли джойстик в мультимедиа
+
+    bool m_offlineRouteActive = false;   // приборка сама строит маршрут
+    bool m_routeStateActive = false;
+    double m_routeRemainingM = 0;
+    double m_routeEtaS = 0;
+    QString m_routeManeuver;
+    double m_routeNextDistanceM = 0;
+    QString m_routeStreet;
 
     bool m_navActive = false;
     QString m_navManeuver;

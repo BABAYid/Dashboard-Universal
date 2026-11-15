@@ -363,13 +363,21 @@ Window {
         NetworkServer.setNavigationActive(root.navigationMode)
         NetworkServer.setInputForwarding(!root.navigationMode && !calibration.visible)
 
-        // вошли в навигацию с офлайн-картой — строим маршрут к navDest
+        // вошли в навигацию с офлайн-картой — строим маршрут к navDest.
+        // Если маршрут только что запрошен через requestTo() (route_handoff),
+        // второй запрос не нужен: RouteService сам игнорирует перегрузку.
         if (root.navigationMode && root.offlineMap) {
             root.routeProgress = 0
-            route.buildRoute(root.gpsLat, root.gpsLon, root.navDestLat, root.navDestLon)
+            route.startLat = root.gpsLat
+            route.startLon = root.gpsLon
+            if (!route.loading)
+                route.buildRoute(root.gpsLat, root.gpsLon,
+                                 root.navDestLat, root.navDestLon)
         }
         if (!root.navigationMode)
             root.mapDetached = false
+        NetworkServer.setOfflineRouteActive(
+                    root.navigationMode && root.offlineMap && route.ready)
     }
 
     Connections {
@@ -382,6 +390,58 @@ Window {
     Connections {
         target: NetworkServer
         function onAddressReceived(text) { root.searchAddress(text) }
+    }
+
+    // Маршрут от Android (docs/priberka_route_handoff.md):
+    //   {"type":"route_handoff","lat":..,"lon":..,"name":".."} — строим сами
+    //   {"type":"route_clear"} — сбрасываем
+    // Кадры экрана Android после route_handoff — только резерв.
+    Connections {
+        target: NetworkServer
+        function onRouteRequested(lat, lon, name) {
+            root.navDestLat = lat
+            root.navDestLon = lon
+            root.navDestName = (name && name.length > 0) ? name : "Точка от Android"
+            route.startLat = root.gpsLat
+            route.startLon = root.gpsLon
+            root.routeProgress = 0
+            route.requestTo(lat, lon)
+            root.navigationMode = true
+            if (name && name.length > 0)
+                root.rememberDestination(name, lat, lon)
+            console.log("Маршрут от Android:", root.navDestName,
+                        lat.toFixed(5), lon.toFixed(5))
+        }
+        function onRouteCancelled() {
+            route.clear()
+            root.navigationMode = false
+            console.log("Маршрут от Android: сброшен")
+        }
+    }
+
+    // Состояние своего маршрута для route_state (Android):
+    // QML обновляет поля, NetworkServer отправляет их раз в секунду.
+    Timer {
+        interval: 1000
+        repeat: true
+        running: root.navigationMode && root.offlineMap
+        onTriggered: {
+            const remain = Math.max(0, route.routeDistanceM - route.traveledM)
+            const eta = route.routeDistanceM > 0
+                      ? route.routeTimeS * remain / route.routeDistanceM : 0
+            NetworkServer.setRouteState(route.ready, remain, eta,
+                                        route.hintManeuver,
+                                        route.hintDistanceM, route.hintText)
+        }
+    }
+
+    // Маршрут готов/пропал — обновить подписку на кадры экрана.
+    Connections {
+        target: route
+        function onReadyChanged() {
+            NetworkServer.setOfflineRouteActive(
+                        root.navigationMode && root.offlineMap && route.ready)
+        }
     }
 
     // --- Кинематографичный запуск с 3D-машиной (см. Car3DView.qml) ---
@@ -896,7 +956,18 @@ Window {
             // Фон сцены: в Genesis он прозрачный, чтобы чёрный квадрат не
             // выделялся на панели; в классике как было — чёрный.
             transparentBackground: inGenesis
-            backgroundColor: inGenesis ? "#070D13" : "black"
+            backgroundColor: inGenesis ? "#0A1218" : "black"
+
+            // Края вида растворяются в панели: без этого видна рамка
+            // прямоугольника. Картинка — 420×213, в центре прозрачная,
+            // к краям заливается цветом панели (генерётся в tools).
+            Image {
+                anchors.fill: parent
+                visible: root.skin === "genesis"
+                source: "images/genesis/car3d_fade.png"
+                fillMode: Image.Stretch
+                z: 1
+            }
             progress: root.startupStage
             roadVisible: root.panelReady
             roadSpeed: root.speed

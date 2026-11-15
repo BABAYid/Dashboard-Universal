@@ -29,13 +29,65 @@ Item {
     property var points: []            // [[lon, lat], ...] для карты
     property var maneuvers: []         // [{at: метры от старта, text, sign}]
 
+    // ---- для приёма маршрута от Android (route_handoff) ----
+    // Точка старта (позиция машины) — Main.qml выставляет перед requestTo().
+    property real startLat: 55.7558
+    property real startLon: 37.6173
+    // Шаги для route_state: [{at, distance, sign, text, maneuver}]
+    readonly property var steps: maneuvers
+    // Текущий (ближайший) манёвр: {maneuver, distanceM, street}
+    property var nextStep: null
+
     // ---- текущее положение на маршруте ----
     property real traveledM: 0
     property string hintText: ""
     property real hintDistanceM: 0
     property string hintSign: ""
+    property string hintManeuver: ""
 
     signal routeReady(var coordinates)
+
+    // Знак GraphHopper (int строкой) → maneuver из контракта §6.2
+    // (straight / slight_left / left / sharp_left / slight_right / right /
+    //  sharp_right / uturn / roundabout / arrive / none).
+    function maneuverOfSign(sign) {
+        switch (String(sign)) {
+        case "0":  return "straight"       // CONTINUE
+        case "2":  return "right"          // RIGHT
+        case "3":  return "sharp_right"    // SHARP_RIGHT
+        case "7":  return "slight_right"   // KEEP_RIGHT
+        case "-2": return "left"           // LEFT
+        case "-3": return "sharp_left"     // SHARP_LEFT
+        case "-7": return "slight_left"    // KEEP_LEFT
+        case "4":  return "roundabout"
+        case "5":  return "arrive"         // REACHED_DESTINATION
+        case "-4": return "roundabout"
+        default:   return "straight"
+        }
+    }
+
+    // Принять маршрут от Android (route_handoff): точка назначения,
+    // источник — текущая позиция машины (startLat/startLon).
+    function requestTo(toLat, toLon) {
+        root.buildRoute(root.startLat, root.startLon, toLat, toLon)
+    }
+
+    // Сбросить маршрут (route_clear от Android).
+    function clear() {
+        root.ready = false
+        root.loading = false
+        root.errorText = ""
+        root.routeDistanceM = 0
+        root.routeTimeS = 0
+        root.points = []
+        root.maneuvers = []
+        root.traveledM = 0
+        root.hintText = ""
+        root.hintDistanceM = 0
+        root.hintSign = ""
+        root.hintManeuver = ""
+        root.nextStep = null
+    }
 
     // Построить маршрут между двумя точками
     function buildRoute(fromLat, fromLon, toLat, toLon) {
@@ -70,9 +122,11 @@ Item {
                 const ms = []
                 let acc = 0
                 for (let i = 0; i < ins.length; i++) {
+                    const sign = String(ins[i].sign || "")
                     ms.push({ at: acc, text: ins[i].text || "",
-                              sign: String(ins[i].sign || ""),
-                              distance: ins[i].distance })
+                              sign: sign,
+                              distance: ins[i].distance,
+                              maneuver: root.maneuverOfSign(sign) })
                     acc += ins[i].distance || 0
                 }
                 root.maneuvers = ms
@@ -106,12 +160,19 @@ Item {
             if (m.at + (m.distance || 0) > t) {
                 root.hintText = m.text
                 root.hintSign = m.sign
+                root.hintManeuver = m.maneuver
                 root.hintDistanceM = Math.max(0, m.at - t)
+                root.nextStep = { maneuver: m.maneuver,
+                                  distanceM: Math.max(0, m.at - t),
+                                  street: m.text }
                 return
             }
         }
         root.hintText = "Прибытие"
         root.hintDistanceM = Math.max(0, root.routeDistanceM - t)
-        root.hintSign = "4"
+        root.hintSign = "5"
+        root.hintManeuver = "arrive"
+        root.nextStep = { maneuver: "arrive", distanceM: root.hintDistanceM,
+                          street: "Прибытие" }
     }
 }

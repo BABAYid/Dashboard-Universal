@@ -184,6 +184,8 @@ int NetworkServer::start()
     m_carTimer = new QTimer(this);
     m_carTimer->setInterval(1000);
     connect(m_carTimer, &QTimer::timeout, this, &NetworkServer::pushCarSnapshot);
+    // Тем же 1-Гц таймером — состояние своего маршрута для route_state.
+    connect(m_carTimer, &QTimer::timeout, this, &NetworkServer::pushRouteState);
     m_carTimer->start();
 
     m_statusTimer = new QTimer(this);
@@ -581,6 +583,31 @@ void NetworkServer::onTextMessage(const QString &text)
         return;
     }
 
+    if (type == QLatin1String("route_handoff")) {
+        // Android просит построить маршрут к точке. Проверяем координаты:
+        // нули и NaN — это не точка, такой запрос не пускаем.
+        const double lat = object.value(QStringLiteral("lat")).toDouble(qQNaN());
+        const double lon = object.value(QStringLiteral("lon")).toDouble(qQNaN());
+        const bool ok = std::isfinite(lat) && std::isfinite(lon)
+            && lat >= -90.0 && lat <= 90.0
+            && lon >= -180.0 && lon <= 180.0
+            && !(qAbs(lat) < 1e-9 && qAbs(lon) < 1e-9);
+        if (!ok) {
+            qWarning() << "Сеть: route_handoff с некорректными координатами" << lat << lon;
+            return;
+        }
+        const QString name = object.value(QStringLiteral("name")).toString();
+        qInfo() << "Сеть: route_handoff" << lat << lon << name;
+        emit routeRequested(lat, lon, name);
+        return;
+    }
+
+    if (type == QLatin1String("route_clear")) {
+        qInfo() << "Сеть: route_clear — маршрут сброшен";
+        emit routeCancelled();
+        return;
+    }
+
     if (type == QLatin1String("address")) {
         // Телефон прислал адрес: "Москва, ул. Ленина 5". Поиск и маршрут —
         // на приборке (база адресов SQLite FTS на устройстве).
@@ -635,6 +662,47 @@ void NetworkServer::pushCarSnapshot()
     sendToClients(message);
 }
 
+void NetworkServer::pushRouteState()
+{
+    if (m_clients.isEmpty())
+        return;
+    QJsonObject message;
+    message.insert(QStringLiteral("type"), QStringLiteral("route_state"));
+    message.insert(QStringLiteral("ts"), QDateTime::currentMSecsSinceEpoch());
+    message.insert(QStringLiteral("active"), m_routeStateActive);
+    message.insert(QStringLiteral("remaining_m"), num(m_routeRemainingM));
+    message.insert(QStringLiteral("eta_s"), num(m_routeEtaS));
+    message.insert(QStringLiteral("maneuver"), m_routeManeuver);
+    message.insert(QStringLiteral("next_distance_m"), num(m_routeNextDistanceM));
+    message.insert(QStringLiteral("street"), m_routeStreet);
+    sendToClients(message);
+}
+
+void NetworkServer::setRouteState(bool active, double remainingM, double etaS,
+                                  const QString &maneuver, double nextDistanceM,
+                                  const QString &street)
+{
+    m_routeStateActive = active;
+    m_routeRemainingM = remainingM;
+    m_routeEtaS = etaS;
+    m_routeManeuver = maneuver;
+    m_routeNextDistanceM = nextDistanceM;
+    m_routeStreet = street;
+}
+
+void NetworkServer::setOfflineRouteActive(bool on)
+{
+    if (m_offlineRouteActive == on)
+        return;
+    m_offlineRouteActive = on;
+    // Взяли маршрут на себя — кадры экрана больше не резерв, а именно
+    // резерв: отписываемся. Отдали (маршрута нет) — снова просим кадры.
+    if (on)
+        requestMapFrames(false);
+    else if (m_navigationActive)
+        requestMapFrames(true);
+}
+
 void NetworkServer::pushStatus()
 {
     if (m_clients.isEmpty())
@@ -671,7 +739,9 @@ void NetworkServer::setNavigationActive(bool on)
     if (m_navigationActive == on)
         return;
     m_navigationActive = on;
-    requestMapFrames(on);
+    // Кадры экрана нужны только как резерв: если приборка строит маршрут
+    // сама (офлайн-карта), картинка Android не нужна.
+    requestMapFrames(on && !m_offlineRouteActive);
     if (!on) {
         // Вышли из навигации — кадры больше не нужны, карту отпускаем.
         m_mapFrame = QImage();
