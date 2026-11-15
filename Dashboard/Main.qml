@@ -758,6 +758,26 @@ Window {
             mapZoom: root.mapZoom
         }
 
+        // ============ ПОДСКАЗКА МАНЁВРА (свой маршрут) ============
+        // В навигации на своей карте плашка с ближайшим манёвром и
+        // остатком пути (данные RouteService/GraphHopper).
+        RouteHint {
+            id: routeHint
+            x: (parent.width - width) / 2
+            y: parent.height - height - 12
+            z: 6
+            shown: root.navigationMode && root.offlineMap && route.ready
+            distanceM: route.hintDistanceM
+            sign: route.hintSign
+            hintText: route.hintText
+            remainM: Math.max(0, route.routeDistanceM - route.traveledM)
+            remainS: route.routeDistanceM > 0
+                     ? route.routeTimeS
+                       * Math.max(0, route.routeDistanceM - route.traveledM)
+                       / route.routeDistanceM
+                     : 0
+        }
+
         // ============ ИЗБРАННОЕ НА КАРТЕ ============
         // В навигации слева сверху: энкодер листает список, PRESS строит
         // маршрут к выбранной точке; ◀/▶ сдвигают вид карты — тогда в

@@ -18,7 +18,7 @@ Item {
     property string hintText: ""     // «Поверните направо на …»
     property real remainM: 0         // осталось до цели, м
     property real remainS: 0         // до цели, с
-    property bool visible: false
+    property bool shown: false
 
     readonly property color colorText: "#E8F1F5"
     readonly property color colorDim: "#6E8597"
@@ -54,7 +54,7 @@ Item {
         return min + " мин"
     }
 
-    visible: root.visible
+    visible: root.shown
     width: 640
     height: 88
 
@@ -81,7 +81,7 @@ Item {
         spacing: 2
 
         Text {
-            text: root.hintDistanceM > 0
+            text: (root.distanceM > 0 && root.hintText !== "")
                   ? "ЧЕРЕЗ " + root.distanceText(root.distanceM).toUpperCase()
                   : ""
             color: root.colorText
