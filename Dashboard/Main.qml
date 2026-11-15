@@ -846,6 +846,7 @@ Window {
             rangeKm: root.rangeKmValid ? root.rangeKm : 0
             nightMode: root.nightMode
             // камеры слепых зон в колодцах приборов
+            centerMode: root.centerMode
             blindSpotEnabled: root.blindSpotEnabled
             promoVideoLeft: root.promoVideoLeft
             promoVideoRight: root.promoVideoRight
@@ -877,13 +878,18 @@ Window {
         // чтобы показания не ложились поверх модели.
         Car3DView {
             id: carView
-            // Шире центральной зоны: концы дороги упираются в точки, где
-            // горизонтальные полосы уходят под тахометр и спидометр
-            // (560…1360), при 492 они висели бы внутри зоны.
-            x: 560
-            y: 149
-            width: 800
-            height: 406
+            // В классике вид шире центральной зоны: концы дороги уходят под
+            // приборы (560…1360). В скине Genesis приборы крупнее и ближе к
+            // центру, поэтому вид ставится в свободную колонку между ними
+            // (711…1229) и поднимается над скином (z 60 против 50).
+            readonly property bool inGenesis: root.skin === "genesis"
+            // Пропорции вида сохраняем как в классике (800×406 ≈ 1.97):
+            // при ширине 518 высота 263, иначе камера обрезает дорогу по бокам.
+            x: inGenesis ? 711 : 560
+            y: inGenesis ? 130 : 149
+            width: inGenesis ? 518 : 800
+            height: inGenesis ? 263 : 406
+            z: inGenesis ? 60 : 0
             progress: root.startupStage
             roadVisible: root.panelReady
             roadSpeed: root.speed

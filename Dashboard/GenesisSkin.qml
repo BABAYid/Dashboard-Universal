@@ -76,6 +76,11 @@ Item {
 
     // Камеры слепых зон в колодцах приборов (как в классическом скине).
     // Main.qml передаёт эти три свойства; поворотники скин берёт из CanBackend.
+    // Режим центральной панели (Main.qml: 0…5). В 5-м и 6-м режимах в центре
+    // показывается 3D-машина, поэтому колонку данных там прячем.
+    property int centerMode: 0
+    readonly property bool car3dMode: root.centerMode === 4 || root.centerMode === 5
+
     property bool blindSpotEnabled: true
     property string promoVideoLeft: ""
     property string promoVideoRight: ""
@@ -610,6 +615,7 @@ Item {
 
     // Буква передачи: капс 48 px → кегль ~66.
     Text {
+        visible: !root.car3dMode
         x: 714
         y: 36
         width: 200
@@ -622,6 +628,7 @@ Item {
     // Линия-разделитель: в макете путь от (718, 110) до (1211, 110)
     // с градиентом от прозрачного к светлому.
     Rectangle {
+        visible: !root.car3dMode
         x: 718
         y: 110
         width: 493
@@ -686,6 +693,7 @@ Item {
     // точно опознаны два (топливо во второй строке, часы в третьей), поэтому
     // температура стоит сверху, топливо — в середине.
     InfoRow {
+        visible: !root.car3dMode
         x: 787
         y: 298
         icon: "images/genesis/icon_coolant.png"
@@ -694,6 +702,7 @@ Item {
     }
 
     InfoRow {
+        visible: !root.car3dMode
         x: 787
         y: 376
         icon: "images/genesis/icon_fuel.png"
@@ -702,6 +711,7 @@ Item {
     }
 
     InfoRow {
+        visible: !root.car3dMode
         x: 787
         y: 455
         icon: "images/genesis/icon_clock.png"
@@ -712,6 +722,7 @@ Item {
     // Строка пробега за поездку: в макете на этом месте широкая надпись
     // (785…1132, y=193).
     Text {
+        visible: !root.car3dMode
         x: 785
         width: 348
         y: 189
