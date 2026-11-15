@@ -676,11 +676,22 @@ void NetworkServer::pushRouteState()
     message.insert(QStringLiteral("type"), QStringLiteral("route_state"));
     message.insert(QStringLiteral("ts"), QDateTime::currentMSecsSinceEpoch());
     message.insert(QStringLiteral("active"), m_routeStateActive);
-    message.insert(QStringLiteral("remaining_m"), num(m_routeRemainingM));
+    // Форма по контракту §6.6: distance_m + next{maneuver,distance_m,street}.
+    message.insert(QStringLiteral("distance_m"), num(m_routeRemainingM));
     message.insert(QStringLiteral("eta_s"), num(m_routeEtaS));
+    QJsonObject next;
+    next.insert(QStringLiteral("maneuver"), m_routeManeuver);
+    next.insert(QStringLiteral("distance_m"), num(m_routeNextDistanceM));
+    next.insert(QStringLiteral("street"), m_routeStreet);
+    message.insert(QStringLiteral("next"), next);
+    // Плоские поля — для уже установленной версии мультимедиа, которая читает
+    // старую форму. Уберём, когда все клиенты перейдут на §6.6.
+    message.insert(QStringLiteral("remaining_m"), num(m_routeRemainingM));
     message.insert(QStringLiteral("maneuver"), m_routeManeuver);
     message.insert(QStringLiteral("next_distance_m"), num(m_routeNextDistanceM));
     message.insert(QStringLiteral("street"), m_routeStreet);
+    if (!m_routeError.isEmpty())
+        message.insert(QStringLiteral("error"), m_routeError);
     sendToClients(message);
 }
 
@@ -694,6 +705,11 @@ void NetworkServer::setRouteState(bool active, double remainingM, double etaS,
     m_routeManeuver = maneuver;
     m_routeNextDistanceM = nextDistanceM;
     m_routeStreet = street;
+}
+
+void NetworkServer::setRouteError(const QString &error)
+{
+    m_routeError = error;
 }
 
 void NetworkServer::setOfflineRouteActive(bool on)

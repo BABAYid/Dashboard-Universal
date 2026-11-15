@@ -90,6 +90,12 @@ public:
                                    const QString &maneuver, double nextDistanceM,
                                    const QString &street);
 
+    // Отказ приборки: маршрут не построен (точки вне офлайн-карты, GraphHopper
+    // ответил ошибкой). Уходит в route_state как "error":"no_route" — по
+    // контракту §6.6 мультимедиа тогда возвращается к кадрам экрана.
+    // Пустая строка — сброс.
+    Q_INVOKABLE void setRouteError(const QString &error);
+
     // Текущий кадр карты для QQuickImageProvider (`image://mapframe/<seq>`).
     QImage mapFrame() const;
 
@@ -169,6 +175,7 @@ private:
     QString m_routeManeuver;
     double m_routeNextDistanceM = 0;
     QString m_routeStreet;
+    QString m_routeError;              // "no_route" — маршрут не построен
 
     bool m_navActive = false;
     QString m_navManeuver;

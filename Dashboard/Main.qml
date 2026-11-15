@@ -374,8 +374,12 @@ Window {
                 route.buildRoute(root.gpsLat, root.gpsLon,
                                  root.navDestLat, root.navDestLon)
         }
-        if (!root.navigationMode)
+        if (!root.navigationMode) {
             root.mapDetached = false
+            // Вышли из навигации — маршрута больше нет, состояние устарело.
+            NetworkServer.setRouteState(false, 0, 0, "", 0, "")
+            NetworkServer.setRouteError("")
+        }
         NetworkServer.setOfflineRouteActive(
                     root.navigationMode && root.offlineMap && route.ready)
     }
@@ -405,6 +409,7 @@ Window {
             route.startLat = root.gpsLat
             route.startLon = root.gpsLon
             root.routeProgress = 0
+            NetworkServer.setRouteError("")   // новый маршрут — прошлый отказ забыт
             route.requestTo(lat, lon)
             root.navigationMode = true
             if (name && name.length > 0)
@@ -415,6 +420,12 @@ Window {
         function onRouteCancelled() {
             route.clear()
             root.navigationMode = false
+            // Пока маршрут был активен, приборка каждый секунду сообщала
+            // route_state с "active": true. После сброса это состояние
+            // устарело: без явного сброса мультимедиа так и считает, что
+            // ведёт приборка, и не поднимает свой навигатор.
+            NetworkServer.setRouteState(false, 0, 0, "", 0, "")
+            NetworkServer.setRouteError("")
             console.log("Маршрут от Android: сброшен")
         }
     }
@@ -439,8 +450,16 @@ Window {
     Connections {
         target: route
         function onReadyChanged() {
+            if (route.ready)
+                NetworkServer.setRouteError("")   // маршрут есть — отказа нет
             NetworkServer.setOfflineRouteActive(
                         root.navigationMode && root.offlineMap && route.ready)
+        }
+        // GraphHopper не смог (чаще всего — точки вне офлайн-карты):
+        // говорим мультимедиа "no_route", оно возвращается к кадрам экрана.
+        function onRouteFailed(reason) {
+            NetworkServer.setRouteError(reason)
+            console.log("Маршрут: отказ, мультимедиа —", reason)
         }
     }
 

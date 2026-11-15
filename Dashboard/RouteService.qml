@@ -46,6 +46,9 @@ Item {
     property string hintManeuver: ""
 
     signal routeReady(var coordinates)
+    // Маршрут не построился (точки вне офлайн-карты, GraphHopper ответил не
+    // 200): Main.qml превращает это в route_state с "error":"no_route".
+    signal routeFailed(string reason)
 
     // Знак GraphHopper (int строкой) → maneuver из контракта §6.2
     // (straight / slight_left / left / sharp_left / slight_right / right /
@@ -108,6 +111,7 @@ Item {
             if (xhr.status !== 200) {
                 root.errorText = "маршрут недоступен (" + xhr.status + ")"
                 console.log("Маршрут:", root.errorText)
+                root.routeFailed("no_route")
                 return
             }
             try {
@@ -140,6 +144,7 @@ Item {
             } catch (e) {
                 root.errorText = "не разобрал ответ: " + e
                 console.log("Маршрут:", root.errorText)
+                root.routeFailed("no_route")
             }
         }
         xhr.open("GET", url)
