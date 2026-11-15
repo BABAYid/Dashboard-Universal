@@ -32,6 +32,12 @@ Item {
     property real progress: 1.0
     property bool idleMotion: true
 
+    // Фон вида. По умолчанию прозрачный: сцена стоит поверх скина, и её чёрный
+    // квадрат выделялся на фоне панели. Если прозрачность где-то не нужна —
+    // transparentBackground: false и backgroundColor в цвет панели.
+    property bool transparentBackground: true
+    property color backgroundColor: "black"
+
     // Тестовый режим дверей/капота/багажника: кнопки в настройках.
     property bool doorsOpen: false
     // Двери по отдельности (демо с клавиатуры: 1 — FL, 2 — FR, 3 — RL, 4 — RR)
@@ -216,8 +222,10 @@ Item {
         camera: camera
 
         environment: SceneEnvironment {
-            backgroundMode: SceneEnvironment.Color
-            clearColor: "black"
+            backgroundMode: scene.transparentBackground
+                            ? SceneEnvironment.Transparent
+                            : SceneEnvironment.Color
+            clearColor: scene.backgroundColor
             antialiasingMode: SceneEnvironment.NoAA
             // Дымка: дальний край дороги и лучи фар уходят в синеватый мрак —
             // эффект объёма без пост-обработки (на Mali так дешевле).

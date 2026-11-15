@@ -893,6 +893,10 @@ Window {
             width: inGenesis ? 420 : 800
             height: inGenesis ? 213 : 406
             z: inGenesis ? 60 : 0
+            // Фон сцены: в Genesis он прозрачный, чтобы чёрный квадрат не
+            // выделялся на панели; в классике как было — чёрный.
+            transparentBackground: inGenesis
+            backgroundColor: inGenesis ? "#070D13" : "black"
             progress: root.startupStage
             roadVisible: root.panelReady
             roadSpeed: root.speed
