@@ -69,6 +69,11 @@ Item {
     readonly property string numericFont: "Kdam Thmor Pro"
     property bool nightMode: false
 
+    // Настройки приборки открывает Main.qml (оверлей у него поверх всего,
+    // z 300) — скин только сообщает о желании. Вход: двойной клик по
+    // центральной колонке, как в классике, или кнопка OPTION на джойстике.
+    signal settingsRequested()
+
     // Камеры слепых зон в колодцах приборов (как в классическом скине).
     // Main.qml передаёт эти три свойства; поворотники скин берёт из CanBackend.
     property bool blindSpotEnabled: true
@@ -837,6 +842,19 @@ Item {
                                      : "images/genesis/icon_snow.png"
         fillMode: Image.PreserveAspectFit
         opacity: root.nightMode ? 0.8 : 0.95
+    }
+
+    // ======================= ВХОД В НАСТРОЙКИ =======================
+    // Двойной клик по центральной колонке — как в классическом скине
+    // (там по центральной зоне). Область ограничена серединой экрана,
+    // чтобы не мешать нажатиям на карте в центре.
+    MouseArea {
+        x: 714
+        y: 0
+        width: 492
+        height: 520
+        acceptedButtons: Qt.LeftButton
+        onDoubleClicked: root.settingsRequested()
     }
 
     // ======================= НИЖНЯЯ ПАНЕЛЬ =======================

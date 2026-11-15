@@ -851,6 +851,24 @@ Window {
             promoVideoRight: root.promoVideoRight
             cameraLeft: root.leftTurn
             cameraRight: root.rightTurn
+            // вход в настройки из скина (двойной клик по центру)
+            onSettingsRequested: calibration.open()
+        }
+
+        // Оверлей настроек живёт на уровне canvas, а не внутри dashboardLayer:
+        // иначе его z: 300 считается только среди соседей внутри слоя,
+        // и скин Genesis (z: 50) закрывал бы настройки собой.
+        Settings {
+            id: calibration
+
+            nightMode: root.nightMode
+
+            onSettingsApplied: function(sf, rf, ff, tf) {
+                root.speedFactor = sf
+                root.rpmFactor = rf
+                root.fuelFactor = ff
+                root.tempFactor = tf
+            }
         }
 
         // ============ 3D-МАШИНА: 5-й вид центральной зоны (714,154,492×404) ============
@@ -1513,18 +1531,6 @@ Window {
         //  объявлен внутри canvas, поэтому масштабируется вместе с макетом.
         //  Открывается кнопкой «Настройки» или двойным кликом по центру.
         // ====================================================================
-        Settings {
-            id: calibration
-
-            nightMode: root.nightMode
-
-            onSettingsApplied: function(sf, rf, ff, tf) {
-                root.speedFactor = sf
-                root.rpmFactor = rf
-                root.fuelFactor = ff
-                root.tempFactor = tf
-            }
-        }
 
         // ====================================================================
         //  Самопроверка ламп и стрелок при включении зажигания
