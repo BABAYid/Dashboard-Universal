@@ -391,6 +391,7 @@ Window {
             // Вышли из навигации — маршрута больше нет, состояние устарело.
             NetworkServer.setRouteState(false, 0, 0, "", 0, "")
             NetworkServer.setRouteError("")
+            NetworkServer.setRoutePath([])
         }
         NetworkServer.setOfflineRouteActive(
                     root.navigationMode && root.offlineMap && route.ready)
@@ -431,6 +432,7 @@ Window {
         }
         function onRouteCancelled() {
             route.clear()
+            NetworkServer.setRoutePath([])
             root.navigationMode = false
             // Пока маршрут был активен, приборка каждый секунду сообщала
             // route_state с "active": true. После сброса это состояние
@@ -833,7 +835,12 @@ Window {
         // ============ МАРШРУТЫ (офлайн GraphHopper) ============
         RouteService {
             id: route
-            onRouteReady: function(coords) { offlineMapView.setRoute(coords) }
+            onRouteReady: function(coords) {
+                offlineMapView.setRoute(coords)
+                // Геометрия для мини-карты мультимедиа (§6.6): в route_state
+                // она не нужна, а полилиния на телефоне полезна.
+                NetworkServer.setRoutePath(coords)
+            }
         }
 
         // ============ ОФЛАЙН-КАРТА (навигация) ============

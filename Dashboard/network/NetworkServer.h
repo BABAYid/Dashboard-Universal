@@ -2,6 +2,7 @@
 
 #include <QHash>
 #include <QImage>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
 #include <QQmlEngine>
@@ -96,6 +97,12 @@ public:
     // Пустая строка — сброс.
     Q_INVOKABLE void setRouteError(const QString &error);
 
+    // Геометрия маршрута для мини-карты мультимедиа: [[lon,lat], …].
+    // Приходит один раз при построении маршрута (и повторно новому клиенту),
+    // а не каждый тик: в route_state полилинию гонять незачем. Пустой список —
+    // маршрута больше нет.
+    Q_INVOKABLE void setRoutePath(const QVariantList &points);
+
     // Текущий кадр карты для QQuickImageProvider (`image://mapframe/<seq>`).
     QImage mapFrame() const;
 
@@ -137,6 +144,7 @@ private slots:
     void onClimateResult(int id, int action, int result);
     void pushCarSnapshot();
     void pushRouteState();
+    void pushRoutePath();
     void pushStatus();
     void checkNavStale();
 
@@ -176,6 +184,7 @@ private:
     double m_routeNextDistanceM = 0;
     QString m_routeStreet;
     QString m_routeError;              // "no_route" — маршрут не построен
+    QJsonArray m_routePath;            // [[lon,lat], …] для мини-карты
 
     bool m_navActive = false;
     QString m_navManeuver;

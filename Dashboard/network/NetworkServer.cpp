@@ -566,6 +566,10 @@ void NetworkServer::onTextMessage(const QString &text)
         emit clientChanged();
         qInfo() << "Сеть: клиент представился, api" << m_clientApi
                 << "кадры карты:" << m_mapSupported;
+        // Новому клиенту сразу отдаём геометрию активного маршрута, иначе
+        // мультимедиа увидит маршрут только со следующего перестроения.
+        if (!m_routePath.isEmpty())
+            pushRoutePath();
         return;
     }
 
@@ -710,6 +714,31 @@ void NetworkServer::setRouteState(bool active, double remainingM, double etaS,
 void NetworkServer::setRouteError(const QString &error)
 {
     m_routeError = error;
+}
+
+void NetworkServer::setRoutePath(const QVariantList &points)
+{
+    QJsonArray path;
+    for (const QVariant &point : points) {
+        const QVariantList pair = point.toList();
+        if (pair.size() < 2)
+            continue;
+        path.append(QJsonArray{pair.at(0).toDouble(), pair.at(1).toDouble()});
+    }
+    m_routePath = path;
+    pushRoutePath();
+}
+
+void NetworkServer::pushRoutePath()
+{
+    if (m_clients.isEmpty())
+        return;
+    QJsonObject message;
+    message.insert(QStringLiteral("type"), QStringLiteral("route_path"));
+    message.insert(QStringLiteral("ts"), QDateTime::currentMSecsSinceEpoch());
+    message.insert(QStringLiteral("active"), !m_routePath.isEmpty());
+    message.insert(QStringLiteral("points"), m_routePath);
+    sendToClients(message);
 }
 
 void NetworkServer::setOfflineRouteActive(bool on)
