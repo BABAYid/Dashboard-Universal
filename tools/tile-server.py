@@ -25,6 +25,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 TILE_LOG = {"served": 0, "empty": 0}
+LOG_REQUESTS = False
 DBS = []             # несколько mbtiles: области собираются отдельными файлами
 ADDR = None          # база адресов (SQLite FTS), может отсутствовать
 LOCK = threading.Lock()
@@ -99,6 +100,8 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def _send(self, code, body, ctype):
+        if LOG_REQUESTS:
+            print(f"{code} {len(body):>7}б {self.path}", flush=True)
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
@@ -188,7 +191,11 @@ def main():
     ap.add_argument("mbtiles", nargs="+",
                     help="один или несколько .mbtiles (области карты)")
     ap.add_argument("--port", type=int, default=8090)
+    ap.add_argument("--log-requests", action="store_true",
+                    help="печатать каждый запрос (отладка карты: видно, что просит MapLibre)")
     args = ap.parse_args()
+    global LOG_REQUESTS
+    LOG_REQUESTS = args.log_requests
     for path in args.mbtiles:
         if not os.path.exists(path):
             sys.exit(f"нет файла {path} — сначала соберите тайлы")

@@ -153,6 +153,50 @@
       }
     };
     map.on('error', function(e) { console.log('map error: ' + (e.error && e.error.message)); });
+
+    // --- диагностика страницы карты (?diag=1) ------------------------------
+    // Открывается как http://127.0.0.1:8090/map.html?diag=1 и через 4 секунды
+    // пишет в <pre> состояние стиля, источников и отрендеренных объектов.
+    // Так «пустая карта» разбирается за один запуск:
+    //   google-chrome --headless --dump-dom 'http://127.0.0.1:8090/map.html?diag=1'
+    var diagMode = location.search.indexOf('diag') >= 0;
+    if (diagMode) {
+      var errors = [];
+      map.on('error', function(ev) {
+        errors.push((ev.error && ev.error.message) || String(ev));
+      });
+      setTimeout(function() {
+        var out = [];
+        var src = map.getSource('osm');
+        var st = map.getStyle();
+        out.push('isStyleLoaded=' + map.isStyleLoaded());
+        out.push('layers=' + (st && st.layers ? st.layers.length : -1));
+        out.push('canvas=' + map.getCanvas().width + 'x' + map.getCanvas().height);
+        out.push('center=' + map.getCenter().lng.toFixed(4) + ',' + map.getCenter().lat.toFixed(4)
+                 + ' zoom=' + map.getZoom().toFixed(1));
+        out.push('source osm=' + (src ? 'есть' : 'НЕТ'));
+        try {
+          var feats = src ? src._data ? 'tiles=' + Object.keys(src._data).length : 'нет data' : '-';
+          out.push('srcdata=' + feats);
+        } catch (e) { out.push('srcdata err ' + e); }
+        try {
+          var all = map.querySourceFeatures('osm');
+          out.push('querySourceFeatures=' + all.length);
+          var byLayer = {};
+          all.forEach(function(f) { byLayer[f.sourceLayer] = (byLayer[f.sourceLayer] || 0) + 1; });
+          out.push('по слоям: ' + JSON.stringify(byLayer));
+        } catch (e) { out.push('querySourceFeatures err ' + e); }
+        try {
+          var rend = map.queryRenderedFeatures();
+          out.push('queryRenderedFeatures=' + rend.length);
+        } catch (e) { out.push('queryRendered err ' + e); }
+        out.push('errors=' + JSON.stringify(errors));
+        var pre = document.createElement('pre');
+        pre.id = 'diag';
+        pre.textContent = out.join('\n');
+        document.body.appendChild(pre);
+      }, 4000);
+    }
   </script>
 </body>
 </html>
