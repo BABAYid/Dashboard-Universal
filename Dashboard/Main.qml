@@ -862,6 +862,9 @@ Window {
             distanceM: route.hintDistanceM
             sign: route.hintSign
             hintText: route.hintText
+            nextHintText: route.nextHintText
+            nextManeuver: route.nextHintManeuver
+            nextDistanceM: route.nextHintDistanceM
             remainM: Math.max(0, route.routeDistanceM - route.traveledM)
             remainS: route.routeDistanceM > 0
                      ? route.routeTimeS

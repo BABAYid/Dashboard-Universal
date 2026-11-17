@@ -44,6 +44,10 @@ Item {
     property real hintDistanceM: 0
     property string hintSign: ""
     property string hintManeuver: ""
+    // Следующий после текущего манёвр — «затем …».
+    property string nextHintText: ""
+    property real nextHintDistanceM: 0
+    property string nextHintManeuver: ""
 
     signal routeReady(var coordinates)
     // Маршрут не построился (точки вне офлайн-карты, GraphHopper ответил не
@@ -161,20 +165,38 @@ Item {
         if (!root.ready || root.maneuvers.length === 0)
             return
         const t = root.traveledM
+        const ahead = []
         for (let i = 0; i < root.maneuvers.length; i++) {
             const m = root.maneuvers[i]
             // Участок уже пройден (или идёт) — этот манёвр позади.
             if (m.at <= t + 1e-6)
                 continue
-            root.hintText = m.text
-            root.hintSign = m.sign
-            root.hintManeuver = m.maneuver
-            root.hintDistanceM = m.at - t
-            root.nextStep = { maneuver: m.maneuver,
-                              distanceM: m.at - t,
-                              street: m.text }
+            ahead.push(m)
+        }
+        if (ahead.length > 0) {
+            const cur = ahead[0]
+            root.hintText = cur.text
+            root.hintSign = cur.sign
+            root.hintManeuver = cur.maneuver
+            root.hintDistanceM = cur.at - t
+            root.nextStep = { maneuver: cur.maneuver,
+                              distanceM: cur.at - t,
+                              street: cur.text }
+            if (ahead.length > 1) {
+                const nxt = ahead[1]
+                root.nextHintText = nxt.text
+                root.nextHintManeuver = nxt.maneuver
+                root.nextHintDistanceM = nxt.at - t
+            } else {
+                root.nextHintText = ""
+                root.nextHintManeuver = ""
+                root.nextHintDistanceM = 0
+            }
             return
         }
+        root.nextHintText = ""
+        root.nextHintManeuver = ""
+        root.nextHintDistanceM = 0
         root.hintText = "Прибытие"
         root.hintDistanceM = Math.max(0, root.routeDistanceM - t)
         root.hintSign = "5"

@@ -18,6 +18,10 @@ Item {
     property string hintText: ""     // «Поверните направо на …»
     property real remainM: 0         // осталось до цели, м
     property real remainS: 0         // до цели, с
+    // Следующий после текущего манёвр («затем …»)
+    property string nextHintText: ""
+    property string nextManeuver: ""
+    property real nextDistanceM: 0
     property bool shown: false
 
     readonly property color colorText: "#E8F1F5"
@@ -94,6 +98,16 @@ Item {
             color: root.colorText
             font.pixelSize: 18
             width: 380
+            elide: Text.ElideRight
+        }
+        Text {
+            visible: root.nextHintText !== "" && root.nextDistanceM > 0
+            text: "затем " + root.signGlyph(root.nextManeuver) + " "
+                  + root.distanceText(root.nextDistanceM)
+                  + " · " + root.nextHintText
+            color: root.colorDim
+            font.pixelSize: 13
+            width: 420
             elide: Text.ElideRight
         }
     }
