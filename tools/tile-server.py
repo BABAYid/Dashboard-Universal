@@ -25,7 +25,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 TILE_LOG = {"served": 0, "empty": 0}
-DB = None
+DBS = []             # несколько mbtiles: области собираются отдельными файлами
 ADDR = None          # база адресов (SQLite FTS), может отсутствовать
 LOCK = threading.Lock()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -33,10 +33,10 @@ MAP_DIR = os.path.join(HERE, "..", "Dashboard", "map")
 
 
 def open_db(path):
-    global DB
-    DB = sqlite3.connect(path, check_same_thread=False)
-    meta = dict(DB.execute("select name, value from metadata").fetchall())
-    print(f"MBTiles: {meta.get('name','?')} | формат {meta.get('format','?')} | "
+    db = sqlite3.connect(path, check_same_thread=False)
+    meta = dict(db.execute("select name, value from metadata").fetchall())
+    DBS.append(db)
+    print(f"MBTiles: {os.path.basename(path)} | формат {meta.get('format','?')} | "
           f"bounds {meta.get('bounds','?')} | зумы {meta.get('minzoom','?')}–{meta.get('maxzoom','?')}")
 
 
@@ -83,10 +83,15 @@ def search_address(q, limit=5, lat=None, lon=None):
 
 
 def tile(z, x, y):
+    # Области лежат отдельными файлами: тайл берём из первой базы, где он есть.
     with LOCK:
-        row = DB.execute("select tile_data from tiles where zoom_level=? and tile_column=? and tile_row=?",
-                         (z, x, (1 << z) - 1 - y)).fetchone()
-    return row[0] if row else None
+        for db in DBS:
+            row = db.execute(
+                "select tile_data from tiles where zoom_level=? and tile_column=? and tile_row=?",
+                (z, x, (1 << z) - 1 - y)).fetchone()
+            if row:
+                return row[0]
+    return None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -180,13 +185,15 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("mbtiles")
+    ap.add_argument("mbtiles", nargs="+",
+                    help="один или несколько .mbtiles (области карты)")
     ap.add_argument("--port", type=int, default=8090)
     args = ap.parse_args()
-    if not os.path.exists(args.mbtiles):
-        sys.exit(f"нет файла {args.mbtiles} — сначала соберите тайлы")
-    open_db(args.mbtiles)
-    open_addr_db(os.path.join(os.path.dirname(args.mbtiles) or ".", "addresses.sqlite"))
+    for path in args.mbtiles:
+        if not os.path.exists(path):
+            sys.exit(f"нет файла {path} — сначала соберите тайлы")
+        open_db(path)
+    open_addr_db(os.path.join(os.path.dirname(args.mbtiles[0]) or ".", "addresses.sqlite"))
     srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"сервер тайлов: http://127.0.0.1:{args.port}/map.html")
     srv.serve_forever()

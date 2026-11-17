@@ -156,11 +156,33 @@ def main():
     ap = argparse.ArgumentParser(description="Тестовый gpsd для приборки (JSON по TCP)")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=2947)
+    ap.add_argument("--center", default="",
+                    help="центр демо-трека «широта,долгота» (по умолчанию Москва)")
+    ap.add_argument("--radius", type=float, default=1200.0,
+                    help="радиус демо-круга в метрах (по умолчанию 1200)")
     args = ap.parse_args()
+
+    place = "Москва"
+    if args.center:
+        # Демо-трек в своём городе: кольцо вокруг заданной точки. Нужно, когда
+        # проверяешь маршруты приборки там, где нет демо-трека Москвы
+        # (например, Петербург: см. tools/nav-extract.sh и docs/nav_offline.md).
+        lat0, lon0 = [float(v) for v in args.center.split(",")]
+        n = 24
+        dlat = args.radius / 111320.0
+        dlon = args.radius / (111320.0 * math.cos(math.radians(lat0)))
+        ring = [
+            (round(lat0 + dlat * math.sin(2 * math.pi * i / n), 7),
+             round(lon0 + dlon * math.cos(2 * math.pi * i / n), 7))
+            for i in range(n)
+        ]
+        with LOCK:
+            STATE["track"] = Track(ring)
+        place = f"{lat0:.4f},{lon0:.4f} (радиус {args.radius:.0f} м)"
 
     srv = Server((args.host, args.port), Handler)
     print(f"Тестовый gpsd: {args.host}:{args.port} "
-          f"(10 Гц TPV, {SPEED_MS:.0f} м/с, демо-трек Москвы)")
+          f"(10 Гц TPV, {SPEED_MS:.0f} м/с, демо-трек: {place})")
     print("Остановить: Ctrl+C")
     try:
         srv.serve_forever()

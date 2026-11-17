@@ -8,6 +8,7 @@
 #  Использование:
 #      ./tools/nav-fetch.sh moscow      # город Москва (~80 МБ, для прототипа)
 #      ./tools/nav-fetch.sh district    # Центральный ФО (~1.5 ГБ, для 100 км)
+#      ./tools/nav-fetch.sh nwfed       # Северо-Западный ФО (Питер и область)
 #
 #  Дальше: tools/nav-tiles.sh (tilemaker) и Valhalla — см. docs/nav_offline.md.
 # ============================================================================
@@ -21,6 +22,12 @@ case "$WHAT" in
   moscow)
     URL="https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf"
     OUT="$DIR/moscow.osm.pbf"
+    ;;
+  nwfed)
+    # Северо-Западный ФО: Санкт-Петербург, Ленобласть и соседи. Целиком идёт
+    # в склейку для маршрутов (maps/routes.osm.pbf, tools/nav-union.py).
+    URL="https://download.geofabrik.de/russia/northwestern-fed-district-latest.osm.pbf"
+    OUT="$DIR/nw-fed.osm.pbf"
     ;;
   district)
     # Центральный федеральный округ: покрывает Москву + ~300 км вокруг,

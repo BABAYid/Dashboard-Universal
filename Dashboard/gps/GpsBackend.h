@@ -57,7 +57,10 @@ class GpsBackend : public QObject
     Q_PROPERTY(QString utcTime READ utcTime NOTIFY utcTimeChanged)    // как пришло от gpsd
 
 public:
-    explicit GpsBackend(QObject *parent = nullptr);
+    // Без аргумента по умолчанию — иначе QML создаст ВТОРОЙ экземпляр
+    // (как в CanBackend и WeatherProvider): тогда карта и маршруты берут
+    // позицию из пустого объекта, а не из того, что поднял main.cpp.
+    explicit GpsBackend(QObject *parent);
     ~GpsBackend() override;
 
     static GpsBackend *instance();

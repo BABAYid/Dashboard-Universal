@@ -333,14 +333,26 @@ Window {
         xhr.send()
     }
 
-    Connections {
-        target: GpsBackend
-        function onPositionUpdated(lat, lon, course, speedKmh) {
+    // Сколько фиксов приняли от gpsd — для диагностики в логе (первый
+    // и каждый 600-й: при 10 Гц это раз в минуту, лог не засоряется).
+    property int gpsFixCount: 0
+
+    // Позиция от gpsd. Подключаемся явно (а не `Connections`): сигнал
+    // приходит из другого потока, и на стенде было видно, что обработчик
+    // `Connections` не вызывается вовсе — позиция оставалась демо-московской,
+    // а маршрут строился от неё (route.startLat), а не от приёмника.
+    function attachGps() {
+        GpsBackend.positionUpdated.connect(function(lat, lon, course, speedKmh) {
             root.gpsLat = lat
             root.gpsLon = lon
             root.gpsCourse = course
             root.gpsSpeedKmh = speedKmh
-        }
+            root.gpsFixCount += 1
+            if (root.gpsFixCount === 1 || root.gpsFixCount % 600 === 0)
+                console.log("GPS: фиксов", root.gpsFixCount,
+                            "позиция", lat.toFixed(5), lon.toFixed(5))
+        })
+        console.log("GPS: подписка на приёмник готова, valid =", GpsBackend.valid)
     }
 
     // расстояние между двумя точками на сфере (метры)
@@ -729,6 +741,7 @@ Window {
     // Коэффициенты хранит Settings.qml, пробег — CanBackend.
 
     Component.onCompleted: {
+        root.attachGps()
         // Коэффициенты и настройки загружаются в Settings.qml в ЕГО
         // Component.onCompleted, а он выполняется ПОСЛЕ родительского —
         // поэтому читаем значения отложенно, иначе сохраноённые брались бы
