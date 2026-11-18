@@ -6,8 +6,19 @@
 #include <QCommandLineParser>
 #include <QTimer>
 #include <QQuickImageProvider>
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QDebug>
 #include <QVector>
+
+#include <cstring>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 #include "can/CanBackend.h"
 #include "gps/GpsBackend.h"
@@ -19,12 +30,123 @@
 // Путь к ресурсам QML-модуля Dashboard (см. qt_add_qml_module в CMakeLists.txt)
 static const char *kFontResource = ":/qt/qml/Dashboard/fonts/KdamThmorPro-Regular.ttf";
 
+namespace {
+
+// ---- Структурированные логи ----
+// Пишем строки вида «2026-11-18 23:50:45.123 [INFO] текст» в файл
+// (DASHBOARD_LOG_FILE, обычно /run/dashboard/app.log — tmpfs) с ротацией
+// по 5 МБ → app.log.1. Утром по такому логу видно, что произошло, без
+// поиска по журналу systemd. Консоль остаётся (run.sh, отладка).
+QFile *g_logFile = nullptr;
+QString g_logPath;
+QMutex g_logMutex;
+constexpr qint64 kMaxLogBytes = 5 * 1024 * 1024;
+
+const char *levelName(QtMsgType type)
+{
+    switch (type) {
+    case QtDebugMsg:    return "DEBUG";
+    case QtInfoMsg:     return "INFO";
+    case QtWarningMsg:  return "WARN";
+    case QtCriticalMsg: return "ERROR";
+    case QtFatalMsg:    return "FATAL";
+    }
+    return "INFO";
+}
+
+void rotateLog()
+{
+    if (!g_logFile)
+        return;
+    g_logFile->close();
+    QFile::remove(g_logPath + QStringLiteral(".1"));
+    QFile::rename(g_logPath, g_logPath + QStringLiteral(".1"));
+    g_logFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+}
+
+void messageHandler(QtMsgType type, const QMessageLogContext &ctx, const QString &msg)
+{
+    Q_UNUSED(ctx);
+    const QString line = QStringLiteral("%1 [%2] %3\n")
+        .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz")),
+             QString::fromLatin1(levelName(type)), msg);
+    {
+        QMutexLocker lock(&g_logMutex);
+        if (g_logFile && g_logFile->isOpen()) {
+            if (g_logFile->size() > kMaxLogBytes)
+                rotateLog();
+            g_logFile->write(line.toUtf8());
+            g_logFile->flush();
+        }
+    }
+    fputs(line.toLocal8Bit().constData(), stderr);
+}
+
+// ---- sd_notify: READY/STOPPING/WATCHDOG для systemd ----
+// Без libsystemd: короткая датаграмма в unix-сокет из $NOTIFY_SOCKET.
+// Нужно, чтобы в unit работали Type=notify и WatchdogSec.
+void systemdNotify(const QByteArray &state)
+{
+    const QByteArray socket = qgetenv("NOTIFY_SOCKET");
+    if (socket.isEmpty())
+        return;
+    const int fd = ::socket(AF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+    if (fd < 0)
+        return;
+    sockaddr_un addr {};
+    addr.sun_family = AF_UNIX;
+    QByteArray path = socket;
+    if (path.startsWith('@')) {          // абстрактное пространство имён
+        addr.sun_path[0] = '\0';
+        const int n = qMin<int>(path.size() - 1, sizeof(addr.sun_path) - 2);
+        std::memcpy(addr.sun_path + 1, path.constData() + 1, n);
+    } else {
+        const int n = qMin<int>(path.size(), sizeof(addr.sun_path) - 1);
+        std::memcpy(addr.sun_path, path.constData(), n);
+    }
+    ::sendto(fd, state.constData(), state.size(), MSG_NOSIGNAL,
+             reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
+    ::close(fd);
+}
+
+} // namespace
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("AudiDashboard"));
     QCoreApplication::setApplicationName(QStringLiteral("Dashboard"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.2"));
+
+    // ---- Структурированные логи ----
+    // DASHBOARD_LOG_FILE=/run/dashboard/app.log (tmpfs, ротация 5 МБ → .1).
+    // Без переменной пишем только в консоль, как раньше.
+    {
+        const QByteArray logPath = qgetenv("DASHBOARD_LOG_FILE");
+        if (!logPath.isEmpty()) {
+            g_logPath = QString::fromLocal8Bit(logPath);
+            QDir().mkpath(QFileInfo(g_logPath).absolutePath());
+            g_logFile = new QFile(g_logPath);
+            if (g_logFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+                qInstallMessageHandler(messageHandler);
+                qInfo().noquote() << "Логи: файл" << g_logPath;
+            } else {
+                delete g_logFile;
+                g_logFile = nullptr;
+                qWarning() << "Логи: не открыть" << g_logPath << "— только консоль";
+            }
+        }
+    }
+
+    // Watchdog systemd: кормим раз в 10 с (в unit WatchdogSec=30).
+    {
+        auto *watchdog = new QTimer(&app);
+        watchdog->setInterval(10000);
+        QObject::connect(watchdog, &QTimer::timeout, []() { systemdNotify("WATCHDOG=1"); });
+        watchdog->start();
+    }
+    QObject::connect(&app, &QCoreApplication::aboutToQuit,
+                     []() { systemdNotify("STOPPING=1"); });
 
     // ---- WebGL в QtWebEngine (карта MapLibre) ----
     // MapLibre GL JS без WebGL не рисует ничего: карта есть, а вместо воды,
@@ -323,6 +445,9 @@ int main(int argc, char *argv[])
                                  if (alreadyReported)
                                      return;
                                  alreadyReported = true;
+                                 // Первый кадр на экране — сервис «готов»
+                                 // (Type=notify в systemd).
+                                 systemdNotify("READY=1");
                                  QMetaObject::invokeMethod(root, [root]() {
                                      root->setProperty("firstFrameRendered", true);
                                  }, Qt::QueuedConnection);

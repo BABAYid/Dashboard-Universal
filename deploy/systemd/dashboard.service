@@ -3,6 +3,10 @@
 # Специально нет After=network-online.target: приборка должна показывать
 # данные без сети. Карта, медиа и время подтягиваются позже, когда сеть
 # появится, — но приборы ждать её не имеют права.
+#
+# Отказоустойчивость: Type=notify + WatchdogSec=30. Приложение шлёт
+# sd_notify READY=1 после первого кадра и WATCHDOG=1 каждые 10 с; если
+# зависло/упало — systemd перезапустит (Restart=always).
 
 [Unit]
 Description=Audi Dashboard (Qt6/QML, EGLFS)
@@ -12,14 +16,23 @@ Wants=local-fs.target
 After=network.target
 
 [Service]
-Type=simple
+Type=notify
 ExecStart=/opt/dashboard/appDashboard --can can0
 Restart=always
-RestartSec=1
+RestartSec=2
+# Watchdog: нет WATCHDOG=1 за 30 с → рестарт
+WatchdogSec=30
 # EGLFS: без X/Wayland, окно на весь экран, событий ввода с мыши нет
 Environment=QT_QPA_PLATFORM=eglfs
-# В релизе логи только ошибками: вывод в консоль тормозит запуск
-Environment=QT_LOGGING_RULES=*=false
+# Логи: файл на tmpfs (/run/dashboard) с таймстампами и уровнями,
+# ротация 5 МБ → app.log.1. В журнал systemd при этом тоже пишем stderr.
+Environment=DASHBOARD_LOG_FILE=/run/dashboard/app.log
+# Не глушим весь Qt-лог: INFO/WARN/ERROR нужны для разбора утром.
+# Отключаем только шум платформы.
+Environment=QT_LOGGING_RULES=qt.qpa.*=false
+# tmpfs-каталог под логи (создаётся systemd, живёт до перезагрузки)
+RuntimeDirectory=dashboard
+RuntimeDirectoryMode=0755
 # Не перезапускаться бесконечно, если бинарника нет
 RestartPreventExitStatus=127
 

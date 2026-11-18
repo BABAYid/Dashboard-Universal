@@ -84,16 +84,18 @@ ws_clients() {
     ss -tn state established "( sport = :8080 )" 2>/dev/null | awk 'NR>1' | wc -l
 }
 
-# Uptime процесса: /proc/uptime минус starttime (тика) / HZ
+# Uptime процесса: uptime системы минус starttime процесса (в тиках / HZ).
+# Без systime() — mawk её не знает, а Ubuntu ставит mawk.
 app_uptime() {
     local pid="$1"
     local start
     start=$(awk '{print $22}' "/proc/$pid/stat" 2>/dev/null || true)
     [ -n "$start" ] || { echo ""; return; }
-    local hz
+    local hz sysup
     hz=$(getconf CLK_TCK 2>/dev/null || echo 100)
-    awk -v st="$start" -v hz="$hz" 'BEGIN{printf "%.0f", systime() - st/hz}' 2>/dev/null \
-        || echo ""
+    sysup=$(cut -d. -f1 /proc/uptime 2>/dev/null || true)
+    [ -n "$sysup" ] || { echo ""; return; }
+    echo $((sysup - start / hz))
 }
 
 rss_kb() { awk '/VmRSS/ {print $2}' "/proc/$1/status" 2>/dev/null || echo ""; }
