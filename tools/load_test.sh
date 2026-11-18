@@ -54,14 +54,14 @@ fi
 # 20 с между событиями: смена режимов панели, вход в навигацию, избранное,
 # маршрут, перекрестие, выход. Длину подгоняем под общее время прогона.
 events=""
-seq="right,right,right,nav,next,press,left,press,back,media,right,right,nav,next,next,press,back,radio"
+seq=(right right right nav next press left press back media right right nav next next press back radio)
 # Длина списка: событие раз в 20 с (в DASHBOARD_INPUT_DEMO число —
 # пауза перед следующим событием в 100 мс, поэтому 200 = 20 с).
 count=$(( (DURATION / 20) + 2 ))
+nseq=${#seq[@]}
 i=0
-IFS=','; set -- $seq; IFS=' '
 while [ "$i" -lt "$count" ]; do
-    ev="${!(( i % $# + 1 ))}"
+    ev="${seq[$((i % nseq))]}"
     events+="200,${ev},"
     i=$((i + 1))
 done
@@ -113,9 +113,12 @@ echo "Сценарий: ${MINUTES} мин, приборка в демо-режи
 echo "Метрики: logs/metrics.csv (раз в минуту)"
 
 bg=""
-( s=0; while [ $s -lt "$DURATION" ]; do storm; sleep 15; s=$((s+15)); done ) & bg+=" $!"
-( s=0; while [ $s -lt "$DURATION" ]; do route_churn; s=$((s+90)); done ) & bg+=" $!"
-( s=0; while [ $s -lt "$DURATION" ]; do sleep 180; gps_flap; s=$((s+210)); done ) & bg+=" $!"
+( s=0; while [ $s -lt "$DURATION" ]; do storm; sleep 15; s=$((s+15)); done ) \
+    >> logs/load-test.log 2>&1 & bg+=" $!"
+( s=0; while [ $s -lt "$DURATION" ]; do route_churn; s=$((s+90)); done ) \
+    >> logs/load-test.log 2>&1 & bg+=" $!"
+( s=0; while [ $s -lt "$DURATION" ]; do sleep 180; gps_flap; s=$((s+210)); done ) \
+    >> logs/load-test.log 2>&1 & bg+=" $!"
 
 # Сама приборка — в фоне, с логированием в файл на диске (для разбора).
 DASHBOARD_LOG_FILE="$PWD/logs/app.log" \

@@ -153,6 +153,11 @@ z12 1 444, z13 5 476, z14 21 462, z15 85 509), bounds ровно наш bbox.
 | `tools/nav-sprite.py` | генерация спрайта POI-иконок (PIL) → `Dashboard/map/sprite*.json/png` |
 | `tools/nav-update.sh` | обновление карт целиком: выгрузка OSM → тайлы → граф GraphHopper → база адресов (1.5–2 часа) |
 | `tools/desk_demo.sh` | проверка на столе: поднимает :8090 и :8989, если их нет, и запускает `./run.sh --mock --window` |
+| `tools/metrics.sh` | сбор метрик в CSV: RSS/CPU/температура/частота/CAN-счётчики/WS-сессии/uptime (для суточных прогонов) |
+| `tools/load_test.sh` | сценарий нагрузки на столе: смена экранов, шторм WS, churn маршрутов, потеря GPS, метрики |
+
+Приёмка на железе (сценарии и пороги) — `docs/hardware_acceptance.md`;
+структурированные логи и watchdog — `deploy/systemd/dashboard.service`.
 
 Проверено 13.11.2026:
 - BBBike отдаёт городской экстракт медленно (>5 минут на 80 МБ, таймаут),
