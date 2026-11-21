@@ -131,8 +131,6 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
-        # Затухание краёв 3D-вида (скин Genesis)
-        images/genesis/car3d_fade.png
         # Цветные копии стрелки для шлейфа шкал (tools/tint_genesis_icons.py)
         images/genesis/needle_red.png
         images/genesis/needle_green.png

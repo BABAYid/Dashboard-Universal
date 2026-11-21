@@ -33,9 +33,6 @@ Item {
     property bool doorRR: false
     property bool capotOpen: false
     property bool trunkOpen: false
-    // Фон вида: прозрачный (поверх скина) или заливка цветом панели
-    property bool transparentBackground: true
-    property color backgroundColor: "black"
 
     // Необязательная зависимость: отсутствие модуля не ломает приборку
     readonly property bool sceneLoaded: sceneLoader.status === Loader.Ready
@@ -71,8 +68,6 @@ Item {
             scene.doorRR = Qt.binding(function() { return root.doorRR })
             scene.capotOpen = Qt.binding(function() { return root.capotOpen })
             scene.trunkOpen = Qt.binding(function() { return root.trunkOpen })
-            scene.transparentBackground = Qt.binding(function() { return root.transparentBackground })
-            scene.backgroundColor = Qt.binding(function() { return root.backgroundColor })
             scene.modelReady.connect(root.modelReady)
             scene.modelFailed.connect(root.modelFailed)
         }

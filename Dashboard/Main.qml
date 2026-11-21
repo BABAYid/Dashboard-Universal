@@ -998,10 +998,6 @@ Window {
             width: inGenesis ? 420 : 800
             height: inGenesis ? 213 : 406
             z: inGenesis ? 60 : 0
-            // Фон сцены: в Genesis он прозрачный, чтобы чёрный квадрат не
-            // выделялся на панели; в классике как было — чёрный.
-            transparentBackground: inGenesis
-            backgroundColor: inGenesis ? "#080F15" : "black"
 
             progress: root.startupStage
             roadVisible: root.panelReady
@@ -1036,22 +1032,6 @@ Window {
             visible: root.car3d && !root.navigationMode
                      && (root.centerMode === 4 || root.centerMode === 5
                          || root.gaugesOpacity < 0.01)
-        }
-
-        // Виньетка поверх 3D-вида в скине Genesis: растворяет края
-        // прямоугольника в фоне панели. Отдельный слой выше вида (z 62 против
-        // 60), а не ребёнок Car3DView — так порядок отрисовки не зависит от
-        // того, как Loader сцены вставляет свои узлы.
-        Image {
-            // на 8 px больше вида: внешняя кайма перекрывает его границу
-            x: 744
-            y: 243
-            width: 436
-            height: 229
-            visible: root.skin === "genesis" && root.car3d && !root.navigationMode
-            source: "images/genesis/car3d_fade.png"
-            fillMode: Image.Stretch
-            z: 62
         }
 
         // ============ СЛОЙ ПРИБОРОВ ============
