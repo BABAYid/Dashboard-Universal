@@ -1006,8 +1006,9 @@ Item {
         font.pixelSize: 36
     }
 
-    // Ползунок шкалы: заливка от нуля до значения (зелёный → жёлтый → красный)
-    // и сама ручка с подсветкой цветом текущего порога.
+    // Шкала 0…20: вся полоса целиком красится в цвет текущего порога —
+    // до 10 л/100 км зелёная, 10…15 жёлтая, выше 15 красная. Положение
+    // показывает ручка, значения — число справа (у подписи «l/100km»).
     Item {
         x: root.consumptionScaleX0
         y: 626
@@ -1017,41 +1018,28 @@ Item {
         readonly property real knobX:
             width * root.consumptionShown / 20
 
-        // подсвеченная часть шкалы
+        // полоса: цвет меняется весь, без градиента и без заливки по длине
         Rectangle {
             x: 0
             y: parent.height / 2 - 4
-            width: parent.knobX
+            width: parent.width
             height: 8
             radius: 4
-            opacity: 0.75
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "#57D68A" }
-                GradientStop { position: 0.5; color: "#F2C14E" }
-                GradientStop { position: 1.0; color: "#FF5252" }
-            }
-            Behavior on width { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+            color: root.consumptionColor
+            opacity: 0.8
+            Behavior on color { ColorAnimation { duration: 400 } }
         }
 
-        // ручка
+        // ручка: показывает, где мы на шкале
         Rectangle {
             width: 10
             height: 26
             radius: 5
             x: parent.knobX - width / 2
             anchors.verticalCenter: parent.verticalCenter
-            color: root.consumptionColor
+            color: "#FFFFFF"
+            opacity: 0.9
             Behavior on x { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
-
-            Rectangle {
-                anchors.centerIn: parent
-                width: 4
-                height: 14
-                radius: 2
-                color: "#FFFFFF"
-                opacity: 0.85
-            }
         }
     }
 }
