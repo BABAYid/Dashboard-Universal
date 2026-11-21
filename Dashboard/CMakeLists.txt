@@ -4,8 +4,14 @@ project(Dashboard VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick WebView Network Concurrent HttpServer WebSockets)
+# Само приложение требует WebView/HttpServer/WebSockets и Qt 6.8+.
+# На машинах/CI без этих модулей можно собрать только тесты:
+#     cmake -S Dashboard -B build -DDASHBOARD_FULL_APP=OFF -DDASHBOARD_BUILD_TESTS=ON
+find_package(Qt6 REQUIRED COMPONENTS Quick Network Concurrent)
+find_package(Qt6 QUIET COMPONENTS WebView HttpServer WebSockets)
+option(DASHBOARD_FULL_APP "Собирать приложение (нужны WebView, HttpServer, WebSockets)" ON)
 
+if(DASHBOARD_FULL_APP AND TARGET Qt6::WebView AND TARGET Qt6::HttpServer AND TARGET Qt6::WebSockets)
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appDashboard
@@ -221,6 +227,10 @@ install(TARGETS appDashboard
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+else()
+    message(STATUS "Приложение не собирается: нет WebView/HttpServer/WebSockets "
+                   "или DASHBOARD_FULL_APP=OFF (только тесты)")
+endif()
 
 # ---------------------------------------------------------------------------
 #  Тест разбора CAN-протокола (не входит в обычную сборку):
@@ -234,6 +244,8 @@ if(DASHBOARD_BUILD_TESTS)
         tests/test_canprotocol.cpp
         can/CanBackend.cpp
     )
+    # moc для CanBackend.h (Q_OBJECT) — иначе линковка падает на сигналах.
+    set_target_properties(test_canprotocol PROPERTIES AUTOMOC ON)
     target_include_directories(test_canprotocol PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/can)
     target_link_libraries(test_canprotocol PRIVATE Qt6::Quick)
 
@@ -242,6 +254,7 @@ if(DASHBOARD_BUILD_TESTS)
         tests/test_speedcam.cpp
         speedcam/SpeedCamManager.cpp
     )
+    set_target_properties(test_speedcam PROPERTIES AUTOMOC ON)
     target_include_directories(test_speedcam PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/speedcam)
     target_link_libraries(test_speedcam PRIVATE Qt6::Core Qt6::Qml Qt6::Concurrent)
 endif()
