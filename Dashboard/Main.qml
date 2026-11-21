@@ -1001,7 +1001,7 @@ Window {
             // Фон сцены: в Genesis он прозрачный, чтобы чёрный квадрат не
             // выделялся на панели; в классике как было — чёрный.
             transparentBackground: inGenesis
-            backgroundColor: inGenesis ? "#0A1218" : "black"
+            backgroundColor: inGenesis ? "#080F15" : "black"
 
             // Края вида растворяются в панели: без этого видна рамка
             // прямоугольника. Картинка — 420×213, в центре прозрачная,
