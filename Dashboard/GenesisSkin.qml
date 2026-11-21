@@ -456,8 +456,8 @@ Item {
     // топливо (59, 572), температура (1854, 572). Рисуются ПОД стрелками,
     // чтобы стрелка проходила поверх, как на настоящем приборе.
     Image {
-        x: 82
-        y: 530
+        x: 91
+        y: 525
         width: 40
         height: 34
         source: "images/genesis/icon_fuel.png"
@@ -466,8 +466,8 @@ Item {
     }
 
     Image {
-        x: 1791
-        y: 530
+        x: 1782
+        y: 525
         width: 40
         height: 34
         source: "images/genesis/icon_coolant.png"
