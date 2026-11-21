@@ -30,7 +30,11 @@ OUT = os.path.join(HERE, "..", "Dashboard", "images", "genesis", "car3d_fade.png
 
 # Геометрия вида в скине Genesis (Main.qml, carView: x/y/width/height)
 X0, Y0, W, H = 752, 251, 420, 213
-FADE = 46          # ширина затухания по краю, px
+# Затухание «виньеткой»: в центре почти прозрачно, к краям заливается фоном.
+# Так прямоугольник не читается вообще: 3D видно только в середине вида.
+CENTER_ALPHA = 0.10   # прозрачность в самом центре (0 — совсем не затемнять)
+EDGE_ALPHA = 1.0      # на краю — полная заливка фоном
+POWER = 2.0           # степень кривой: больше — резче переход к краям
 
 
 def main():
@@ -43,12 +47,13 @@ def main():
         print(f"снимок меньше нужного: {bg.shape}, ожидалось {(H, W)}")
         return 1
 
+    # расстояние до ближайшего края, нормированное на половину меньшей стороны
     alpha = np.zeros((H, W), dtype=float)
+    half = min(W, H) / 2.0
     for y in range(H):
         for x in range(W):
-            d = min(x, W - 1 - x, y, H - 1 - y)
-            if d < FADE:
-                alpha[y, x] = (1.0 - d / FADE) ** 1.5
+            d = min(x, W - 1 - x, y, H - 1 - y) / half      # 0 у края … 1 в центре
+            alpha[y, x] = CENTER_ALPHA + (EDGE_ALPHA - CENTER_ALPHA) * (1.0 - d) ** POWER
 
     img = np.zeros((H, W, 4), dtype=np.uint8)
     img[:, :, :3] = bg
@@ -56,10 +61,10 @@ def main():
     Image.fromarray(img).save(OUT)
 
     center = bg[H // 2, W // 2]
-    print(f"готово: {os.path.relpath(OUT, os.path.dirname(HERE))} {W}×{H}, "
-          f"затухание {FADE} px")
+    print(f"готово: {os.path.relpath(OUT, os.path.dirname(HERE))} {W}×{H}")
     print(f"  цвет фона в центре вида: #{center[0]:02X}{center[1]:02X}{center[2]:02X} "
           f"(его же надо ставить в backgroundColor сцены)")
+    print(f"  затухание: центр {CENTER_ALPHA:.2f} → край {EDGE_ALPHA:.2f}, степень {POWER}")
     return 0
 
 
