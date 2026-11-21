@@ -1003,16 +1003,6 @@ Window {
             transparentBackground: inGenesis
             backgroundColor: inGenesis ? "#080F15" : "black"
 
-            // Края вида растворяются в панели: без этого видна рамка
-            // прямоугольника. Картинка — 420×213, в центре прозрачная,
-            // к краям заливается цветом панели (генерётся в tools).
-            Image {
-                anchors.fill: parent
-                visible: root.skin === "genesis"
-                source: "images/genesis/car3d_fade.png"
-                fillMode: Image.Stretch
-                z: 1
-            }
             progress: root.startupStage
             roadVisible: root.panelReady
             roadSpeed: root.speed
@@ -1046,6 +1036,21 @@ Window {
             visible: root.car3d && !root.navigationMode
                      && (root.centerMode === 4 || root.centerMode === 5
                          || root.gaugesOpacity < 0.01)
+        }
+
+        // Виньетка поверх 3D-вида в скине Genesis: растворяет края
+        // прямоугольника в фоне панели. Отдельный слой выше вида (z 62 против
+        // 60), а не ребёнок Car3DView — так порядок отрисовки не зависит от
+        // того, как Loader сцены вставляет свои узлы.
+        Image {
+            x: 752
+            y: 251
+            width: 420
+            height: 213
+            visible: root.skin === "genesis" && root.car3d && !root.navigationMode
+            source: "images/genesis/car3d_fade.png"
+            fillMode: Image.Stretch
+            z: 62
         }
 
         // ============ СЛОЙ ПРИБОРОВ ============
