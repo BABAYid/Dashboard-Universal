@@ -1043,10 +1043,11 @@ Window {
         // 60), а не ребёнок Car3DView — так порядок отрисовки не зависит от
         // того, как Loader сцены вставляет свои узлы.
         Image {
-            x: 752
-            y: 251
-            width: 420
-            height: 213
+            // на 8 px больше вида: внешняя кайма перекрывает его границу
+            x: 744
+            y: 243
+            width: 436
+            height: 229
             visible: root.skin === "genesis" && root.car3d && !root.navigationMode
             source: "images/genesis/car3d_fade.png"
             fillMode: Image.Stretch

@@ -29,12 +29,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "Dashboard", "images", "genesis", "car3d_fade.png")
 
 # Геометрия вида в скине Genesis (Main.qml, carView: x/y/width/height)
-X0, Y0, W, H = 752, 251, 420, 213
+VIEW_X, VIEW_Y, VIEW_W, VIEW_H = 752, 251, 420, 213
+# Картинка чуть больше вида: запас 8 px, чтобы её край гарантированно
+# перекрывал границу вида даже при сдвиге на пару пикселей.
+MARGIN = 8
+X0, Y0 = VIEW_X - MARGIN, VIEW_Y - MARGIN
+W, H = VIEW_W + 2 * MARGIN, VIEW_H + 2 * MARGIN
 # Затухание «виньеткой»: в центре почти прозрачно, к краям заливается фоном.
 # Так прямоугольник не читается вообще: 3D видно только в середине вида.
-CENTER_ALPHA = 0.10   # прозрачность в самом центре (0 — совсем не затемнять)
+CENTER_ALPHA = 0.15   # прозрачность в самом центре (0 — совсем не затемнять)
 EDGE_ALPHA = 1.0      # на краю — полная заливка фоном
 POWER = 2.0           # степень кривой: больше — резче переход к краям
+SAFE = 40             # сколько пикселей у края залито фоном полностью
 
 
 def main():
@@ -47,13 +53,18 @@ def main():
         print(f"снимок меньше нужного: {bg.shape}, ожидалось {(H, W)}")
         return 1
 
-    # расстояние до ближайшего края, нормированное на половину меньшей стороны
+    # Внешняя кайма SAFE пикселей залита фоном целиком: так граница вида
+    # перекрыта даже если картинка встанет на пару пикселей мимо.
     alpha = np.zeros((H, W), dtype=float)
     half = min(W, H) / 2.0
     for y in range(H):
         for x in range(W):
-            d = min(x, W - 1 - x, y, H - 1 - y) / half      # 0 у края … 1 в центре
-            alpha[y, x] = CENTER_ALPHA + (EDGE_ALPHA - CENTER_ALPHA) * (1.0 - d) ** POWER
+            d = min(x, W - 1 - x, y, H - 1 - y)
+            if d <= SAFE:
+                alpha[y, x] = EDGE_ALPHA
+            else:
+                u = min(1.0, (d - SAFE) / max(1.0, half - SAFE))   # 0 у каймы … 1 в центре
+                alpha[y, x] = EDGE_ALPHA + (CENTER_ALPHA - EDGE_ALPHA) * u ** POWER
 
     img = np.zeros((H, W, 4), dtype=np.uint8)
     img[:, :, :3] = bg
