@@ -69,9 +69,6 @@ Window {
     property bool debugLowBeam: false
     readonly property real rpmShown: debugFullThrottle ? 5400 : rpm
 
-    // Приколы (анимация в правом верхнем углу) включаются и выключаются
-    // в настройках, отдельной строкой «Приколы». Состояние хранит Settings.qml.
-    readonly property bool funEnabled: calibration.funEnabled
     readonly property bool weatherEnabled: calibration.weatherEnabled
 
     // Предупреждения о камерах (см. CameraWarning.qml и SpeedCamManager).
@@ -1526,28 +1523,6 @@ Window {
             z: 6
             compact: root.navigationMode
             enabled: root.cameraWarningEnabled
-        }
-
-        // ========== ВЕРХНИЙ ПРАВЫЙ УГОЛ: индикация газа ==========
-        // Угол выбран по геометрии: циферблат тахометра — круг радиусом 357 с
-        // центром (1563, 360), и правее x≈1720 в верхней полосе уже чёрное поле
-        // вне шкалы. В навигации блок скрыт: там в этом углу кнопка закрытия.
-        //
-        // По просьбе заказчика вместо статичной надписи GAS здесь анимация:
-        // на газу монетки сыплются в кошелёк (газ дешевле бензина — экономим),
-        // а выше 5000 об/мин появляется кочегар и бросает пачки денег в топку
-        // (на таких оборотах топливо летит в трубу). Всё нарисовано примитивами
-        // в GasAnimation.qml, поэтому убирается одной этой строкой.
-        GasAnimation {
-            x: 1650
-            y: 8
-            width: 190
-            height: 150
-            gasOn: root.gasDisplay
-            highBurn: root.rpmShown > 5000
-            rpm: root.rpmShown
-            visible: root.car3d && !root.navigationMode && root.funEnabled && (gasOn || highBurn)
-            z: 2
         }
 
         Rectangle {

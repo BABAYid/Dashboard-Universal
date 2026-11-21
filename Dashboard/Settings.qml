@@ -45,11 +45,6 @@ Item {
     property real tempFactor: 1.0
     property bool nightMode: false
 
-    // «Приколы» — анимация в правом верхнем углу (монетки в кошелёк на газу и
-    // кочегар с пачками денег выше 5000 об/мин). Выключатель отдельной строкой:
-    // в серийной приборке шутку можно погасить, не трогая код.
-    property bool funEnabled: true
-
     // «Погода» — дождь/снег на панели, когда за окном непогода (Open-Meteo).
     property bool weatherEnabled: true
 
@@ -87,7 +82,6 @@ Item {
         property real savedRpmFactor: 1.0
         property real savedFuelFactor: 1.0
         property real savedTempFactor: 1.0
-        property bool savedFunEnabled: true
         property bool savedWeatherEnabled: true
         property bool savedCameraWarningEnabled: true
         property bool savedBlindSpotEnabled: true
@@ -105,7 +99,6 @@ Item {
         rpmFactor = appSettings.savedRpmFactor
         fuelFactor = appSettings.savedFuelFactor
         tempFactor = appSettings.savedTempFactor
-        funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
         cameraWarningEnabled = appSettings.savedCameraWarningEnabled
         blindSpotEnabled = appSettings.savedBlindSpotEnabled
@@ -166,7 +159,6 @@ Item {
         appSettings.savedRpmFactor = rpmFactor
         appSettings.savedFuelFactor = fuelFactor
         appSettings.savedTempFactor = tempFactor
-        appSettings.savedFunEnabled = funEnabled
         appSettings.savedWeatherEnabled = weatherEnabled
         appSettings.savedCameraWarningEnabled = cameraWarningEnabled
         appSettings.savedBlindSpotEnabled = blindSpotEnabled
@@ -195,7 +187,6 @@ Item {
         rpmFactor = appSettings.savedRpmFactor
         fuelFactor = appSettings.savedFuelFactor
         tempFactor = appSettings.savedTempFactor
-        funEnabled = appSettings.savedFunEnabled
         weatherEnabled = appSettings.savedWeatherEnabled
         cameraWarningEnabled = appSettings.savedCameraWarningEnabled
         blindSpotEnabled = appSettings.savedBlindSpotEnabled
@@ -281,7 +272,6 @@ Item {
             color: settingsOverlay.valueColor
             font.pixelSize: 34
             font.bold: true
-            font.family: settingsOverlay.uiFont
         }
 
         Text {
@@ -443,61 +433,6 @@ Item {
 
             Item { width: 1; height: 8 }
 
-            // «Приколы»: анимация в правом верхнем углу — монетки в кошелёк на
-            // газу и кочегар с пачками денег выше 5000 об/мин. Выключатель
-            // отдельной строкой, состояние хранится в настройках.
-            Row {
-                spacing: 18
-                x: (parent.width - 736) / 2
-
-                Text {
-                    text: "Приколы"
-                    width: 320
-                    horizontalAlignment: Text.AlignRight
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: settingsOverlay.labelColor
-                    font.pixelSize: 24
-                }
-
-                Switch {
-                    id: funSwitch
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: settingsOverlay.funEnabled
-                    onToggled: settingsOverlay.funEnabled = checked
-
-                    indicator: Rectangle {
-                        implicitWidth: 78
-                        implicitHeight: 36
-                        radius: 18
-                        color: funSwitch.checked ? "#2A7A3A" : "#3A3A3A"
-                        border.color: funSwitch.checked ? "#3FBF57" : "#5A5A5A"
-                        border.width: 2
-
-                        Rectangle {
-                            y: 4
-                            x: funSwitch.checked ? parent.width - width - 4 : 4
-                            width: 28
-                            height: 28
-                            radius: 14
-                            color: funSwitch.checked ? "#E8FFE8" : "#9A9A9A"
-                            Behavior on x { NumberAnimation { duration: 120 } }
-                        }
-                    }
-
-                    // Свой текст не нужен: подпись есть слева
-                    contentItem: Item {}
-                }
-
-                Text {
-                    text: settingsOverlay.funEnabled ? "включены" : "выключены"
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: settingsOverlay.funEnabled ? "#3FBF57" : "#8A8A8A"
-                    font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
-                }
-            }
-            Item { width: 1; height: 8 }
-
             // «Двери (тест)»: проверка анимации дверей на 3D-модели.
             Row {
                 spacing: 18
@@ -545,7 +480,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.doorsOpen ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
                 }
             }
             Item { width: 1; height: 8 }
@@ -597,7 +531,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.capotOpen ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
                 }
             }
             Item { width: 1; height: 8 }
@@ -649,36 +582,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.trunkOpen ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
-                }
-            }
-            Item { width: 1; height: 8 }
-
-            // «Симулировать заправку»: тест — mock поднимает уровень топлива
-            // 3 %/с на 8 секунд; приборка ловит заправку и показывает пистолет.
-            Row {
-                spacing: 18
-                x: (parent.width - 736) / 2
-
-                Button {
-                    id: fuelingButton
-                    width: 320
-                    height: 56
-                    text: "Симулировать заправку"
-                    background: Rectangle {
-                        color: fuelingButton.pressed ? "#3FBF57" : "#2A7A3A"
-                        radius: 8
-                    }
-                    contentItem: Text {
-                        text: fuelingButton.text
-                        color: "white"
-                        font.pixelSize: 20
-                        font.bold: true
-                        font.family: settingsOverlay.uiFont
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    onClicked: CanBackend.simulateFueling()
                 }
             }
             Item { width: 1; height: 8 }
@@ -732,7 +635,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.cameraWarningEnabled ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
                 }
             }
             Item { width: 1; height: 8 }
@@ -784,7 +686,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.blindSpotEnabled ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
                 }
             }
             Item { width: 1; height: 8 }
@@ -823,8 +724,7 @@ Item {
                         color: "white"
                         font.pixelSize: 20
                         font.bold: true
-                        font.family: settingsOverlay.uiFont
-                        horizontalAlignment: Text.AlignHCenter
+                            horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: {
@@ -885,7 +785,6 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: settingsOverlay.weatherEnabled ? "#3FBF57" : "#8A8A8A"
                     font.pixelSize: 20
-                    font.family: settingsOverlay.uiFont
                 }
             }
 
@@ -915,8 +814,7 @@ Item {
                         color: "white"
                         font.pixelSize: 22
                         font.bold: true
-                        font.family: settingsOverlay.uiFont
-                        horizontalAlignment: Text.AlignHCenter
+                            horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: settingsOverlay.apply()
@@ -936,8 +834,7 @@ Item {
                         color: "white"
                         font.pixelSize: 22
                         font.bold: true
-                        font.family: settingsOverlay.uiFont
-                        horizontalAlignment: Text.AlignHCenter
+                            horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     onClicked: settingsOverlay.revert()
