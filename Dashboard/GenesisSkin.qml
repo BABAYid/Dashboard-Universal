@@ -79,6 +79,10 @@ Item {
     // Режим центральной панели (Main.qml: 0…5). В 5-м и 6-м режимах в центре
     // показывается 3D-машина, поэтому колонку данных там прячем.
     property int centerMode: 0
+    // Отладка раскладки: Main.qml по клавише L зажигает все лампы на обоих
+    // скинах. Своя самопроверка (selfTest) работает как раньше.
+    property bool allLampsOn: false
+    readonly property bool lampTest: selfTest || allLampsOn
     readonly property bool car3dMode: root.centerMode === 4 || root.centerMode === 5
 
     property bool blindSpotEnabled: true
@@ -235,24 +239,24 @@ Item {
     // из тех же белых исходников дизайнера.
     // dx — сдвиг лампы от общей сетки: поворотники разнесены наружу на 140 px
     readonly property var topLamps: [
-        { art: "images/left_turn.png",  dx: -140, on: root.selfTest || (root.leftTurn && root.blinkOn) },
-        { art: "images/hi_beam.png",    dx: 0,   on: root.selfTest || root.highBeamOn },
-        { art: "images/gabarit.png",    dx: 0,   on: root.selfTest || root.positionOn },
-        { art: "images/tuman.png",      dx: 0,   on: root.selfTest || root.fogOn },
-        { art: "images/right_turn.png", dx: 140,  on: root.selfTest || (root.rightTurn && root.blinkOn) }
+        { art: "images/left_turn.png",  dx: -140, on: root.lampTest || (root.leftTurn && root.blinkOn) },
+        { art: "images/hi_beam.png",    dx: 0,   on: root.lampTest || root.highBeamOn },
+        { art: "images/gabarit.png",    dx: 0,   on: root.lampTest || root.positionOn },
+        { art: "images/tuman.png",      dx: 0,   on: root.lampTest || root.fogOn },
+        { art: "images/right_turn.png", dx: 140,  on: root.lampTest || (root.rightTurn && root.blinkOn) }
     ]
 
     // Нижняя группа: предупреждения и аварии.
     readonly property var bottomLamps: [
-        { art: "images/oil_press.png",     on: root.selfTest || root.oilOn },
-        { art: "images/H_brake.png",       on: root.selfTest || root.handBrakeOn },
-        { art: "images/belt.png",          on: root.selfTest || root.beltOn },
-        { art: "images/batt.png",          on: root.selfTest || root.batteryOn },
-        { art: "images/check.png",         on: root.selfTest || root.checkOn },
-        { art: "images/ABS.png",           on: root.selfTest || root.absOn },
-        { art: "images/temp_dvs_red.png",  on: root.selfTest || root.overheat },
-        { art: "images/fuel_tank.png",     on: root.selfTest || root.fuelLow },
-        { art: "images/snow.png",          on: root.selfTest || root.coldRoad }
+        { art: "images/oil_press.png",     on: root.lampTest || root.oilOn },
+        { art: "images/H_brake.png",       on: root.lampTest || root.handBrakeOn },
+        { art: "images/belt.png",          on: root.lampTest || root.beltOn },
+        { art: "images/batt.png",          on: root.lampTest || root.batteryOn },
+        { art: "images/check.png",         on: root.lampTest || root.checkOn },
+        { art: "images/ABS.png",           on: root.lampTest || root.absOn },
+        { art: "images/temp_dvs_red.png",  on: root.lampTest || root.overheat },
+        { art: "images/fuel_tank.png",     on: root.lampTest || root.fuelLow },
+        { art: "images/snow.png",          on: root.lampTest || root.coldRoad }
     ]
 
     // Шкалы топлива и температуры — дуги вокруг центров дисков: расстояние

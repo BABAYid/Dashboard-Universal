@@ -135,6 +135,11 @@ Window {
     property bool startup: true
     // Самопроверка ламп при включении зажигания (гаснет через 2,5 с)
     property bool lampSelfTest: true
+    // Отладка раскладки: клавиша L зажигает ВСЕ лампы постоянно, на обоих
+    // скинах — видно, какой значок где стоит. Обычная самопроверка при
+    // старте (lampSelfTest) остаётся как была.
+    property bool lampsAllOn: false
+    readonly property bool lampTestOn: lampSelfTest || lampsAllOn
     property real brightness: 1.0
     property bool navigationMode: false
     property real navigationAnimDuration: 400
@@ -946,6 +951,7 @@ Window {
             nightMode: root.nightMode
             // камеры слепых зон в колодцах приборов
             centerMode: root.centerMode
+            allLampsOn: root.lampsAllOn
             blindSpotEnabled: root.blindSpotEnabled
             promoVideoLeft: root.promoVideoLeft
             promoVideoRight: root.promoVideoRight
@@ -1166,10 +1172,10 @@ Window {
                 cameraVisible: root.leftTurn && root.blindSpotEnabled
                 cameraLabel: "L"
                 cameraVideoSource: root.promoVideoLeft
-                seatBeltWarning: root.lampSelfTest || root.seatBelt
-                handBrakeWarning: root.lampSelfTest || root.handBrake
-                fuelWarning: root.lampSelfTest || (root.fuelLevel <= 10)
-                batteryWarning: root.lampSelfTest || (root.rpmShown > 400 && root.voltage < 12.8)
+                seatBeltWarning: root.lampTestOn || root.seatBelt
+                handBrakeWarning: root.lampTestOn || root.handBrake
+                fuelWarning: root.lampTestOn || (root.fuelLevel <= 10)
+                batteryWarning: root.lampTestOn || (root.rpmShown > 400 && root.voltage < 12.8)
                 gasMode: root.gasDisplay
                 z: 1
             }
@@ -1212,10 +1218,10 @@ Window {
                 tempAngleEnd: calibration.tempAngleEnd
                 startup: root.startup
                 nightMode: root.nightMode
-                absWarning: root.lampSelfTest || root.abs
-                checkEngineWarning: root.lampSelfTest || root.checkEngine
-                oilPressureWarning: root.lampSelfTest || root.oilPressureAlarm
-                tempWarning: root.lampSelfTest || (root.temp >= 110)
+                absWarning: root.lampTestOn || root.abs
+                checkEngineWarning: root.lampTestOn || root.checkEngine
+                oilPressureWarning: root.lampTestOn || root.oilPressureAlarm
+                tempWarning: root.lampTestOn || (root.temp >= 110)
                 z: 1
             }
         }
@@ -1310,6 +1316,12 @@ Window {
         Shortcut { sequence: "S"; onActivated: calibration.open() }
 
         // F8 — переключить скин (классический ↔ Genesis): приёмка на столе
+        // L — показать все лампы сразу (отладка раскладки значков)
+        Shortcut { sequence: "L"; onActivated: {
+                      root.lampsAllOn = !root.lampsAllOn
+                      console.log("Отладка: все лампы", root.lampsAllOn ? "ВКЛ" : "выкл")
+                  } }
+
         Shortcut { sequence: "F8"; onActivated: {
                       root.skin = root.skin === "genesis" ? "classic" : "genesis"
                       console.log("Скин:", root.skin)
@@ -1504,7 +1516,7 @@ Window {
             odometer: root.odometer
             tripA: root.tripA
             tripB: root.tripB
-            selfTest: root.lampSelfTest
+            selfTest: root.lampTestOn
         }
 
         // ========== ПРЕДУПРЕЖДЕНИЕ О КАМЕРЕ (Smart Driver) ==========
