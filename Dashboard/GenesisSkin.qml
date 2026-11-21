@@ -451,6 +451,30 @@ Item {
         opacity: root.artLevel
     }
 
+    // Иконки по середине шкал: бензоколонка у топлива, двигатель у температуры.
+    // Середина полосы — точка с параметром 0.5 на её оси (см. fuelBand/tempBand):
+    // топливо (59, 572), температура (1854, 572). Рисуются ПОД стрелками,
+    // чтобы стрелка проходила поверх, как на настоящем приборе.
+    Image {
+        x: 39
+        y: 555
+        width: 40
+        height: 34
+        source: "images/genesis/icon_fuel.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: root.nightMode ? 0.7 : 0.9
+    }
+
+    Image {
+        x: 1834
+        y: 555
+        width: 40
+        height: 34
+        source: "images/genesis/icon_coolant.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: root.nightMode ? 0.7 : 0.9
+    }
+
     Dial {
         cx: root.dialCx1
         cy: root.dialCy1
