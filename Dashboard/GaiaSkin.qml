@@ -109,6 +109,10 @@ Item {
     readonly property real screenW: 248
     readonly property real screenH: 43
     readonly property string numericFont: "Kdam Thmor Pro"
+    // Семисегментный шрифт экранчика одометра («как на калькуляторе»):
+    // Digital-7 Mono, регистрируется в main.cpp, файл —
+    // fonts/Digital7Mono.ttf, EULA рядом с ним.
+    readonly property string digiFont: "Digital-7 Mono"
 
     // Режимы экранчика: 0 — общий пробег (ODO), 1 — Trip A, 2 — Trip B.
     // Переключаются нажатием на сам экранчик (мышью/тапом) или клавишей O
@@ -351,136 +355,19 @@ Item {
         }
 
         // Цифры идут справа, левая часть плашки остаётся под подпись.
-        Row {
+        // Шрифт семисегментный (Digital-7 Mono), поэтому цифры выглядят
+        // как на калькуляторе без ручной отрисовки сегментов.
+        Text {
             anchors.right: parent.right
             anchors.rightMargin: 14
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 4
-
-            Repeater {
-                model: root.odoText.split("")
-
-                delegate: Item {
-                    id: digitCell
-                    required property int index
-                    required property string modelData
-
-                    // Точка между целыми и десятыми у поездок.
-                    readonly property bool isDot: digitCell.modelData === "."
-
-                    width: digitCell.isDot ? 8 : 20
-                    height: 36
-
-                    SegDigit {
-                        anchors.centerIn: parent
-                        visible: !digitCell.isDot
-                        digit: digitCell.isDot ? -1 : Number(digitCell.modelData)
-                    }
-                    Rectangle {
-                        visible: digitCell.isDot
-                        width: 4
-                        height: 4
-                        radius: 1
-                        color: "#000000"
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 3
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-            }
-        }
-    }
-
-    // Одна цифра семисегментного индикатора — «как на калькуляторе».
-    // Сегменты рисуются полигонами со скошенными концами (45°), поэтому
-    // цифра выглядит цельной и не «рассыпается» на короткие отрезки.
-    // Размеры: 20 × 36, толщина сегмента 4.5, шаг цифры 24 px.
-    component SegDigit: Item {
-        id: seg
-
-        required property int digit        // 0…9, -1 — пусто
-
-        width: 20
-        height: 36
-
-        // Какие сегменты горят: a — верх, b — верх-право, c — низ-право,
-        // d — низ, e — низ-лево, f — верх-лево, g — середина.
-        readonly property string segs: {
-            switch (seg.digit) {
-            case 0: return "abcdef"
-            case 1: return "bc"
-            case 2: return "abged"
-            case 3: return "abgcd"
-            case 4: return "fgbc"
-            case 5: return "afgcd"
-            case 6: return "afgecd"
-            case 7: return "abc"
-            case 8: return "abcdefg"
-            case 9: return "abcdfg"
-            default: return ""
-            }
-        }
-        function on(name) { return seg.segs.indexOf(name) >= 0 }
-
-        Canvas {
-            id: segCanvas
-            anchors.fill: parent
-
-            Connections {
-                target: seg
-                function onDigitChanged() { segCanvas.requestPaint() }
-            }
-            Component.onCompleted: requestPaint()
-
-            // Толщина сегмента и скос. Скос = половина толщины: концы
-            // сегментов сходятся под 45°, как у настоящего индикатора.
-            readonly property real th: 4.5
-            readonly property real ch: th / 2
-            readonly property real m: th / 2       // поле до края цифры
-
-            onPaint: {
-                var ctx = getContext("2d")
-                ctx.clearRect(0, 0, width, height)
-                ctx.fillStyle = "#000000"
-                var w = width, h = height, t = th, c = ch, margin = m
-
-                function hseg(x1, x2, y) {
-                    ctx.beginPath()
-                    ctx.moveTo(x1 + c, y)
-                    ctx.lineTo(x2 - c, y)
-                    ctx.lineTo(x2, y + c)
-                    ctx.lineTo(x2, y + t - c)
-                    ctx.lineTo(x2 - c, y + t)
-                    ctx.lineTo(x1 + c, y + t)
-                    ctx.lineTo(x1, y + t - c)
-                    ctx.lineTo(x1, y + c)
-                    ctx.closePath()
-                    ctx.fill()
-                }
-                function vseg(x, y1, y2) {
-                    ctx.beginPath()
-                    ctx.moveTo(x + c, y1)
-                    ctx.lineTo(x + t - c, y1)
-                    ctx.lineTo(x + t, y1 + c)
-                    ctx.lineTo(x + t, y2 - c)
-                    ctx.lineTo(x + t - c, y2)
-                    ctx.lineTo(x + c, y2)
-                    ctx.lineTo(x, y2 - c)
-                    ctx.lineTo(x, y1 + c)
-                    ctx.closePath()
-                    ctx.fill()
-                }
-
-                var midTop = (h - t) / 2
-                var midBot = (h + t) / 2
-                if (seg.on("a")) hseg(margin, w - margin, 0)
-                if (seg.on("g")) hseg(margin, w - margin, midTop)
-                if (seg.on("d")) hseg(margin, w - margin, h - t)
-                if (seg.on("f")) vseg(0, margin, midTop)
-                if (seg.on("b")) vseg(w - t, margin, midTop)
-                if (seg.on("e")) vseg(0, midBot, h - margin)
-                if (seg.on("c")) vseg(w - t, midBot, h - margin)
-            }
+            text: root.odoText
+            color: "#000000"
+            font.family: root.digiFont
+            // В макете цифры 33 px высотой: у Digital-7 Mono высота цифры
+            // ~0.65 от кегля, отсюда pixelSize 50.
+            font.pixelSize: 50
+            font.letterSpacing: 0
         }
     }
 

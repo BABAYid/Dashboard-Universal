@@ -29,6 +29,10 @@
 
 // Путь к ресурсам QML-модуля Dashboard (см. qt_add_qml_module в CMakeLists.txt)
 static const char *kFontResource = ":/qt/qml/Dashboard/fonts/KdamThmorPro-Regular.ttf";
+// Семисегментный шрифт для экранчика одометра в скине Gaia (Digital-7 Mono,
+// Style-7). EULA рядом с файлом: README-Digital7.txt — бесплатен для
+// домашнего/некоммерческого использования, для коммерческого нужна лицензия.
+static const char *kDigitalFontResource = ":/qt/qml/Dashboard/fonts/Digital7Mono.ttf";
 
 namespace {
 
@@ -268,6 +272,15 @@ int main(int argc, char *argv[])
         qWarning() << "Не удалось загрузить шрифт" << kFontResource;
     else
         qInfo() << "Шрифт приборки загружен:" << QFontDatabase::applicationFontFamilies(fontId);
+
+    // Семисегментный шрифт экранчика (скин Gaia): «как на калькуляторе».
+    const int digitalFontId =
+        QFontDatabase::addApplicationFont(QString::fromLatin1(kDigitalFontResource));
+    if (digitalFontId < 0)
+        qWarning() << "Не удалось загрузить цифровой шрифт" << kDigitalFontResource;
+    else
+        qInfo() << "Цифровой шрифт загружен:"
+                << QFontDatabase::applicationFontFamilies(digitalFontId);
 
     QQmlApplicationEngine engine;
 

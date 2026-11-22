@@ -80,6 +80,10 @@ qt_add_qml_module(appDashboard
         # Бип предупреждения о камере (Smart Driver)
         assets/sounds/camera_beep.wav
         fonts/KdamThmorPro-Regular.ttf
+        # Семисегментный шрифт экранчика одометра в скине Gaia (Digital-7 Mono).
+        # Лицензия/EULA — рядом, fonts/README-Digital7.txt.
+        fonts/Digital7Mono.ttf
+        fonts/README-Digital7.txt
         images/ABS.png
         images/lights_glow.png
         images/around_in.png
