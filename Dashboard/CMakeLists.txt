@@ -66,6 +66,7 @@ qt_add_qml_module(appDashboard
         InputController.qml
         NavPanel.qml
         GenesisSkin.qml
+        GaiaSkin.qml
         MapView.qml
         RouteService.qml
         RouteHint.qml
@@ -131,6 +132,27 @@ qt_add_qml_module(appDashboard
         images/genesis/ind_gear.png
         images/genesis/ind_speed_limit.png
         images/genesis/needle.png
+        # Третий скин «Gaia»: фон выпекается из SVG макета tools/gaia_bake.py,
+        # иконки ламп и буквы передач раскладывает tools/gaia_assets.py.
+        images/gaia/gaia_bg.png
+        images/gaia/lamp_fuel.png
+        images/gaia/lamp_engine.png
+        images/gaia/lamp_abs.png
+        images/gaia/lamp_eco.png
+        images/gaia/lamp_oil.png
+        images/gaia/lamp_doors.png
+        images/gaia/lamp_batt.png
+        images/gaia/lamp_brake.png
+        images/gaia/lamp_airbag.png
+        images/gaia/lamp_belt.png
+        images/gaia/gear_P.png
+        images/gaia/gear_R.png
+        images/gaia/gear_N.png
+        images/gaia/gear_D.png
+        images/gaia/gear_2.png
+        images/gaia/gear_L.png
+        images/gaia/turn_left.png
+        images/gaia/turn_right.png
         # Цветные копии стрелки для шлейфа шкал (tools/tint_genesis_icons.py)
         images/genesis/needle_red.png
         images/genesis/needle_green.png
