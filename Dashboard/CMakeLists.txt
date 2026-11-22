@@ -161,6 +161,10 @@ qt_add_qml_module(appDashboard
         images/gaia/turn_right.png
         images/gaia/turn_left_green.png
         images/gaia/turn_right_green.png
+        # Значок дальнего света: белый из классики + синяя копия
+        # (tools/gaia_lamps.py).
+        images/gaia/hi_beam.png
+        images/gaia/hi_beam_blue.png
         # Цветные копии стрелки для шлейфа шкал (tools/tint_genesis_icons.py)
         images/genesis/needle_red.png
         images/genesis/needle_green.png

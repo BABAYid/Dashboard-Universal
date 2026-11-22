@@ -359,6 +359,21 @@ Item {
         opacity: root.lampTest || root.rightTurnOn ? 1.0 : root.arrowOffOpacity
     }
 
+    // Дальний свет — между поворотниками. Иконка из классического скина,
+    // покрашена в синий заранее (tools/gaia_lamps.py). В макете на этом
+    // месте стоял белый значок «5 полос + мачта» — он вырезан из фона
+    // (tools/gaia_bake.py, ZONE_HIGHBEAM).
+    Image {
+        source: "images/gaia/hi_beam_blue.png"
+        width: 42
+        height: 42
+        fillMode: Image.PreserveAspectFit
+        x: 960 - width / 2
+        y: 80 - height / 2
+        smooth: true
+        opacity: root.lampTest || CanBackend.highBeam ? 1.0 : root.arrowOffOpacity
+    }
+
     // ======================= РЯД ЛАМП =======================
     // Положения и размеры — из макета (tools/gaia_assets.py печатает ту же
     // таблицу). Размер в макете = размер PNG / 2: иконки выгружены в @2x.
