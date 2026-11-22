@@ -254,6 +254,19 @@ Item {
         transformOrigin: Item.Bottom
         rotation: startAngle + 270 * Math.max(0, Math.min(1, value01))
 
+        // Пружина как в классическом скине (Gauge.qml) и Genesis: без неё
+        // стрелка дёргается по кадрам CAN, с ней — перелетает на 2–3 % и
+        // успокаивается за ~0.5 с. Числа те же, что в классике, чтобы
+        // характер движения приборки не менялся от скина к скину.
+        Behavior on rotation {
+            SpringAnimation {
+                spring: 2.0
+                damping: 0.2
+                mass: 1.0
+                epsilon: 0.1
+            }
+        }
+
         Rectangle {
             anchors.fill: parent
             radius: 1.6
