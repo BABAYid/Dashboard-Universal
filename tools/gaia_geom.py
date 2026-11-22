@@ -39,7 +39,7 @@ def mat_mul(a, b):
 
 def parse_transform(text):
     m = (1, 0, 0, 1, 0, 0)
-    for name, args in re.findall(r"(matrix|translate|scale|rotate)\(([^)]*)\)", text):
+    for name, args in re.findall(r"(matrix|translate|scale|rotate|skewX|skewY)\(([^)]*)\)", text):
         v = [float(x) for x in NUM.findall(args)]
         if name == "matrix":
             mm = tuple(v)
@@ -47,10 +47,24 @@ def parse_transform(text):
             mm = (1, 0, 0, 1, v[0], v[1] if len(v) > 1 else 0)
         elif name == "scale":
             mm = (v[0], 0, 0, (v[1] if len(v) > 1 else v[0]), 0, 0)
-        else:
+        elif name == "rotate" and len(v) >= 3:
+            # rotate(a cx cy) = T(cx,cy) · R(a) · T(-cx,-cy)
+            import math
+            a = math.radians(v[0])
+            ca, sa = math.cos(a), math.sin(a)
+            cx, cy = v[1], v[2]
+            # R about origin, then translate to keep (cx,cy) fixed
+            mm = (ca, sa, -sa, ca, cx - ca * cx + sa * cy, cy - sa * cx - ca * cy)
+        elif name == "rotate":
             import math
             a = math.radians(v[0])
             mm = (math.cos(a), math.sin(a), -math.sin(a), math.cos(a), 0, 0)
+        elif name == "skewX":
+            mm = (1, 0, __import__("math").tan(__import__("math").radians(v[0])), 1, 0, 0)
+        elif name == "skewY":
+            mm = (1, __import__("math").tan(__import__("math").radians(v[0])), 0, 1, 0, 0)
+        else:
+            continue
         m = mat_mul(m, mm)
     return m
 
