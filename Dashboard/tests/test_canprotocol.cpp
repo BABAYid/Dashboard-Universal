@@ -306,8 +306,8 @@ int main(int argc, char *argv[])
     check(!can.climateAuto(), "AUTO выключен");
     checkNum(can.climateSetpoint(), 22.5, "уставка 22.5 °C (байт 0x2D = 45)");
     check(can.climateFanLevel() == 3, QStringLiteral("вентилятор 3, получено %1").arg(can.climateFanLevel()));
-    check(can.climateAirflow() == QStringLiteral("лицо"),
-          QStringLiteral("поток «лицо», получено «%1»").arg(can.climateAirflow()));
+    check(can.climateAirflow() == QStringLiteral("face"),
+          QStringLiteral("поток «лицо» = face, получено «%1»").arg(can.climateAirflow()));
     checkNum(can.climateCabinTemp(), 24.0, "в салоне 24 °C");
     check(qIsNaN(can.climateEvaporatorTemp()), "испаритель — нет данных (0x80 → NaN)");
 
@@ -316,7 +316,18 @@ int main(int argc, char *argv[])
     check(can.climateAuto(), "AUTO включён");
     check(can.climateFanLevel() == -1, "вентилятор — нет данных (-1)");
     check(qIsNaN(can.climateSetpoint()), "уставка — нет данных (0 → NaN)");
-    check(can.climateAirflow() == QStringLiteral("авто"), "поток выбирает автоматика");
+    check(can.climateAirflow() == QStringLiteral("auto"), "поток выбирает автоматика");
+
+    // Протокол 1.6: четвёртый режим цикла MODE — «лобовое + ноги» (маска 0x03).
+    can.feedFrame(0x510, frame({0x21, 0x2D, 0x03, 0x03, 0x18, 0x80, 0x00, 0x00}));
+    check(can.climateAirflow() == QStringLiteral("defrost_feet"),
+          QStringLiteral("поток «лобовое + ноги» = defrost_feet, получено «%1»")
+              .arg(can.climateAirflow()));
+    // «Лицо + ноги» остаётся отдельным значением.
+    can.feedFrame(0x510, frame({0x21, 0x2D, 0x03, 0x06, 0x18, 0x80, 0x00, 0x00}));
+    check(can.climateAirflow() == QStringLiteral("face_feet"),
+          QStringLiteral("поток «лицо + ноги» = face_feet, получено «%1»")
+              .arg(can.climateAirflow()));
 
     // ---- 0x520 и 0x521: GPS (протокол 1.3) ----
     qInfo() << "0x520 — GPS: положение (новое в 1.3)";
@@ -397,6 +408,8 @@ int main(int argc, char *argv[])
                          ++resCount; resId = id; resAction = action; resResult = result;
                      });
 
+    // Тесты проверяют ожидание ответа от панели — демо-ответ выключаем.
+    can.setMockClimateAck(false);
     const int cmdId = can.pressClimateButton(CanBackend::ClimateTempUp);
     check(cmdId >= 0, QStringLiteral("команда отправлена, id %1").arg(cmdId));
     check(sentCount == 1 && sentAction == CanBackend::ClimateTempUp,

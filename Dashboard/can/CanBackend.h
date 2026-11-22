@@ -185,7 +185,11 @@ public:
         ClimateModeFeet,            // поток в ноги
         ClimateModeFaceFeet,        // лицо + ноги
         ClimateTempUpRight,         // вторая зона +
-        ClimateTempDownRight        // вторая зона −
+        ClimateTempDownRight,       // вторая зона −
+        // Протокол 1.6: четвёртый режим цикла MODE — «лобовое + ноги».
+        // Родная панель перебирает лицо → ноги → лицо+ноги → лобовое+ноги;
+        // без этого действия цикл на панели и в интерфейсе расходился.
+        ClimateModeDefrostFeet = 0x10
     };
     Q_ENUM(ClimateAction)
 
@@ -229,6 +233,13 @@ public:
 
     void setInterfaceName(const QString &name) { m_interfaceName = name; }
     void setMockMode(bool on) { m_mockMode = on; }
+
+    /**
+     * Демо-режим: отвечать за ESP32 климата сразу («выполнено»). Стенду это
+     * нужно, чтобы интерфейс не висел в таймауте без живой панели; тестам,
+     * которые проверяют ожидание ответа, — наоборот, мешает.
+     */
+    void setMockClimateAck(bool on) { m_mockClimateAck = on; }
 
     bool connected() const { return m_connected; }
     bool dataValid() const { return m_dataValid; }
@@ -453,7 +464,16 @@ private:
     }
 
     QString m_interfaceName = QStringLiteral("can0");
+    // Маска направления из 0x510 → значение контракта (§4.1): face/feet/…
+    static QString airflowCode(quint8 mask);
+    // Демо-режим: применить нажатие к нашему состоянию климата.
+    void applyMockClimateAction(int action);
+
     bool m_mockMode = false;
+    // Демо-режим: направление обдува меняется командами — так цикл MODE
+    // проверяется без живой панели. Маска как в 0x510.
+    quint8 m_mockAirflow = 0x04;      // по умолчанию «в лицо»
+    bool m_mockClimateAck = true;     // демо отвечает за панель само
     int m_socket = -1;
     QSocketNotifier *m_notifier = nullptr;
     QTimer *m_mockTimer = nullptr;

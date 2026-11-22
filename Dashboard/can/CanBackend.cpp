@@ -416,6 +416,40 @@ void CanBackend::handleGasFrame(const quint8 *d)
     set(m_gasLevelPercent, percent, &CanBackend::gasLevelPercentChanged);
 }
 
+// Маска направления потока из 0x510 → значение контракта (§4.1).
+QString CanBackend::airflowCode(quint8 mask)
+{
+    switch (mask) {
+    case 0x04: return QStringLiteral("face");
+    case 0x02: return QStringLiteral("feet");
+    case 0x06: return QStringLiteral("face_feet");
+    case 0x03: return QStringLiteral("defrost_feet");   // лобовое + ноги
+    case 0x08: return QStringLiteral("auto");
+    case 0x00: return QString();
+    default: {
+        // Нестандартная комбинация: отдаём как есть, по-русски.
+        QStringList parts;
+        if (mask & 0x01) parts << QStringLiteral("лобовое");
+        if (mask & 0x02) parts << QStringLiteral("ноги");
+        if (mask & 0x04) parts << QStringLiteral("лицо");
+        if (mask & 0x08) parts << QStringLiteral("авто");
+        return parts.join(QLatin1Char('+'));
+    }
+    }
+}
+
+// Демо-режим: применить нажатие к нашему состоянию климата.
+void CanBackend::applyMockClimateAction(int action)
+{
+    switch (action) {
+    case ClimateModeFace:        m_mockAirflow = 0x04; break;
+    case ClimateModeFeet:        m_mockAirflow = 0x02; break;
+    case ClimateModeFaceFeet:    m_mockAirflow = 0x06; break;
+    case ClimateModeDefrostFeet: m_mockAirflow = 0x03; break;
+    default:                     return;               // остальное демо не трогает
+    }
+}
+
 // 0x510: климат (протокол 1.3). Байт 0 — флаги, 1 — уставка ×2, 2 — вентилятор,
 // 3 — направление потока (маска), 4 — температура в салоне, 5 — испаритель,
 // 6 — уставка второй зоны. Значения «нет данных»: 0x80 для температур,
@@ -436,13 +470,11 @@ void CanBackend::handleClimateFrame(const quint8 *d)
     set(m_climateFanLevel, d[2] == kValueNone ? -1 : static_cast<int>(d[2]),
         &CanBackend::climateFanLevelChanged);
 
-    // Направление потока — маска, собираем человеческую строку для QML.
-    QStringList parts;
-    if (d[3] & 0x01) parts << QStringLiteral("лобовое");
-    if (d[3] & 0x02) parts << QStringLiteral("ноги");
-    if (d[3] & 0x04) parts << QStringLiteral("лицо");
-    if (d[3] & 0x08) parts << QStringLiteral("авто");
-    set(m_climateAirflow, parts.join(QLatin1Char('+')), &CanBackend::climateAirflowChanged);
+    // Направление потока — маска (бит 0 лобовое, 1 ноги, 2 лицо, 3 авто).
+    // Отдаём каноническое значение контракта (§4.1): face / feet / face_feet /
+    // defrost_feet / auto. Незнакомые комбинации — человекочитаемой строкой,
+    // чтобы состояние не терялось.
+    set(m_climateAirflow, airflowCode(d[3] & 0x0F), &CanBackend::climateAirflowChanged);
 
     set(m_climateCabinTemp, d[4] == kTempNone ? qQNaN() : static_cast<double>(static_cast<qint8>(d[4])),
         &CanBackend::climateCabinTempChanged);
@@ -597,8 +629,19 @@ bool CanBackend::sendFrame(quint32 id, const quint8 *data)
 // команды, чтобы вызывающий мог сопоставить его с ответом.
 int CanBackend::pressClimateButton(int action)
 {
-    if (action < ClimateTempUp || action > ClimateTempDownRight)
+    // Явный список, а не диапазон: между действиями есть «дыры» (0x0F
+    // зарезервирован, новые действия приходят из протокола 1.6 с кодом 0x10).
+    switch (action) {
+    case ClimateTempUp: case ClimateTempDown: case ClimateFanUp: case ClimateFanDown:
+    case ClimateAuto: case ClimateAc: case ClimateRecirculation:
+    case ClimateDefrostFront: case ClimateDefrostRear:
+    case ClimateModeFace: case ClimateModeFeet: case ClimateModeFaceFeet:
+    case ClimateTempUpRight: case ClimateTempDownRight:
+    case ClimateModeDefrostFeet:
+        break;
+    default:
         return -3;                      // такого действия у панели нет
+    }
 
     if (m_climatePendingId >= 0)
         return -2;                      // прошлая команда ещё не закрыта
@@ -614,6 +657,14 @@ int CanBackend::pressClimateButton(int action)
     if (!sendFrame(kIdClimaCmd, frame)) {
         emit climateCommandResult(id, action, ClimateNotSent);
         return -1;
+    }
+
+    if (m_mockMode && m_mockClimateAck) {
+        // Панели нет — применяем нажатие к демо-состоянию сами и отвечаем
+        // так же, как ответил бы ESP32 климата (иначе демо вечно в таймауте).
+        applyMockClimateAction(action);
+        emit climateCommandResult(id, action, ClimateDone);
+        return id;
     }
 
     m_climatePendingId = id;
@@ -1106,7 +1157,7 @@ void CanBackend::generateMockFrames()
             if (cycle > 20.0 && cycle < 30.0) d[0] |= 0x04;   // рециркуляция
             d[1] = static_cast<quint8>(qBound(0.0, setpoint * 2.0, 255.0));
             d[2] = static_cast<quint8>(fan);
-            d[3] = (fan > 4) ? 0x04 : 0x06;       // лицо или лицо+ноги
+            d[3] = m_mockAirflow;                 // меняется командами MODE
             d[4] = static_cast<quint8>(static_cast<qint8>(qBound(-40.0, cabin, 60.0)));
             d[5] = static_cast<quint8>(8);        // испаритель ~+8 °C
             d[6] = 0;                             // одной зоны достаточно

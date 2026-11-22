@@ -65,6 +65,7 @@ QString actionName(int action)
     case CanBackend::ClimateModeFaceFeet:   return QStringLiteral("mode_face_feet");
     case CanBackend::ClimateTempUpRight:    return QStringLiteral("temp_up_right");
     case CanBackend::ClimateTempDownRight:  return QStringLiteral("temp_down_right");
+    case CanBackend::ClimateModeDefrostFeet: return QStringLiteral("mode_defrost_feet");
     default:                                return QString();
     }
 }
@@ -85,6 +86,7 @@ int actionCode(const QString &name)
     if (name == QStringLiteral("mode_face_feet"))  return CanBackend::ClimateModeFaceFeet;
     if (name == QStringLiteral("temp_up_right"))   return CanBackend::ClimateTempUpRight;
     if (name == QStringLiteral("temp_down_right")) return CanBackend::ClimateTempDownRight;
+    if (name == QStringLiteral("mode_defrost_feet")) return CanBackend::ClimateModeDefrostFeet;
     return 0;
 }
 
