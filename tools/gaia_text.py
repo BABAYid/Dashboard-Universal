@@ -55,9 +55,7 @@ def components(mask):
     seen = np.zeros_like(mask, dtype=bool)
     out = []
     ys, xs = np.nonzero(mask)
-    idx = np.argsort(ys * w + xs)
-    for k in idx:
-        y, x = divmod(int(k), w)
+    for y, x in zip(ys.tolist(), xs.tolist()):
         if seen[y, x]:
             continue
         q = deque([(y, x)])
