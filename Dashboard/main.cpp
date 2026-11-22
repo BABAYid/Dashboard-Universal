@@ -306,13 +306,15 @@ int main(int argc, char *argv[])
             root->setProperty("debugLowBeam", true);
     }
 
-    // DASHBOARD_SKIN=genesis — запустить со вторым скином (docs/skin.md).
+    // DASHBOARD_SKIN=genesis|gaia — запустить со вторым/третьим скином
+    // (docs/skin.md).
     // Нужно для снимков и приёмки: скины переключаются клавишей F8, а для
     // автоматической проверки нужен способ задать его при старте.
     if (qEnvironmentVariableIsSet("DASHBOARD_SKIN")) {
         if (auto *root = engine.rootObjects().constFirst()) {
             const QString skin = QString::fromLocal8Bit(qgetenv("DASHBOARD_SKIN"));
-            if (skin == QStringLiteral("genesis") || skin == QStringLiteral("classic"))
+            if (skin == QStringLiteral("genesis") || skin == QStringLiteral("classic")
+                || skin == QStringLiteral("gaia"))
                 root->setProperty("skin", skin);
         }
     }

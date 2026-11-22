@@ -189,9 +189,11 @@ Window {
     // Вид оторван от машины: джойстик двигает карту, в центре перекрестие.
     property bool mapDetached: false
 
-    // Второй скин (docs/design/genesis.jpg): тёмно-синий фон, приборы
-    // примитивами, светлая полоса внизу. Классический скин — classic.
-    // Переключается клавишей F8 и переменной DASHBOARD_SKIN при запуске.
+    // Скины: classic — раскладка классики; genesis — тёмно-синяя приборка
+    // примитивами (docs/design/genesis.jpg); gaia — аналоговая приборка по
+    // макету «Gaia / Вариант 2» (два эллиптических колодца, колонка передач,
+    // ряд ламп). Переключаются клавишей F8 по кругу и переменной
+    // DASHBOARD_SKIN при запуске.
     property string skin: "classic"
 
     // ---- офлайн-карта в навигационном режиме ----
@@ -961,6 +963,34 @@ Window {
             onSettingsRequested: calibration.open()
         }
 
+        // ============ ТРЕТИЙ СКИН «GAIA» ============
+        // Повторяет макет дизайнера: фон выпечен из SVG, поверх — только
+        // живые стрелки, буква передачи, поворотники и лампы. Дополнительных
+        // экранов, камер и 3D-машины у этого скина нет.
+        GaiaSkin {
+            anchors.fill: parent
+            z: 50
+            visible: root.skin === "gaia"
+            speed: root.speed
+            rpm: root.rpmShown
+            gear: root.gearMode
+            fuel: root.fuelLevel
+            temp: root.temp
+            clock: root.timeString
+            tripKm: CanBackend.journeyKm
+            rangeKm: root.rangeKmValid ? root.rangeKm : 0
+            nightMode: root.nightMode
+            centerMode: root.centerMode
+            allLampsOn: root.lampsAllOn
+            blindSpotEnabled: root.blindSpotEnabled
+            promoVideoLeft: root.promoVideoLeft
+            promoVideoRight: root.promoVideoRight
+            cameraLeft: root.leftTurn
+            cameraRight: root.rightTurn
+            // вход в настройки из скина (двойной клик по колонке передач)
+            onSettingsRequested: calibration.open()
+        }
+
         // Оверлей настроек живёт на уровне canvas, а не внутри dashboardLayer:
         // иначе его z: 300 считается только среди соседей внутри слоя,
         // и скин Genesis (z: 50) закрывал бы настройки собой.
@@ -1301,7 +1331,8 @@ Window {
         Shortcut { sequence: "N"; onActivated: input.button(6) }
         Shortcut { sequence: "S"; onActivated: calibration.open() }
 
-        // F8 — переключить скин (классический ↔ Genesis): приёмка на столе
+        // F8 — переключить скин по кругу: классический → Genesis → Gaia →
+        // классический. Приёмка на столе, в машине скин задаётся при запуске.
         // L — показать все лампы сразу (отладка раскладки значков)
         Shortcut { sequence: "L"; onActivated: {
                       root.lampsAllOn = !root.lampsAllOn
@@ -1309,7 +1340,12 @@ Window {
                   } }
 
         Shortcut { sequence: "F8"; onActivated: {
-                      root.skin = root.skin === "genesis" ? "classic" : "genesis"
+                      if (root.skin === "classic")
+                          root.skin = "genesis"
+                      else if (root.skin === "genesis")
+                          root.skin = "gaia"
+                      else
+                          root.skin = "classic"
                       console.log("Скин:", root.skin)
                   } }
 
