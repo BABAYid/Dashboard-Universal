@@ -376,7 +376,10 @@ Item {
 
     // ======================= РЯД ЛАМП =======================
     // Положения и размеры — из макета (tools/gaia_assets.py печатает ту же
-    // таблицу). Размер в макете = размер PNG / 2: иконки выгружены в @2x.
+    // таблицу). Информационные лампы (топливо, ECO, двери, подушка, ремень)
+    // берутся из макета Gaia; предупреждающие (двигатель, ABS, масло, АКБ,
+    // ручник) — из прошлых скинов, tools/gaia_lamps.py: они уже в палитре
+    // Genesis (янтарный/красный) и выгружены в 256×224.
     readonly property var lamps: [
         { art: "lamp_fuel.png",   cx: 362.2,  cy: 600.0, w: 33.5, h: 35.0, on: root.lampTest || root.fuelLow },
         { art: "lamp_engine.png", cx: 639.5,  cy: 600.5, w: 46.0, h: 31.0, on: root.lampTest || CanBackend.checkEngine },
@@ -398,6 +401,9 @@ Item {
             source: "images/gaia/" + modelData.art
             width: modelData.w
             height: modelData.h
+            // У информационных ламп пропорции из макета, у предупреждающих
+            // (из Genesis) — 256×224, поэтому вписываем по меньшей стороне.
+            fillMode: Image.PreserveAspectFit
             x: modelData.cx - width / 2
             y: modelData.cy - height / 2
             smooth: true

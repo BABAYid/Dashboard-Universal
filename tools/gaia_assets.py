@@ -28,15 +28,13 @@ OUT = os.path.join(ROOT, "Dashboard", "images", "gaia")
 DESIGN2X = os.path.join(GAIA, "Приборная панель · Вариант 2 · 1920 × 722@2x.png")
 
 # Иконки дизайнера → имена в скине. Размер в макете 1x = размер PNG / 2.
+# Из макета Gaia берём только «информационные» лампы. Предупреждающие
+# (check engine, ABS, масло, АКБ, ручник) заказчик попросил взять из прошлых
+# скинов — ими занимается tools/gaia_lamps.py, поэтому здесь их нет.
 ICONS = {
     "Резерв топлива.png": "lamp_fuel.png",
-    "Неисправность двигателя.png": "lamp_engine.png",
-    "Group 5.png": "lamp_abs.png",          # (ABS) в кольце
     "ECO.png": "lamp_eco.png",
-    "Давление масла.png": "lamp_oil.png",
     "Открытые двери.png": "lamp_doors.png",
-    "Group 6.png": "lamp_batt.png",          # АКБ: корпус с клеммами «- +»
-    "Group 7.png": "lamp_brake.png",         # «!» в кольце — тормоза
     "Подушка безопасности.png": "lamp_airbag.png",
     "Ремень безопасности.png": "lamp_belt.png",
     # Поворотники в Gaia берутся из прошлых скинов и красятся в зелёный —
