@@ -155,8 +155,12 @@ qt_add_qml_module(appDashboard
         images/gaia/gear_D.png
         images/gaia/gear_2.png
         images/gaia/gear_L.png
+        # Указатели поворота: белые стрелки из классики + зелёные копии
+        # (tools/gaia_arrows.py, цвет задаётся заливкой файла).
         images/gaia/turn_left.png
         images/gaia/turn_right.png
+        images/gaia/turn_left_green.png
+        images/gaia/turn_right_green.png
         # Цветные копии стрелки для шлейфа шкал (tools/tint_genesis_icons.py)
         images/genesis/needle_red.png
         images/genesis/needle_green.png

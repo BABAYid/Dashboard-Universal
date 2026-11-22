@@ -335,19 +335,24 @@ Item {
 
     // ======================= ПОВОРОТНИКИ =======================
     // По центру сверху, между ними — статичный значок из фона.
+    // Картинки — белые стрелки из классического скина, покрашенные в
+    // зелёный заранее (tools/gaia_arrows.py): цвет в QML на программном
+    // рендерере не работает.
     Image {
-        source: "images/gaia/turn_left.png"
+        source: "images/gaia/turn_left_green.png"
         width: 52.5
         height: 50
+        fillMode: Image.PreserveAspectFit
         x: 873 - width / 2
         y: 79 - height / 2
         smooth: true
         opacity: root.lampTest || root.leftTurnOn ? 1.0 : root.arrowOffOpacity
     }
     Image {
-        source: "images/gaia/turn_right.png"
+        source: "images/gaia/turn_right_green.png"
         width: 52.5
         height: 50
+        fillMode: Image.PreserveAspectFit
         x: 1048 - width / 2
         y: 79 - height / 2
         smooth: true
