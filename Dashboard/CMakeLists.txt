@@ -149,12 +149,20 @@ qt_add_qml_module(appDashboard
         images/gaia/lamp_brake.png
         images/gaia/lamp_airbag.png
         images/gaia/lamp_belt.png
+        # Буквы передач: белые спрайты из макета + цветные копии
+        # (tools/gaia_assets.py: P/N/D — зелёные, R/2/L — оранжевые).
         images/gaia/gear_P.png
         images/gaia/gear_R.png
         images/gaia/gear_N.png
         images/gaia/gear_D.png
         images/gaia/gear_2.png
         images/gaia/gear_L.png
+        images/gaia/gear_P_green.png
+        images/gaia/gear_R_orange.png
+        images/gaia/gear_N_green.png
+        images/gaia/gear_D_green.png
+        images/gaia/gear_2_orange.png
+        images/gaia/gear_L_orange.png
         # Указатели поворота: белые стрелки из классики + зелёные копии
         # (tools/gaia_arrows.py, цвет задаётся заливкой файла).
         images/gaia/turn_left.png
