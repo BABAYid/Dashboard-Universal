@@ -331,9 +331,8 @@ Item {
     // Геометрия карточки из макета: x 936.9, 46.5 × 44, радиус 6.5,
     // обводка 1.86 (tools/gaia_scale.py печатает ту же колонку).
     readonly property var gearOrder: ["P", "R", "N", "D", "2", "L"]
-    // Цвета передач (просьба заказчика): P — зелёная, R — оранжевая,
-    // N и D — зелёные, 2 и L — оранжевые. Спрайты покрашены заранее
-    // (tools/gaia_assets.py): цвет в QML на программном рендерере не работает.
+    // Цвета окантовок передач (просьба заказчика): P/N/D — зелёная,
+    // R/2/L — оранжевая. Буквы при этом белые, как в макете.
     readonly property var gearColors: ["green", "orange", "green", "green", "orange", "orange"]
     // Окантовка активной карточки красится в цвет передачи — тем же HEX,
     // что и цветные спрайты букв (tools/gaia_assets.py).
@@ -366,7 +365,9 @@ Item {
             required property int index
             required property string modelData
 
-            source: "images/gaia/gear_" + modelData + "_" + root.gearColors[index] + ".png"
+            // Буквы белые, как в макете: цветными остаются только окантовки
+            // активной карточки.
+            source: "images/gaia/gear_" + modelData + ".png"
             width: implicitWidth / 2          // картинки выгружены в @2x
             height: implicitHeight / 2
             x: root.gearColumnX - width / 2

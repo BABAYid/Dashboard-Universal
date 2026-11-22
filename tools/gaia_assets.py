@@ -35,16 +35,6 @@ ICONS = {
     # ими занимается отдельный скрипт tools/gaia_arrows.py.
 }
 
-# Цвета передач (просьба заказчика): P — зелёная, R — оранжевая,
-# N и D — зелёные, 2 и L — оранжевые. Спрайты белые, поэтому красим копии:
-# цвет в QML задаётся только шейдерным эффектом, а на программном
-# рендерере он не работает (см. tools/gaia_lamps.py).
-GEAR_COLORS = {
-    "P": "green", "R": "orange", "N": "green",
-    "D": "green", "2": "orange", "L": "orange",
-}
-GEAR_RGB = {"green": (0x57, 0xD6, 0x8A), "orange": (0xF6, 0x7E, 0x53)}
-
 # Карточки передач в макете 1x: x 936.9…983.4, шаг 68.1. В @2x — вдвое.
 GEAR_CARDS = [("P", 136.6), ("R", 204.7), ("N", 272.8),
               ("D", 340.9), ("2", 409.0), ("L", 477.1)]
@@ -89,18 +79,8 @@ def extract_gears():
         rgba[..., 3] = alpha
         name = f"gear_{letter}.png"
         Image.fromarray(rgba, "RGBA").save(os.path.join(OUT, name))
-        colour = GEAR_COLORS.get(letter)
-        if colour:
-            rgb = GEAR_RGB[colour]
-            tinted = rgba.copy()
-            tinted[..., 0] = rgb[0]
-            tinted[..., 1] = rgb[1]
-            tinted[..., 2] = rgb[2]
-            Image.fromarray(tinted, "RGBA").save(os.path.join(OUT, f"gear_{letter}_{colour}.png"))
-            print(f"  {letter}: {name} + gear_{letter}_{colour}.png "
-                  f"{sub.shape[1]}x{sub.shape[0]} (1x {sub.shape[1] / 2:.1f}x{sub.shape[0] / 2:.1f})")
-        else:
-            print(f"  {letter}: {name} {sub.shape[1]}x{sub.shape[0]} (1x {sub.shape[1] / 2:.1f}x{sub.shape[0] / 2:.1f})")
+        print(f"  {letter}: {name} {sub.shape[1]}x{sub.shape[0]} "
+              f"(1x {sub.shape[1] / 2:.1f}x{sub.shape[0] / 2:.1f})")
 
 
 def main():
