@@ -335,6 +335,14 @@ Item {
     // N и D — зелёные, 2 и L — оранжевые. Спрайты покрашены заранее
     // (tools/gaia_assets.py): цвет в QML на программном рендерере не работает.
     readonly property var gearColors: ["green", "orange", "green", "green", "orange", "orange"]
+    // Окантовка активной карточки красится в цвет передачи — тем же HEX,
+    // что и цветные спрайты букв (tools/gaia_assets.py).
+    readonly property color gearGreen: "#57D68A"
+    readonly property color gearOrange: "#F67E53"
+    function gearTint(i) {
+        return root.gearColors[Math.max(0, Math.min(root.gearColors.length - 1, i))] === "orange"
+                ? root.gearOrange : root.gearGreen
+    }
     readonly property int activeGearIndex:
         Math.max(0, root.gearOrder.indexOf(root.activeGear()))
 
@@ -346,8 +354,10 @@ Item {
         radius: 6.5
         color: "transparent"
         border.width: 1.9
-        border.color: "#DFE2DD"
+        // Окантовка в цвет передачи: P/N/D зелёные, R/2/L оранжевые.
+        border.color: root.gearTint(root.activeGearIndex)
         Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on border.color { ColorAnimation { duration: 160 } }
     }
     Repeater {
         model: ["P", "R", "N", "D", "2", "L"]
