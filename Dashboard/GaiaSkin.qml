@@ -81,11 +81,14 @@ Item {
     readonly property color accentOut: "#F67E53"
     readonly property color accentDark: "#832913"
     readonly property color lampColor: "#E8EAE6"
+    // Погашенная лампа НЕ просматривается совсем (просьба заказчика):
+    // раньше оставался еле видный силуэт 10–16 %, и значки читались днём
+    // даже выключенными. Теперь в выключенном состоянии их просто нет.
     readonly property real lampOnOpacity: 1.0
-    readonly property real lampOffOpacity: 0.14
+    readonly property real lampOffOpacity: 0.0
     readonly property real gearOnOpacity: 1.0
     readonly property real gearOffOpacity: 0.16
-    readonly property real arrowOffOpacity: 0.10
+    readonly property real arrowOffOpacity: 0.0
 
     // ---- геометрия из макета ----
     readonly property real dialLeftPivotX: 583.4
