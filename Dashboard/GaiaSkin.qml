@@ -87,7 +87,9 @@ Item {
     readonly property real lampOnOpacity: 1.0
     readonly property real lampOffOpacity: 0.0
     readonly property real gearOnOpacity: 1.0
-    readonly property real gearOffOpacity: 0.16
+    // Передачи видны только активной (просьба заказчика): подсвечиваются
+    // окантовка карточки и буква, остальные карточки остаются тёмными.
+    readonly property real gearOffOpacity: 0.0
     readonly property real arrowOffOpacity: 0.0
 
     // ---- геометрия из макета ----
@@ -324,8 +326,25 @@ Item {
     }
 
     // ======================= КОЛОНКА ПЕРЕДАЧ =======================
-    // Шесть карточек P R N D 2 L сверху вниз. Карточки — в фоне, здесь
-    // только буквы: активная светится, остальные еле видны.
+    // Шесть карточек P R N D 2 L сверху вниз. Плашки карточек — в фоне,
+    // здесь поверх них: окантовка активной карточки и её буква.
+    // Геометрия карточки из макета: x 936.9, 46.5 × 44, радиус 6.5,
+    // обводка 1.86 (tools/gaia_scale.py печатает ту же колонку).
+    readonly property var gearOrder: ["P", "R", "N", "D", "2", "L"]
+    readonly property int activeGearIndex:
+        Math.max(0, root.gearOrder.indexOf(root.activeGear()))
+
+    Rectangle {
+        x: 936.9
+        y: root.gearFirstRowY + root.activeGearIndex * root.gearRowStep
+        width: 46.5
+        height: 44
+        radius: 6.5
+        color: "transparent"
+        border.width: 1.9
+        border.color: "#DFE2DD"
+        Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+    }
     Repeater {
         model: ["P", "R", "N", "D", "2", "L"]
 

@@ -86,5 +86,29 @@ def main():
         print()
 
 
+def gear_cards():
+    """Геометрия карточек передач — печатается для сверки с QML."""
+    root = ET.parse(SVG).getroot()
+    host = root
+    for ch in root:
+        if "clip0" in (ch.get("clip-path") or ""):
+            host = ch
+            break
+    print("=== карточки передач (P R N D 2 L сверху вниз)")
+    for ch in list(host):
+        if ch.tag.replace(GB.NS, "") != "rect":
+            continue
+        bb, _ = GB.bbox_tree(ch, (1, 0, 0, 1, 0, 0))
+        if not bb:
+            continue
+        w, h = bb[2] - bb[0], bb[3] - bb[1]
+        if 40 < w < 55 and 40 < h < 50 and 930 < bb[0] < 990:
+            print(f"  x={bb[0]:.1f} y={bb[1]:.1f} {w:.1f}x{h:.1f} "
+                  f"rx={ch.get('rx')} stroke={ch.get('stroke')} "
+                  f"sw={ch.get('stroke-width')}")
+
+
 if __name__ == "__main__":
     main()
+    print()
+    gear_cards()

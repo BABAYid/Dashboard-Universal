@@ -174,12 +174,6 @@
 <ns0:mask id="stroke4_19_361" fill="white">
 <ns0:path d="M1242.12 590.219C1242.12 589.535 1242.68 588.981 1243.36 588.981H1280.52C1281.21 588.981 1281.76 589.535 1281.76 590.219V613.755C1281.76 614.439 1281.21 614.994 1280.52 614.994H1243.36C1242.68 614.994 1242.12 614.439 1242.12 613.755V590.219Z" />
 </ns0:mask>
-<ns0:rect x="936.929" y="136.586" width="46.4516" height="43.9742" rx="6.50323" fill="url(#paint48_linear_19_361)" stroke-width="1.85806" stroke="#777F82" />
-<ns0:rect x="936.929" y="204.692" width="46.4516" height="43.9742" rx="6.50323" fill="url(#paint49_linear_19_361)" stroke-width="1.85806" stroke="#777F82" />
-<ns0:rect x="936.929" y="272.798" width="46.4516" height="43.9742" rx="6.50323" fill="url(#paint50_linear_19_361)" stroke-width="1.85806" stroke="#777F82" />
-<ns0:rect x="936.929" y="340.905" width="46.4516" height="43.9742" rx="6.50323" fill="url(#paint51_linear_19_361)" stroke-width="1.85806" stroke="#777F82" />
-<ns0:rect x="936.929" y="409.011" width="46.4516" height="43.9742" rx="6.50323" fill="url(#paint52_linear_19_361)" stroke-width="1.85806" stroke="#777F82" />
-<ns0:rect x="936.929" y="477.118" width="46.4516" height="43.9742" rx="6.50323" fill="url(#paint53_linear_19_361)" stroke-width="1.85806" stroke="#777F82" />
 </ns0:g>
 <ns0:defs>
 <ns0:filter id="filter0_d_19_361" x="481.858" y="281.69" width="193.239" height="193.239" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
