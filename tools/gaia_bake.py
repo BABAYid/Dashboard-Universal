@@ -80,10 +80,17 @@ BASE_FILL_OUT = "#000000"
 # ступени макета при простом сдвиге hue остаются почти серыми.
 # Порядок ступеней совпадает с оригинальным градиентом кольца:
 # #9CA39E, #828C87, #CBD1CA, #E3E7DF, #DEE2DA.
+# Кольца основных шкал (5 ступеней, как в макете: тёмная-тёмная-светлая-светлая-светлая).
 RING_GRADIENTS = ("paint0_radial_19_361", "paint17_radial_19_361")
-RING_BLUE_STOPS = ["#3E6E8E", "#33607E", "#6FA3C4", "#9BC6E0", "#94C0DC"]
+RING_BLUE_STOPS = ["#1E6FAE", "#155E96", "#4A9AD4", "#8AC8F0", "#74B8E6"]
+# Кольца-колодцы топлива и температуры в углах (6 ступеней).
+CORNER_GRADIENTS = ("paint34_radial_19_361", "paint41_radial_19_361")
+CORNER_BLUE_STOPS = ["#2A6E9E", "#1F5C88", "#4F97C9", "#7FBCE4", "#6AAEDB", "#24618C"]
+# Обод угловых колодцев и деления шкал — тёмно-синие.
+RING_EDGE = "#2F373D"
+RING_EDGE_BLUE = "#143A55"
 DARK_MARKS = ("#303538", "#31383B")     # деления шкал
-DARK_MARKS_BLUE = "#1E3B52"             # тёмно-синие деления
+DARK_MARKS_BLUE = "#153A5E"             # тёмно-синие деления
 NUMBERS = "#DFE2DD"                     # цифры на шкалах
 NUMBERS_BLUE_THEME = "#FFFFFF"          # в синем варианте — чисто белые
 
@@ -346,25 +353,35 @@ def blue_theme(svg_root):
     (углы с топливом и температурой, карточки) остаётся как в макете.
     """
     changed = 0
-    for gid in RING_GRADIENTS:
-        node = _find_by_id(svg_root, gid)
-        if node is None:
-            print(f"  !! градиент {gid} не найден")
-            continue
-        stops = list(node)
-        for i, st in enumerate(stops):
-            if i < len(RING_BLUE_STOPS):
-                st.set("stop-color", RING_BLUE_STOPS[i])
-                changed += 1
+
+    def repaint(gids, stops, what):
+        nonlocal changed
+        for gid in gids:
+            node = _find_by_id(svg_root, gid)
+            if node is None:
+                print(f"  !! градиент {gid} не найден")
+                continue
+            for i, st in enumerate(list(node)):
+                if i < len(stops):
+                    st.set("stop-color", stops[i])
+                    changed += 1
+        print(f"  {what}: перекрашено")
+
+    repaint(RING_GRADIENTS, RING_BLUE_STOPS, "кольца шкал")
+    repaint(CORNER_GRADIENTS, CORNER_BLUE_STOPS, "колодцы топлива и температуры")
+
     for el in svg_root.iter():
         fill = el.get("fill")
         if fill in DARK_MARKS:
             el.set("fill", DARK_MARKS_BLUE)
             changed += 1
+        elif fill == RING_EDGE:
+            el.set("fill", RING_EDGE_BLUE)
+            changed += 1
         elif fill == NUMBERS:
             el.set("fill", NUMBERS_BLUE_THEME)
             changed += 1
-    print(f"синяя тема: перекрашено цветов — {changed}")
+    print(f"синяя тема: всего перекрашено цветов — {changed}")
 
 
 def render(svg_path=None, png_1x=None, png_2x=None):
