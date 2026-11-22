@@ -355,7 +355,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 14
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 0
+            spacing: 4
 
             Repeater {
                 model: root.odoText.split("")
@@ -368,8 +368,8 @@ Item {
                     // Точка между целыми и десятыми у поездок.
                     readonly property bool isDot: digitCell.modelData === "."
 
-                    width: digitCell.isDot ? 7 : 15
-                    height: 33
+                    width: digitCell.isDot ? 8 : 20
+                    height: 36
 
                     SegDigit {
                         anchors.centerIn: parent
@@ -391,17 +391,17 @@ Item {
         }
     }
 
-    // Одна цифра семисегментного индикатора: 15 × 33, толщина сегмента 4.
-    // Форма сегментов — как на калькуляторе, поэтому шрифт не нужен.
+    // Одна цифра семисегментного индикатора — «как на калькуляторе».
+    // Сегменты рисуются полигонами со скошенными концами (45°), поэтому
+    // цифра выглядит цельной и не «рассыпается» на короткие отрезки.
+    // Размеры: 20 × 36, толщина сегмента 4.5, шаг цифры 24 px.
     component SegDigit: Item {
         id: seg
 
         required property int digit        // 0…9, -1 — пусто
 
-        width: 15
-        height: 33
-        readonly property real th: 4       // толщина сегмента
-        readonly property real gap: 0.9    // зазор между сегментами
+        width: 20
+        height: 36
 
         // Какие сегменты горят: a — верх, b — верх-право, c — низ-право,
         // d — низ, e — низ-лево, f — верх-лево, g — середина.
@@ -422,27 +422,66 @@ Item {
         }
         function on(name) { return seg.segs.indexOf(name) >= 0 }
 
-        // Горизонтальные сегменты
-        Rectangle { visible: seg.on("a"); x: seg.th; y: 0
-            width: seg.width - 2 * seg.th; height: seg.th; radius: seg.th / 2; color: "#000000" }
-        Rectangle { visible: seg.on("g"); x: seg.th; y: (seg.height - seg.th) / 2
-            width: seg.width - 2 * seg.th; height: seg.th; radius: seg.th / 2; color: "#000000" }
-        Rectangle { visible: seg.on("d"); x: seg.th; y: seg.height - seg.th
-            width: seg.width - 2 * seg.th; height: seg.th; radius: seg.th / 2; color: "#000000" }
+        Canvas {
+            id: segCanvas
+            anchors.fill: parent
 
-        // Вертикальные сегменты: верхняя половина — f/b, нижняя — e/c
-        readonly property real vTop: seg.th + seg.gap
-        readonly property real vMid: (seg.height - seg.th) / 2 - seg.gap
-        readonly property real vBot: (seg.height + seg.th) / 2 + seg.gap
+            Connections {
+                target: seg
+                function onDigitChanged() { segCanvas.requestPaint() }
+            }
+            Component.onCompleted: requestPaint()
 
-        Rectangle { visible: seg.on("f"); x: 0; y: seg.vTop
-            width: seg.th; height: seg.vMid - seg.vTop; radius: seg.th / 2; color: "#000000" }
-        Rectangle { visible: seg.on("b"); x: seg.width - seg.th; y: seg.vTop
-            width: seg.th; height: seg.vMid - seg.vTop; radius: seg.th / 2; color: "#000000" }
-        Rectangle { visible: seg.on("e"); x: 0; y: seg.vBot
-            width: seg.th; height: (seg.height - seg.th - seg.gap) - seg.vBot; radius: seg.th / 2; color: "#000000" }
-        Rectangle { visible: seg.on("c"); x: seg.width - seg.th; y: seg.vBot
-            width: seg.th; height: (seg.height - seg.th - seg.gap) - seg.vBot; radius: seg.th / 2; color: "#000000" }
+            // Толщина сегмента и скос. Скос = половина толщины: концы
+            // сегментов сходятся под 45°, как у настоящего индикатора.
+            readonly property real th: 4.5
+            readonly property real ch: th / 2
+            readonly property real m: th / 2       // поле до края цифры
+
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                ctx.fillStyle = "#000000"
+                var w = width, h = height, t = th, c = ch, margin = m
+
+                function hseg(x1, x2, y) {
+                    ctx.beginPath()
+                    ctx.moveTo(x1 + c, y)
+                    ctx.lineTo(x2 - c, y)
+                    ctx.lineTo(x2, y + c)
+                    ctx.lineTo(x2, y + t - c)
+                    ctx.lineTo(x2 - c, y + t)
+                    ctx.lineTo(x1 + c, y + t)
+                    ctx.lineTo(x1, y + t - c)
+                    ctx.lineTo(x1, y + c)
+                    ctx.closePath()
+                    ctx.fill()
+                }
+                function vseg(x, y1, y2) {
+                    ctx.beginPath()
+                    ctx.moveTo(x + c, y1)
+                    ctx.lineTo(x + t - c, y1)
+                    ctx.lineTo(x + t, y1 + c)
+                    ctx.lineTo(x + t, y2 - c)
+                    ctx.lineTo(x + t - c, y2)
+                    ctx.lineTo(x + c, y2)
+                    ctx.lineTo(x, y2 - c)
+                    ctx.lineTo(x, y1 + c)
+                    ctx.closePath()
+                    ctx.fill()
+                }
+
+                var midTop = (h - t) / 2
+                var midBot = (h + t) / 2
+                if (seg.on("a")) hseg(margin, w - margin, 0)
+                if (seg.on("g")) hseg(margin, w - margin, midTop)
+                if (seg.on("d")) hseg(margin, w - margin, h - t)
+                if (seg.on("f")) vseg(0, margin, midTop)
+                if (seg.on("b")) vseg(w - t, margin, midTop)
+                if (seg.on("e")) vseg(0, midBot, h - margin)
+                if (seg.on("c")) vseg(w - t, midBot, h - margin)
+            }
+        }
     }
 
     // Клавиша O на столе — переключение ODO → Trip A → Trip B.
