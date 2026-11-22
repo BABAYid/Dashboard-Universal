@@ -186,6 +186,56 @@ Item {
         smooth: true
     }
 
+    // ======================= ЭКРАН ОДОМЕТРА =======================
+    // ЭКРАН ОБЪЯВЛЕН ДО СТРЕЛОК: так стрелка проходит поверх плашки
+    // (просьба заказчика — экран под стрелкой).
+    // Светлая плашка с чёрными сегментными цифрами («как на калькуляторе»).
+    // Геометрия плашки и цвета — из рендера макета (см. свойства выше).
+    // Подпись режима: ODO — в верхнем углу, TRIP A/TRIP B — в нижнем.
+    Rectangle {
+        id: odometerScreen
+        x: root.screenX
+        y: root.screenY
+        width: root.screenW
+        height: root.screenH
+        radius: 5
+        color: "#9FA597"
+        border.width: 1
+        border.color: "#767F72"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.nextOdoMode()
+        }
+
+        Text {
+            text: root.odoLabel
+            color: "#333934"
+            font.family: root.numericFont
+            font.pixelSize: 13
+            font.letterSpacing: 1.5
+            x: 12
+            // ODO — сверху, поездки — снизу, как просил заказчик.
+            y: root.odoMode === 0 ? 7 : (parent.height - height - 7)
+        }
+
+        // Цифры идут справа, левая часть плашки остаётся под подпись.
+        // Шрифт семисегментный (Digital-7 Mono), поэтому цифры выглядят
+        // как на калькуляторе без ручной отрисовки сегментов.
+        Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.odoText
+            color: "#000000"
+            font.family: root.digiFont
+            // В макете цифры 33 px высотой: у Digital-7 Mono высота цифры
+            // ~0.65 от кегля, отсюда pixelSize 50.
+            font.pixelSize: 50
+            font.letterSpacing: 0
+        }
+    }
+
     // ======================= СТРЕЛКИ =======================
     // Стрелка — прямоугольник с градиентом макета и закруглённым кончиком.
     // Ось — нижний центр холста, поэтому поворот идёт вокруг оси прибора.
@@ -320,54 +370,6 @@ Item {
             smooth: true
             opacity: modelData.on ? root.lampOnOpacity : root.lampOffOpacity
             Behavior on opacity { NumberAnimation { duration: 120 } }
-        }
-    }
-
-    // ======================= ЭКРАН ОДОМЕТРА =======================
-    // Светлая плашка с чёрными сегментными цифрами («как на калькуляторе»).
-    // Геометрия плашки и цвета — из рендера макета (см. свойства выше).
-    // Подпись режима: ODO — в верхнем углу, TRIP A/TRIP B — в нижнем.
-    Rectangle {
-        id: odometerScreen
-        x: root.screenX
-        y: root.screenY
-        width: root.screenW
-        height: root.screenH
-        radius: 5
-        color: "#9FA597"
-        border.width: 1
-        border.color: "#767F72"
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: root.nextOdoMode()
-        }
-
-        Text {
-            text: root.odoLabel
-            color: "#333934"
-            font.family: root.numericFont
-            font.pixelSize: 13
-            font.letterSpacing: 1.5
-            x: 12
-            // ODO — сверху, поездки — снизу, как просил заказчик.
-            y: root.odoMode === 0 ? 7 : (parent.height - height - 7)
-        }
-
-        // Цифры идут справа, левая часть плашки остаётся под подпись.
-        // Шрифт семисегментный (Digital-7 Mono), поэтому цифры выглядят
-        // как на калькуляторе без ручной отрисовки сегментов.
-        Text {
-            anchors.right: parent.right
-            anchors.rightMargin: 14
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.odoText
-            color: "#000000"
-            font.family: root.digiFont
-            // В макете цифры 33 px высотой: у Digital-7 Mono высота цифры
-            // ~0.65 от кегля, отсюда pixelSize 50.
-            font.pixelSize: 50
-            font.letterSpacing: 0
         }
     }
 
