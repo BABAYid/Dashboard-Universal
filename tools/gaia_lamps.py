@@ -6,9 +6,13 @@
 Genesis — там они уже покрашены в палитру приборки (янтарный/красный) и
 выгружены в 256×224, поэтому копируются и обрезаются по контенту.
 
-Reмня в Genesis есть (warn_seat_belt_red), а вот значка SRS/подушки и
-«открытых дверей» там нет — эти две берутся из макета Gaia и красятся
-красным здесь же (как просил заказчик).
+Ремня в Genesis есть (warn_seat_belt_red), а вот значка SRS/подушки и
+«открытых дверей» там нет. Двери остаются из макета Gaia и красятся
+красным. Для SRS в свободных наборах иконок (MDI, UIX, IconOven, Picon)
+нашлись только абстрактные картинки «airbag», не похожие на приборную
+лампу, поэтому классический значок «человек с подушкой» нарисован вручную:
+исходник — Dashboard/images/airbag.svg, растрирован в airbag.png (белый),
+а здесь красится красным.
 
 В макете Gaia иконки свои и монохромные, но заказчик попросил взять
 указатели поворота и значок дальнего света из прошлых скинов и дать им
@@ -47,6 +51,7 @@ OUT_DIR = os.path.join(ROOT, "Dashboard", "images", "gaia")
 GREEN = "#57D68A"
 BLUE = "#63C8FF"
 RED = "#FF5252"
+AMBER = "#F2C14E"
 
 # Исходник классики -> (копия без цвета, цветная копия, цвет)
 LAMPS = {
@@ -68,12 +73,19 @@ WARN_FROM_GENESIS = {
     "warn_seat_belt_red.png":      "lamp_belt.png",
 }
 
-# Значков, которых в прошлых скинах нет, — берём иконку из макета Gaia и
-# красим: «открытые двери» и подушка безопасности (SRS) — красные.
+# Значков, которых в прошлых скинах нет: берём исходник из проекта или
+# макета Gaia и красим здесь же.
 GAIA_DIR = os.path.join(ROOT, "Gaia")
-TINTED_FROM_GAIA = {
-    "Открытые двери.png":           ("lamp_doors.png",  RED),
-    "Подушка безопасности.png":     ("lamp_airbag.png", RED),
+TINTED_SOURCES = {
+    # «Открытые двери» — иконка макета Gaia, как просил заказчик: форму
+    # оставляем, красим в красный.
+    os.path.join(GAIA_DIR, "Открытые двери.png"): ("lamp_doors.png", RED),
+    # Топливо — жёлтое (янтарное, как лампа запаса топлива).
+    os.path.join(GAIA_DIR, "Резерв топлива.png"): ("lamp_fuel.png", AMBER),
+    # ECO — зелёное.
+    os.path.join(GAIA_DIR, "ECO.png"): ("lamp_eco.png", GREEN),
+    # Подушка безопасности (SRS) — свой значок, см. docstring.
+    os.path.join(SRC_DIR, "airbag.png"): ("lamp_airbag.png", RED),
 }
 
 
@@ -101,13 +113,12 @@ def main():
         size = tint(src, os.path.join(OUT_DIR, color_name), color)
         print(f"  {src_name} -> {plain_name} + {color_name}  {size[0]}x{size[1]}  {color}")
 
-    for src_name, (dst_name, color) in TINTED_FROM_GAIA.items():
-        src = os.path.join(GAIA_DIR, src_name)
+    for src, (dst_name, color) in TINTED_SOURCES.items():
         if not os.path.exists(src):
-            print(f"  !! нет файла Gaia/{src_name}")
+            print(f"  !! нет файла {os.path.relpath(src, ROOT)}")
             continue
         size = tint(src, os.path.join(OUT_DIR, dst_name), color)
-        print(f"  Gaia/{src_name} -> {dst_name}  {size[0]}x{size[1]}  {color}")
+        print(f"  {os.path.relpath(src, ROOT)} -> {dst_name}  {size[0]}x{size[1]}  {color}")
 
     for src_name, dst_name in WARN_FROM_GENESIS.items():
         src = os.path.join(GENESIS_DIR, src_name)
