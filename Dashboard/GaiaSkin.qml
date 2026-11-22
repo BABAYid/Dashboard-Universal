@@ -99,6 +99,19 @@ Item {
     readonly property real gearRowStep: 68.1
     readonly property real gearFirstRowY: 136.6
 
+    // Экранчик одометра под левым колодцем. Координаты и цвета сняты с
+    // PNG-рендера макета: плашка 248×43 в (466, 466), тело #9FA597,
+    // кромка #767F72, цифры чёрные. В SVG этого узла нет — SVG и PNG
+    // дизайнера разошлись, поэтому плашку рисуем примитивами, а цифры
+    // живые, шрифтом приборки.
+    readonly property real screenX: 466
+    readonly property real screenY: 466
+    readonly property real screenW: 248
+    readonly property real screenH: 43
+    readonly property string numericFont: "Kdam Thmor Pro"
+    // Пробег: целые километры, выровнены вправо, как в макете.
+    readonly property string odometerText: String(Math.round(Math.max(0, CanBackend.odometer)))
+
     // ---- состояние ламп из CAN ----
     readonly property bool engineRunning: CanBackend.rpm > 400
     readonly property bool fuelLow: CanBackend.fuelLevel <= 10
@@ -281,6 +294,34 @@ Item {
             smooth: true
             opacity: modelData.on ? root.lampOnOpacity : root.lampOffOpacity
             Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+    }
+
+    // ======================= ЭКРАН ОДОМЕТРА =======================
+    // Светлая плашка с чёрными цифрами — как в макете. Геометрия и цвета
+    // в свойствах выше; цифры идут справа, левая часть плашки остаётся
+    // пустой (в макете там тоже пусто).
+    Rectangle {
+        x: root.screenX
+        y: root.screenY
+        width: root.screenW
+        height: root.screenH
+        radius: 5
+        color: "#9FA597"
+        border.width: 1
+        border.color: "#767F72"
+
+        Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.odometerText
+            color: "#000000"
+            // В макете цифры 33 px высотой с шагом ~26 px — под эти
+            // размеры подобраны pixelSize и letterSpacing.
+            font.family: root.numericFont
+            font.pixelSize: 42
+            font.letterSpacing: 8
         }
     }
 }
