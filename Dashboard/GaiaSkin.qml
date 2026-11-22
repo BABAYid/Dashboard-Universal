@@ -109,8 +109,30 @@ Item {
     readonly property real screenW: 248
     readonly property real screenH: 43
     readonly property string numericFont: "Kdam Thmor Pro"
-    // Пробег: целые километры, выровнены вправо, как в макете.
-    readonly property string odometerText: String(Math.round(Math.max(0, CanBackend.odometer)))
+
+    // Режимы экранчика: 0 — общий пробег (ODO), 1 — Trip A, 2 — Trip B.
+    // Переключаются нажатием на сам экранчик (мышью/тапом) или клавишей O
+    // на столе; в машине будет кнопка на подрулевом — как придёт в CAN.
+    property int odoMode: 0
+    function nextOdoMode() { root.odoMode = (root.odoMode + 1) % 3 }
+
+    // Подпись режима: у ODO — в верхнем углу, у поездок — в нижнем.
+    readonly property string odoLabel:
+        root.odoMode === 0 ? "ODO" : (root.odoMode === 1 ? "TRIP A" : "TRIP B")
+
+    // Что показываем. Общий пробег — шесть знакомест целыми километрами
+    // (как у механического одометра), поездки — с одним знаком после точки.
+    readonly property string odoText: {
+        if (root.odoMode === 0) {
+            var v = Math.round(Math.max(0, CanBackend.odometer))
+            var s = String(v)
+            while (s.length < 6)
+                s = "0" + s
+            return s
+        }
+        var t = root.odoMode === 1 ? CanBackend.tripA : CanBackend.tripB
+        return (Math.round(Math.max(0, t) * 10) / 10).toFixed(1)
+    }
 
     // ---- состояние ламп из CAN ----
     readonly property bool engineRunning: CanBackend.rpm > 400
@@ -298,10 +320,11 @@ Item {
     }
 
     // ======================= ЭКРАН ОДОМЕТРА =======================
-    // Светлая плашка с чёрными цифрами — как в макете. Геометрия и цвета
-    // в свойствах выше; цифры идут справа, левая часть плашки остаётся
-    // пустой (в макете там тоже пусто).
+    // Светлая плашка с чёрными сегментными цифрами («как на калькуляторе»).
+    // Геометрия плашки и цвета — из рендера макета (см. свойства выше).
+    // Подпись режима: ODO — в верхнем углу, TRIP A/TRIP B — в нижнем.
     Rectangle {
+        id: odometerScreen
         x: root.screenX
         y: root.screenY
         width: root.screenW
@@ -311,17 +334,121 @@ Item {
         border.width: 1
         border.color: "#767F72"
 
-        Text {
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.odometerText
-            color: "#000000"
-            // В макете цифры 33 px высотой с шагом ~26 px — под эти
-            // размеры подобраны pixelSize и letterSpacing.
-            font.family: root.numericFont
-            font.pixelSize: 42
-            font.letterSpacing: 8
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.nextOdoMode()
         }
+
+        Text {
+            text: root.odoLabel
+            color: "#333934"
+            font.family: root.numericFont
+            font.pixelSize: 13
+            font.letterSpacing: 1.5
+            x: 12
+            // ODO — сверху, поездки — снизу, как просил заказчик.
+            y: root.odoMode === 0 ? 7 : (parent.height - height - 7)
+        }
+
+        // Цифры идут справа, левая часть плашки остаётся под подпись.
+        Row {
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 0
+
+            Repeater {
+                model: root.odoText.split("")
+
+                delegate: Item {
+                    id: digitCell
+                    required property int index
+                    required property string modelData
+
+                    // Точка между целыми и десятыми у поездок.
+                    readonly property bool isDot: digitCell.modelData === "."
+
+                    width: digitCell.isDot ? 7 : 15
+                    height: 33
+
+                    SegDigit {
+                        anchors.centerIn: parent
+                        visible: !digitCell.isDot
+                        digit: digitCell.isDot ? -1 : Number(digitCell.modelData)
+                    }
+                    Rectangle {
+                        visible: digitCell.isDot
+                        width: 4
+                        height: 4
+                        radius: 1
+                        color: "#000000"
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 3
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+            }
+        }
+    }
+
+    // Одна цифра семисегментного индикатора: 15 × 33, толщина сегмента 4.
+    // Форма сегментов — как на калькуляторе, поэтому шрифт не нужен.
+    component SegDigit: Item {
+        id: seg
+
+        required property int digit        // 0…9, -1 — пусто
+
+        width: 15
+        height: 33
+        readonly property real th: 4       // толщина сегмента
+        readonly property real gap: 0.9    // зазор между сегментами
+
+        // Какие сегменты горят: a — верх, b — верх-право, c — низ-право,
+        // d — низ, e — низ-лево, f — верх-лево, g — середина.
+        readonly property string segs: {
+            switch (seg.digit) {
+            case 0: return "abcdef"
+            case 1: return "bc"
+            case 2: return "abged"
+            case 3: return "abgcd"
+            case 4: return "fgbc"
+            case 5: return "afgcd"
+            case 6: return "afgecd"
+            case 7: return "abc"
+            case 8: return "abcdefg"
+            case 9: return "abcdfg"
+            default: return ""
+            }
+        }
+        function on(name) { return seg.segs.indexOf(name) >= 0 }
+
+        // Горизонтальные сегменты
+        Rectangle { visible: seg.on("a"); x: seg.th; y: 0
+            width: seg.width - 2 * seg.th; height: seg.th; radius: seg.th / 2; color: "#000000" }
+        Rectangle { visible: seg.on("g"); x: seg.th; y: (seg.height - seg.th) / 2
+            width: seg.width - 2 * seg.th; height: seg.th; radius: seg.th / 2; color: "#000000" }
+        Rectangle { visible: seg.on("d"); x: seg.th; y: seg.height - seg.th
+            width: seg.width - 2 * seg.th; height: seg.th; radius: seg.th / 2; color: "#000000" }
+
+        // Вертикальные сегменты: верхняя половина — f/b, нижняя — e/c
+        readonly property real vTop: seg.th + seg.gap
+        readonly property real vMid: (seg.height - seg.th) / 2 - seg.gap
+        readonly property real vBot: (seg.height + seg.th) / 2 + seg.gap
+
+        Rectangle { visible: seg.on("f"); x: 0; y: seg.vTop
+            width: seg.th; height: seg.vMid - seg.vTop; radius: seg.th / 2; color: "#000000" }
+        Rectangle { visible: seg.on("b"); x: seg.width - seg.th; y: seg.vTop
+            width: seg.th; height: seg.vMid - seg.vTop; radius: seg.th / 2; color: "#000000" }
+        Rectangle { visible: seg.on("e"); x: 0; y: seg.vBot
+            width: seg.th; height: (seg.height - seg.th - seg.gap) - seg.vBot; radius: seg.th / 2; color: "#000000" }
+        Rectangle { visible: seg.on("c"); x: seg.width - seg.th; y: seg.vBot
+            width: seg.th; height: (seg.height - seg.th - seg.gap) - seg.vBot; radius: seg.th / 2; color: "#000000" }
+    }
+
+    // Клавиша O на столе — переключение ODO → Trip A → Trip B.
+    Shortcut {
+        sequence: "O"
+        enabled: root.visible
+        onActivated: root.nextOdoMode()
     }
 }
