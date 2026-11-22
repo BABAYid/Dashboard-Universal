@@ -967,10 +967,13 @@ Window {
         // Повторяет макет дизайнера: фон выпечен из SVG, поверх — только
         // живые стрелки, буква передачи, поворотники и лампы. Дополнительных
         // экранов, камер и 3D-машины у этого скина нет.
+        // Второй вариант оформления («gaia-blue») — синие шкалы и белые
+        // цифры: тот же скин, у него другой фон из tools/gaia_bake.py.
         GaiaSkin {
             anchors.fill: parent
             z: 50
-            visible: root.skin === "gaia"
+            visible: root.skin === "gaia" || root.skin === "gaia-blue"
+            blueScale: root.skin === "gaia-blue"
             speed: root.speed
             rpm: root.rpmShown
             gear: root.gearMode
@@ -1332,7 +1335,8 @@ Window {
         Shortcut { sequence: "S"; onActivated: calibration.open() }
 
         // F8 — переключить скин по кругу: классический → Genesis → Gaia →
-        // классический. Приёмка на столе, в машине скин задаётся при запуске.
+        // Gaia с синими шкалами → классический. Приёмка на столе, в машине
+        // скин задаётся при запуске.
         // L — показать все лампы сразу (отладка раскладки значков)
         Shortcut { sequence: "L"; onActivated: {
                       root.lampsAllOn = !root.lampsAllOn
@@ -1344,6 +1348,8 @@ Window {
                           root.skin = "genesis"
                       else if (root.skin === "genesis")
                           root.skin = "gaia"
+                      else if (root.skin === "gaia")
+                          root.skin = "gaia-blue"
                       else
                           root.skin = "classic"
                       console.log("Скин:", root.skin)

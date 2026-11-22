@@ -139,6 +139,9 @@ qt_add_qml_module(appDashboard
         # Третий скин «Gaia»: фон выпекается из SVG макета tools/gaia_bake.py,
         # иконки ламп и буквы передач раскладывает tools/gaia_assets.py.
         images/gaia/gaia_bg.png
+        # Второй вариант оформления Gaia: синие шкалы, белые цифры
+        # (та же выпечка из SVG, другая палитра — tools/gaia_bake.py).
+        images/gaia/gaia_bg_blue.png
         images/gaia/lamp_fuel.png
         images/gaia/lamp_engine.png
         images/gaia/lamp_abs.png

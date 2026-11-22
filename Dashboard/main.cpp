@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
         if (auto *root = engine.rootObjects().constFirst()) {
             const QString skin = QString::fromLocal8Bit(qgetenv("DASHBOARD_SKIN"));
             if (skin == QStringLiteral("genesis") || skin == QStringLiteral("classic")
-                || skin == QStringLiteral("gaia"))
+                || skin == QStringLiteral("gaia") || skin == QStringLiteral("gaia-blue"))
                 root->setProperty("skin", skin);
         }
     }

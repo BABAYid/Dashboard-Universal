@@ -60,6 +60,10 @@ Item {
     property real tripKm: 0
     property real rangeKm: 0
     property bool nightMode: false
+    // Второй вариант оформления (как второй вариант в оригинале): синие
+    // шкалы и белые цифры. Фон для него печётся отдельно —
+    // tools/gaia_bake.py (синяя тема), файл images/gaia/gaia_bg_blue.png.
+    property bool blueScale: false
 
     // Скин ничего не рисует в центре, но Main.qml передаёт режим панели —
     // принимаем, чтобы связка свойств не ругалась.
@@ -207,7 +211,8 @@ Item {
     // их рисует скин. Выпекает tools/gaia_bake.py.
     Image {
         anchors.fill: parent
-        source: "images/gaia/gaia_bg.png"
+        source: root.blueScale ? "images/gaia/gaia_bg_blue.png"
+                               : "images/gaia/gaia_bg.png"
         fillMode: Image.Stretch
         smooth: true
     }

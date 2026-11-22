@@ -72,6 +72,25 @@ PIVOT_DOTS = ("paint40_linear_19_361", "paint47_linear_19_361")
 BASE_FILL_IN = "#14171A"
 BASE_FILL_OUT = "#000000"
 
+# --- синяя тема (второй вариант скина) ---
+# В оригинале есть вариант, где шкалы синие, а цифры на них белые. Фон
+# печётся из того же SVG, но с другой палитрой шкал: серые кольца и деления
+# уводятся в синий (яркость сохраняется), цифры становятся чисто белыми.
+# Палитра синей шкалы — задана явно, а не «поворотом оттенка»: серые
+# ступени макета при простом сдвиге hue остаются почти серыми.
+# Порядок ступеней совпадает с оригинальным градиентом кольца:
+# #9CA39E, #828C87, #CBD1CA, #E3E7DF, #DEE2DA.
+RING_GRADIENTS = ("paint0_radial_19_361", "paint17_radial_19_361")
+RING_BLUE_STOPS = ["#3E6E8E", "#33607E", "#6FA3C4", "#9BC6E0", "#94C0DC"]
+DARK_MARKS = ("#303538", "#31383B")     # деления шкал
+DARK_MARKS_BLUE = "#1E3B52"             # тёмно-синие деления
+NUMBERS = "#DFE2DD"                     # цифры на шкалах
+NUMBERS_BLUE_THEME = "#FFFFFF"          # в синем варианте — чисто белые
+
+SVG_OUT_BLUE = os.path.join(OUT_DIR, "gaia_bg_blue.svg")
+PNG_1X_BLUE = os.path.join(OUT_DIR, "gaia_bg_blue.png")
+PNG_2X_BLUE = os.path.join(OUT_DIR, "gaia_bg_blue@2x.png")
+
 
 def mat_mul(a, b):
     a0, a1, a2, a3, a4, a5 = a
@@ -299,15 +318,66 @@ def main():
     if what == "--check" or what == "all":
         render()
 
+    # Второй вариант: синие шкалы, белые цифры. Собирается из того же
+    # вырезанного SVG, поэтому живое (стрелки, передачи, лампы) не страдает.
+    if what in ("all", "--blue"):
+        blue = ET.parse(SVG_OUT)
+        blue_theme(blue.getroot())
+        blue.write(SVG_OUT_BLUE, encoding="unicode")
+        print("SVG фона (синие шкалы):", os.path.relpath(SVG_OUT_BLUE, ROOT))
+        render(SVG_OUT_BLUE, PNG_1X_BLUE, PNG_2X_BLUE)
 
-def render():
+
+def _find_by_id(el, ident):
+    """Ищет элемент по id во всём поддереве (градиенты лежат в defs)."""
+    if el.get("id") == ident:
+        return el
+    for ch in el:
+        found = _find_by_id(ch, ident)
+        if found is not None:
+            return found
+    return None
+
+
+def blue_theme(svg_root):
+    """Перекрашивает шкалы в синий, цифры — в белый (вариант «синие шкалы»).
+
+    Красим прицельно: только градиенты колец шкал, деления и цифры. Декор
+    (углы с топливом и температурой, карточки) остаётся как в макете.
+    """
+    changed = 0
+    for gid in RING_GRADIENTS:
+        node = _find_by_id(svg_root, gid)
+        if node is None:
+            print(f"  !! градиент {gid} не найден")
+            continue
+        stops = list(node)
+        for i, st in enumerate(stops):
+            if i < len(RING_BLUE_STOPS):
+                st.set("stop-color", RING_BLUE_STOPS[i])
+                changed += 1
+    for el in svg_root.iter():
+        fill = el.get("fill")
+        if fill in DARK_MARKS:
+            el.set("fill", DARK_MARKS_BLUE)
+            changed += 1
+        elif fill == NUMBERS:
+            el.set("fill", NUMBERS_BLUE_THEME)
+            changed += 1
+    print(f"синяя тема: перекрашено цветов — {changed}")
+
+
+def render(svg_path=None, png_1x=None, png_2x=None):
+    svg_path = svg_path or SVG_OUT
+    png_1x = png_1x or PNG_1X
+    png_2x = png_2x or PNG_2X
     chrome = os.path.join(os.sep, "usr", "bin", "google-chrome")
     prof = os.path.join(ROOT, ".dsh-ocr", "gaia", "chrome", "prof")
-    for scale, out in ((1, PNG_1X), (2, PNG_2X)):
+    for scale, out in ((1, png_1x), (2, png_2x)):
         cmd = [chrome, "--headless=new", "--disable-gpu", "--no-sandbox",
                "--hide-scrollbars", "--force-device-scale-factor=%d" % scale,
                "--user-data-dir=" + prof, "--window-size=1920,720",
-               "--screenshot=" + out, "file://" + SVG_OUT]
+               "--screenshot=" + out, "file://" + svg_path]
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
         ok = os.path.exists(out)
         print(f"рендер @{scale}x: {'ok' if ok else 'FAIL'} -> {os.path.relpath(out, ROOT)}")
