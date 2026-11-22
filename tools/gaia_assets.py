@@ -72,7 +72,7 @@ def extract_gears():
         ya = int(round(y0 * 2)) - 4
         yb = int(round((y0 + CARD_H) * 2)) + 4
         crop = d[ya:yb, x0:x1]
-        mask = crop > 55
+        mask = crop > 150   # буква светлее плашки карточки
         if not mask.any():
             print(f"  !! нет глифа {letter}")
             continue
