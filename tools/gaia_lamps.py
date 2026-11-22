@@ -2,10 +2,13 @@
 """Готовит цветные лампы скина Gaia.
 
 Поворотники (зелёные) и дальний свет (синий) делаются из белых иконок
-классического скина заливкой цвета. Лампы-предупреждения (check engine,
-ABS, масло, АКБ, ручник) берутся из скина Genesis — там они уже покрашены
-в палитру приборки (янтарный/красный) и выгружены в 256×224, поэтому просто
-копируются под именами Gaia.
+классического скина заливкой цвета. Лампы-предупреждения берутся из скина
+Genesis — там они уже покрашены в палитру приборки (янтарный/красный) и
+выгружены в 256×224, поэтому копируются и обрезаются по контенту.
+
+Reмня в Genesis есть (warn_seat_belt_red), а вот значка SRS/подушки и
+«открытых дверей» там нет — эти две берутся из макета Gaia и красятся
+красным здесь же (как просил заказчик).
 
 В макете Gaia иконки свои и монохромные, но заказчик попросил взять
 указатели поворота и значок дальнего света из прошлых скинов и дать им
@@ -43,6 +46,7 @@ OUT_DIR = os.path.join(ROOT, "Dashboard", "images", "gaia")
 # во всех скинах.
 GREEN = "#57D68A"
 BLUE = "#63C8FF"
+RED = "#FF5252"
 
 # Исходник классики -> (копия без цвета, цветная копия, цвет)
 LAMPS = {
@@ -61,6 +65,15 @@ WARN_FROM_GENESIS = {
     "warn_oil_pressure_red.png":   "lamp_oil.png",
     "warn_battery_red.png":        "lamp_batt.png",
     "warn_hand_brake_red.png":     "lamp_brake.png",
+    "warn_seat_belt_red.png":      "lamp_belt.png",
+}
+
+# Значков, которых в прошлых скинах нет, — берём иконку из макета Gaia и
+# красим: «открытые двери» и подушка безопасности (SRS) — красные.
+GAIA_DIR = os.path.join(ROOT, "Gaia")
+TINTED_FROM_GAIA = {
+    "Открытые двери.png":           ("lamp_doors.png",  RED),
+    "Подушка безопасности.png":     ("lamp_airbag.png", RED),
 }
 
 
@@ -87,6 +100,14 @@ def main():
         shutil.copyfile(src, os.path.join(OUT_DIR, plain_name))
         size = tint(src, os.path.join(OUT_DIR, color_name), color)
         print(f"  {src_name} -> {plain_name} + {color_name}  {size[0]}x{size[1]}  {color}")
+
+    for src_name, (dst_name, color) in TINTED_FROM_GAIA.items():
+        src = os.path.join(GAIA_DIR, src_name)
+        if not os.path.exists(src):
+            print(f"  !! нет файла Gaia/{src_name}")
+            continue
+        size = tint(src, os.path.join(OUT_DIR, dst_name), color)
+        print(f"  Gaia/{src_name} -> {dst_name}  {size[0]}x{size[1]}  {color}")
 
     for src_name, dst_name in WARN_FROM_GENESIS.items():
         src = os.path.join(GENESIS_DIR, src_name)
