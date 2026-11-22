@@ -95,6 +95,27 @@ Item {
     readonly property real needleWidth: 9.9
     readonly property real needleLength: 289.6
     readonly property real needleTipWidth: 7.4
+    // Куда смотрит стрелка на каждом делении — замер с макета
+    // (tools/gaia_scale.py). Шкалы нарисованы на эллипсе, а стрелка ходит
+    // по кругу вокруг оси, смещённой от центра эллипса на 72 px, поэтому
+    // равномерный поворот «0…270°» с цифрами не совпадает: у нуля ошибка
+    // была ~8–13°, у максимума ~18°. Здесь — углы поворота спрайта,
+    // снятые прямо с цифр 0…180 км/ч и 0…8 «×1000/min».
+    readonly property var speedAngles: [-121.6, -94.1, -66.0, -42.2, -15.6,
+                                        12.6, 40.0, 65.1, 94.0, 121.7]
+    readonly property var rpmAngles: [-118.9, -90.2, -59.9, -31.1, -0.6,
+                                      30.0, 58.8, 90.2, 120.5]
+
+    // Поворот стрелки для значения: кусочно-линейная интерполяция по
+    // таблице делений. Между делениями стрелка идёт равномерно.
+    function needleAngle(value, maxValue, table) {
+        const t = Math.max(0, Math.min(1, value / maxValue))
+        const pos = t * (table.length - 1)
+        const i = Math.min(table.length - 2, Math.floor(pos))
+        const f = pos - i
+        return table[i] + (table[i + 1] - table[i]) * f
+    }
+
     readonly property real gearColumnX: 960.5
     readonly property real gearRowStep: 68.1
     readonly property real gearFirstRowY: 136.6
@@ -244,15 +265,14 @@ Item {
 
         required property real pivotX
         required property real pivotY
-        required property real value01          // 0…1 по шкале
-        required property real startAngle       // угол поворота при 0
+        required property real angle            // поворот спрайта, градусы
 
         x: pivotX - width / 2
         y: pivotY - height
         width: root.needleWidth
         height: root.needleLength
         transformOrigin: Item.Bottom
-        rotation: startAngle + 270 * Math.max(0, Math.min(1, value01))
+        rotation: needle.angle
 
         // Пружина как в классическом скине (Gauge.qml) и Genesis: без неё
         // стрелка дёргается по кадрам CAN, с ней — перелетает на 2–3 % и
@@ -292,14 +312,12 @@ Item {
     Needle {
         pivotX: root.dialLeftPivotX
         pivotY: root.dialLeftPivotY
-        value01: root.speed / 180
-        startAngle: -130
+        angle: root.needleAngle(root.speed, 180, root.speedAngles)
     }
     Needle {
         pivotX: root.dialRightPivotX
         pivotY: root.dialRightPivotY
-        value01: root.rpm / 8000
-        startAngle: -132
+        angle: root.needleAngle(root.rpm, 8000, root.rpmAngles)
     }
 
     // ======================= КОЛОНКА ПЕРЕДАЧ =======================

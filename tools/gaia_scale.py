@@ -35,7 +35,12 @@ DIALS = {
 
 
 def label_paths():
-    """Пути-цифры на шкалах: в макете они залиты #DFE2DD."""
+    """Пути-цифры на шкалах в порядке документа.
+
+    В макете цифры залиты #DFE2DD, и идут они ровно в порядке шкалы:
+    сначала 0, 20, … 180 левого колодца, потом 0…8 правого. Порядок
+    документа — самый надёжный способ не перепутать значения с углами.
+    """
     root = ET.parse(SVG).getroot()
     host = root
     for ch in root:
@@ -56,39 +61,28 @@ def label_paths():
 
 def main():
     boxes = label_paths()
-    for name, d in DIALS.items():
+    left = [b for b in boxes if (b[0] + b[2]) / 2 < 960]
+    right = [b for b in boxes if (b[0] + b[2]) / 2 >= 960]
+    for name, d, group in (("speed", DIALS["speed"], left), ("rpm", DIALS["rpm"], right)):
         cx, py = d["cx"], d["pivotY"]
-        rows = []
-        for bb in boxes:
-            mx, my = (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2
-            if not (d["xlo"] <= mx <= d["xhi"]):
-                continue
-            if bb[1] < 40 or bb[3] > 560:
-                continue
-            ang = math.degrees(math.atan2(my - py, mx - cx)) % 360
-            rows.append((ang, mx, my, bb[2] - bb[0], bb[3] - bb[1]))
-        rows.sort()
-        print(f"=== {name}: найдено {len(rows)} цифр (угол от оси, центр)")
-        for ang, mx, my, w, h in rows:
-            print(f"  {ang:7.2f}°  центр ({mx:6.1f},{my:6.1f})  {w:.0f}x{h:.0f}")
-        if len(rows) != len(d["values"]):
-            print(f"  !! ожидалось {len(d['values'])} цифр — проверьте вручную")
+        if len(group) != len(d["values"]):
+            print(f"  !! {name}: цифр {len(group)}, ожидалось {len(d['values'])}")
             continue
-        # Порядок цифр по углу совпадает с порядком значений по шкале.
-        vals = d["values"]
-        # нормируем: углы могут перейти через 0 — разворачиваем монотонно от первой
-        base = rows[0][0]
-        angles = [base]
-        for ang, *_ in rows[1:]:
-            a = ang
-            while a < angles[-1] - 1:
-                a += 360
-            angles.append(a)
-        print(f"  углы: {[round(a, 1) for a in angles]}")
-        # QML: поворот спрайта (стрелка нарисована вверх = 270°) = угол - 270
-        rot = [round((a - 270) % 360, 1) for a in angles]
-        rot = [round(x - 360 if x > 180 else x, 1) for x in rot]
-        print(f"  {name}Angles: {rot}")
+        angles = []
+        for bb in group:
+            mx, my = (bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2
+            angles.append(math.degrees(math.atan2(my - py, mx - cx)) % 360)
+        print(f"=== {name}: значения {d['values']}")
+        print(f"    углы от оси: {[round(a, 1) for a in angles]}")
+        # Спрайт стрелки нарисован «вверх» (270° по экранной поляре), поэтому
+        # поворот QML = угол - 270. Приводим к диапазону (-180, 180].
+        rot = []
+        for a in angles:
+            r = (a - 270) % 360
+            if r > 180:
+                r -= 360
+            rot.append(round(r, 1))
+        print(f"    {name}Angles: {rot}")
         print()
 
 
