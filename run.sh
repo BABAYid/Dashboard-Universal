@@ -47,6 +47,7 @@ usage() {
   --demo-camera [КМЧ]    включить демо-камеру в 420 м впереди (по умолчанию 60)
   --demo-type КОД        тип демо-точки: 1 камера, 102 неровность, 22 переход…
   --city LAT,LON         перенести демо-маршрут в свой город
+  --skin NAME            скин при старте: gaia, gaia-blue, genesis, classic
   --speedcam PATH        файл базы камер (по умолчанию ищется автоматически)
   -h, --help             эта справка
 
@@ -94,6 +95,7 @@ while [ $# -gt 0 ]; do
             fi
             export DASHBOARD_MOCK_LAT="$lat" DASHBOARD_MOCK_LON="$lon"; shift 2 ;;
         --speedcam)    need_value "$@"; export DASHBOARD_SPEEDCAM="$2"; shift 2 ;;
+        --skin)        need_value "$@"; export DASHBOARD_SKIN="$2"; shift 2 ;;
         -h|--help)     usage; exit 0 ;;
         *) echo "Неизвестный ключ: $1 (см. --help)" >&2; exit 2 ;;
     esac

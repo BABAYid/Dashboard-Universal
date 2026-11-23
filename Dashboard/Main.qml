@@ -1334,24 +1334,21 @@ Window {
         Shortcut { sequence: "N"; onActivated: input.button(6) }
         Shortcut { sequence: "S"; onActivated: calibration.open() }
 
-        // F8 — переключить скин по кругу: классический → Genesis → Gaia →
-        // Gaia с синими шкалами → классический. Приёмка на столе, в машине
-        // скин задаётся при запуске.
+        // F8 — переключение только между двумя вариантами Gaia (обычный и
+        // синий). Классика и Genesis остаются доступны при запуске через
+        // DASHBOARD_SKIN, но клавишей в этой сборке не включаются.
         // L — показать все лампы сразу (отладка раскладки значков)
         Shortcut { sequence: "L"; onActivated: {
                       root.lampsAllOn = !root.lampsAllOn
                       console.log("Отладка: все лампы", root.lampsAllOn ? "ВКЛ" : "выкл")
                   } }
 
+        // Кнопка F8 переключает ТОЛЬКО два варианта Gaia — белый и синий.
+        // Классика и Genesis в этом режиме не включаются: нужно для записи
+        // видео, чтобы панель не уезжала в другие скины. Если нажали из
+        // классики/Genesis, первой включается Gaia.
         Shortcut { sequence: "F8"; onActivated: {
-                      if (root.skin === "classic")
-                          root.skin = "genesis"
-                      else if (root.skin === "genesis")
-                          root.skin = "gaia"
-                      else if (root.skin === "gaia")
-                          root.skin = "gaia-blue"
-                      else
-                          root.skin = "classic"
+                      root.skin = root.skin === "gaia" ? "gaia-blue" : "gaia"
                       console.log("Скин:", root.skin)
                   } }
 
